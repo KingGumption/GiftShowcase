@@ -20,7 +20,11 @@ const gap = clampInteger(savedRowsConfig.gap ?? 0, 0, 32);
 const rowHeight = clampInteger(savedRowsConfig.rowHeight || 96, 64, 160);
 const showNames = savedRowsConfig.names !== false;
 let highlightTimer;
+let releaseFocusTimer;
 let reconnectTimer;
+let lastTestGiftIndex = -1;
+const rowScrollStates = new WeakMap();
+const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 applyThemeToDocument(savedRowsConfig.theme);
 renderRows();
@@ -52,6 +56,7 @@ function renderRows() {
     const direction = getRowDirection(rowIndex);
     const speed = getRowSpeed(rowIndex);
     const rowGifts = rowGiftGroups[rowIndex] || [];
+    const loopGifts = isScrolling ? getLoopableRowGifts(rowGifts, visibleCount) : rowGifts;
 
     const row = document.createElement('section');
     row.className = `reward-gift-row${isScrolling ? ' is-scrolling' : ''}`;
@@ -62,15 +67,140 @@ function renderRows() {
 
     const track = document.createElement('div');
     track.className = 'reward-gift-row-track';
-    track.innerHTML = getRowMarkup(rowGifts);
-
-    if (isScrolling) {
-      track.innerHTML += getRowMarkup(rowGifts);
-    }
+    track.innerHTML = isScrolling
+      ? getRowMarkup(loopGifts) + getRowMarkup(loopGifts) + getRowMarkup(loopGifts)
+      : getRowMarkup(loopGifts);
 
     row.append(track);
     rewardRowsWidget.append(row);
+    if (isScrolling) {
+      setupRowScrollLoop(row, track, loopGifts.length);
+    }
   }
+}
+
+function setupRowScrollLoop(row, track, loopCount, options = {}) {
+  row.dataset.loopCount = String(loopCount);
+
+  requestAnimationFrame(() => {
+    const firstTile = track.children[0];
+    const firstDuplicateTile = track.children[loopCount];
+
+    if (!firstTile || !firstDuplicateTile) {
+      return;
+    }
+
+    const distance = firstDuplicateTile.offsetLeft - firstTile.offsetLeft;
+    const scrollDistance = Math.max(0, distance);
+    const offset = Number.isFinite(options.startOffset)
+      ? options.startOffset
+      : -scrollDistance;
+
+    stopRowScroll(row);
+    row.style.setProperty('--row-scroll-distance', `${scrollDistance}px`);
+    rowScrollStates.set(row, {
+      track,
+      loopCount,
+      distance: scrollDistance,
+      offset: normalizeRowOffset(row, offset, scrollDistance),
+      speed: scrollDistance / (Math.max(1, getRowScrollDuration(row)) * 1000),
+      direction: row.dataset.direction === 'right' ? 'right' : 'left',
+      rafId: 0,
+      lastFrame: 0,
+      running: false
+    });
+
+    applyRowScrollOffset(row);
+    startRowScroll(row);
+  });
+}
+
+function getRowScrollDuration(row) {
+  return parseFloat(getComputedStyle(row).getPropertyValue('--row-scroll-duration')) || 28;
+}
+
+function startRowScroll(row) {
+  const state = rowScrollStates.get(row);
+  if (!state || !state.distance || prefersReducedMotion) {
+    return;
+  }
+
+  state.running = true;
+  state.lastFrame = performance.now();
+  state.rafId = requestAnimationFrame(time => updateRowScroll(row, time));
+}
+
+function updateRowScroll(row, time) {
+  const state = rowScrollStates.get(row);
+  if (!state || !state.running) {
+    return;
+  }
+
+  const elapsed = Math.max(0, time - state.lastFrame);
+  state.lastFrame = time;
+  state.offset += state.direction === 'right'
+    ? state.speed * elapsed
+    : -state.speed * elapsed;
+  state.offset = normalizeRowOffset(row, state.offset, state.distance);
+  applyRowScrollOffset(row);
+  state.rafId = requestAnimationFrame(nextTime => updateRowScroll(row, nextTime));
+}
+
+function stopRowScroll(row) {
+  const state = rowScrollStates.get(row);
+  if (!state) {
+    return null;
+  }
+
+  state.running = false;
+  if (state.rafId) {
+    cancelAnimationFrame(state.rafId);
+    state.rafId = 0;
+  }
+
+  return state;
+}
+
+function normalizeRowOffset(row, offset, distance) {
+  if (!distance) {
+    return offset;
+  }
+
+  const direction = row.dataset.direction === 'right' ? 'right' : 'left';
+
+  if (direction === 'right') {
+    while (offset >= 0) offset -= distance;
+    while (offset < -distance) offset += distance;
+    return offset;
+  }
+
+  while (offset > -distance) offset -= distance;
+  while (offset <= -distance * 2) offset += distance;
+  return offset;
+}
+
+function applyRowScrollOffset(row) {
+  const state = rowScrollStates.get(row);
+  if (!state) {
+    return;
+  }
+
+  state.track.style.transform = `translateX(${state.offset}px)`;
+}
+
+function getLoopableRowGifts(rowGifts, visibleCount) {
+  if (!rowGifts.length) {
+    return [];
+  }
+
+  const minimumLoopCount = Math.max(rowGifts.length, visibleCount * 2);
+  const loopGifts = [];
+
+  while (loopGifts.length < minimumLoopCount) {
+    loopGifts.push(...rowGifts);
+  }
+
+  return loopGifts;
 }
 
 function getRowMarkup(rowGifts) {
@@ -214,12 +344,10 @@ function setupRowsGiftSimulator() {
 }
 
 function startRowsTestMode() {
-  let testIndex = 0;
-
-  window.setTimeout(sendTestGift, 700);
+  window.setTimeout(sendTestGift, getRandomTestDelay(500, 1700));
 
   function sendTestGift() {
-    const gift = gifts[testIndex % gifts.length];
+    const gift = getRandomTestGift();
     if (gift) {
       highlightGift({
         giftName: gift.label,
@@ -227,9 +355,31 @@ function startRowsTestMode() {
       });
     }
 
-    testIndex += 1;
-    window.setTimeout(sendTestGift, highlightMs + 900);
+    window.setTimeout(sendTestGift, getRandomTestDelay(highlightMs + 450, highlightMs + 2600));
   }
+}
+
+function getRandomTestDelay(min, max) {
+  return Math.round(min + (Math.random() * (max - min)));
+}
+
+function getRandomTestGift() {
+  if (!gifts.length) {
+    return null;
+  }
+
+  if (gifts.length === 1) {
+    lastTestGiftIndex = 0;
+    return gifts[0];
+  }
+
+  let nextIndex = lastTestGiftIndex;
+  while (nextIndex === lastTestGiftIndex) {
+    nextIndex = Math.floor(Math.random() * gifts.length);
+  }
+
+  lastTestGiftIndex = nextIndex;
+  return gifts[nextIndex];
 }
 
 function highlightGift(gift) {
@@ -251,9 +401,12 @@ function highlightGift(gift) {
     return;
   }
 
+  const focusTile = getBestFocusTile(matchingTiles);
+
   clearTimeout(highlightTimer);
-  focusGiftTile(matchingTiles[0]);
-  playRowsGiftSound(matchingTiles[0]);
+  clearTimeout(releaseFocusTimer);
+  focusGiftTile(focusTile);
+  playRowsGiftSound(focusTile);
   rewardRowsWidget.querySelectorAll('.reward-gift-tile.is-hit').forEach(tile => {
     tile.classList.remove('is-hit');
   });
@@ -265,7 +418,65 @@ function highlightGift(gift) {
 
   highlightTimer = setTimeout(() => {
     matchingTiles.forEach(tile => tile.classList.remove('is-hit'));
+    releaseFocusTimer = setTimeout(() => {
+      rewardRowsWidget.querySelectorAll('.reward-gift-row.is-focusing').forEach(row => {
+        releaseFocusedRow(row, focusTile);
+      });
+    }, 240);
   }, highlightMs);
+}
+
+function getBestFocusTile(tiles) {
+  return tiles.reduce((bestTile, tile) => {
+    if (!bestTile) {
+      return tile;
+    }
+
+    return getFocusScore(tile) < getFocusScore(bestTile) ? tile : bestTile;
+  }, null);
+}
+
+function getFocusScore(tile) {
+  const row = tile?.closest('.reward-gift-row');
+  const track = tile?.closest('.reward-gift-row-track');
+  if (!row || !track) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  return getVisibleDistanceFromRowCenter(tile);
+}
+
+function getVisibleDistanceFromRowCenter(tile) {
+  const row = tile?.closest('.reward-gift-row');
+  const track = tile?.closest('.reward-gift-row-track');
+
+  if (!row || !track) {
+    return Number.POSITIVE_INFINITY;
+  }
+
+  const translateX = getCurrentTrackX(row, track);
+  const rowCenter = row.clientWidth / 2;
+  const tileCenter = tile.offsetLeft + (tile.offsetWidth / 2) + translateX;
+
+  return Math.abs(tileCenter - rowCenter);
+}
+
+function getTranslateX(transform) {
+  if (!transform || transform === 'none') {
+    return 0;
+  }
+
+  const matrix = transform.match(/^matrix\((.+)\)$/);
+  if (matrix) {
+    return Number(matrix[1].split(',')[4]) || 0;
+  }
+
+  const matrix3d = transform.match(/^matrix3d\((.+)\)$/);
+  if (matrix3d) {
+    return Number(matrix3d[1].split(',')[12]) || 0;
+  }
+
+  return 0;
 }
 
 function playRowsGiftSound(tile) {
@@ -291,13 +502,130 @@ function focusGiftTile(tile) {
     return;
   }
 
-  const trackWidth = row.classList.contains('is-scrolling') ? track.scrollWidth / 2 : track.scrollWidth;
-  const maxOffset = Math.max(0, trackWidth - row.clientWidth);
-  const centeredOffset = tile.offsetLeft - ((row.clientWidth - tile.clientWidth) / 2);
-  const focusOffset = Math.min(maxOffset, Math.max(0, centeredOffset));
+  const isScrolling = row.classList.contains('is-scrolling');
+  const state = isScrolling ? stopRowScroll(row) : null;
+  const currentX = state?.offset ?? getTranslateX(getComputedStyle(track).transform);
+  const focusX = getCenteredTrackX(row, track, tile, isScrolling);
 
+  track.style.transition = 'none';
+  track.style.transform = `translateX(${currentX}px)`;
+  void track.offsetWidth;
   row.classList.add('is-focusing');
-  row.style.setProperty('--row-focus-x', `${-focusOffset}px`);
+  track.style.removeProperty('transition');
+  requestAnimationFrame(() => {
+    track.style.transform = `translateX(${focusX}px)`;
+  });
+}
+
+function getCenteredTrackX(row, track, tile, isScrolling) {
+  const targetX = getFocusTargetX(tile);
+
+  if (isScrolling) {
+    return normalizeRowOffset(row, targetX, getRowScrollDistance(row));
+  }
+
+  const minX = Math.min(0, row.clientWidth - track.scrollWidth);
+  return Math.max(minX, Math.min(0, targetX));
+}
+
+function getFocusTargetX(tile) {
+  const row = tile?.closest('.reward-gift-row');
+
+  if (!row || !tile) {
+    return 0;
+  }
+
+  return (row.clientWidth / 2) - (tile.offsetLeft + (tile.offsetWidth / 2));
+}
+
+function releaseFocusedRow(row, focusedTile = null) {
+  const track = row.querySelector('.reward-gift-row-track');
+  if (!track) {
+    row.classList.remove('is-focusing');
+    return;
+  }
+
+  const currentX = getCurrentTrackX(row, track);
+  track.style.transition = 'none';
+  track.style.transform = `translateX(${currentX}px)`;
+  void track.offsetWidth;
+
+  const restartOffset = restartRowFromFocusedGift(row, track, focusedTile);
+  if (Number.isFinite(restartOffset)) {
+    track.style.transform = `translateX(${restartOffset}px)`;
+  }
+
+  row.classList.remove('is-focusing');
+  void track.offsetWidth;
+  track.style.removeProperty('transition');
+
+  if (!row.classList.contains('is-scrolling')) {
+    track.style.removeProperty('transform');
+    return;
+  }
+
+  if (!Number.isFinite(restartOffset)) {
+    startRowScroll(row);
+  }
+}
+
+function restartRowFromFocusedGift(row, track, focusedTile) {
+  if (!row.classList.contains('is-scrolling') || !focusedTile) {
+    return null;
+  }
+
+  const loopCount = Number(row.dataset.loopCount || 0);
+  if (!loopCount) {
+    return null;
+  }
+
+  const firstStrip = [...track.children].slice(0, loopCount);
+  const focusedKeys = focusedTile.dataset.giftKeys;
+  const startIndex = firstStrip.findIndex(tile => tile.dataset.giftKeys === focusedKeys);
+
+  if (startIndex < 0) {
+    return resetRowToMiddleStripStart(row, track);
+  }
+
+  const ordered = [
+    ...firstStrip.slice(startIndex),
+    ...firstStrip.slice(0, startIndex)
+  ];
+
+  track.innerHTML = getClonedTilesMarkup(ordered, 3);
+  const restartOffset = getRowStartOffsetFromTile(row, track, track.children[loopCount]);
+  setupRowScrollLoop(row, track, loopCount, { startOffset: restartOffset });
+  return restartOffset;
+}
+
+function resetRowToMiddleStripStart(row, track) {
+  const loopCount = Number(row.dataset.loopCount || 0);
+  const restartOffset = getRowStartOffsetFromTile(row, track, track.children[loopCount]);
+  setupRowScrollLoop(row, track, loopCount, { startOffset: restartOffset });
+  return restartOffset;
+}
+
+function getRowStartOffsetFromTile(row, track, tile) {
+  const fallback = -getRowScrollDistance(row);
+  const offset = tile ? getCenteredTrackX(row, track, tile, false) : fallback;
+
+  return row.classList.contains('is-scrolling')
+    ? normalizeRowOffset(row, offset, getRowScrollDistance(row))
+    : offset;
+}
+
+function getClonedTilesMarkup(tiles, copies) {
+  const markup = tiles.map(tile => tile.outerHTML).join('');
+  return Array.from({ length: copies }, () => markup).join('');
+}
+
+function getRowScrollDistance(row) {
+  return rowScrollStates.get(row)?.distance || parseFloat(getComputedStyle(row).getPropertyValue('--row-scroll-distance')) || 0;
+}
+
+function getCurrentTrackX(row, track) {
+  const state = rowScrollStates.get(row);
+  return Number.isFinite(state?.offset) ? state.offset : getTranslateX(getComputedStyle(track).transform);
 }
 
 function normalizeGiftEvent(data) {

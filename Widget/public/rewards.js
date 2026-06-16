@@ -547,7 +547,7 @@ function startTestMode() {
   let testIndex = 0;
   let lastRewardIndex = -1;
 
-  window.setTimeout(sendTestGift, 900);
+  window.setTimeout(sendTestGift, getRandomTestDelay(700, 1800));
 
   function sendTestGift() {
     const nextRewardIndex = getRandomTestRewardIndex(testRewards, lastRewardIndex);
@@ -565,8 +565,12 @@ function startTestMode() {
 
     lastRewardIndex = nextRewardIndex;
     testIndex += 1;
-    window.setTimeout(sendTestGift, holdOnGiftMs + 1200);
+    window.setTimeout(sendTestGift, getRandomTestDelay(holdOnGiftMs + 700, holdOnGiftMs + 3200));
   }
+}
+
+function getRandomTestDelay(min, max) {
+  return Math.round(min + (Math.random() * (max - min)));
 }
 
 function setupGiftSimulator() {
