@@ -8,10 +8,10 @@
   --reward-theme-accent: #03f5d8;
   --reward-theme-accent-soft: rgba(3, 245, 216, 0.18);
   --reward-theme-accent-strong: rgba(3, 245, 216, 0.76);
-  --reward-theme-secondary: #c447ff;
+  --reward-theme-secondary: #531c7b;
   --reward-theme-secondary-soft: rgba(196, 71, 255, 0.2);
-  --reward-theme-background: rgba(27, 31, 43, 0.78);
-  --reward-theme-background-deep: rgba(27, 31, 43, 0.88);
+  --reward-theme-background: rgba(54, 58, 61, 0.78);
+  --reward-theme-background-deep: rgba(54, 58, 61, 0.88);
   --reward-theme-card: rgba(13, 15, 20, 0.82);
   --reward-theme-card-soft: rgba(13, 15, 20, 0.62);
   --reward-theme-text: #ffffff;
@@ -22,6 +22,32 @@
   --reward-theme-glow-soft: rgba(196, 71, 255, 0.22);
   --reward-theme-glow-strong: rgba(196, 71, 255, 0.78);
   --reward-theme-shine: rgba(255, 255, 255, 0.18);
+  --reward-theme-widget-glow: rgba(196, 71, 255, 0.44);
+  --reward-theme-widget-inset-shine: rgba(255, 255, 255, 0.16);
+  --reward-theme-widget-border: rgba(255, 255, 255, 0.28);
+  --reward-theme-widget-shine: rgba(255, 255, 255, 0.2);
+  --reward-theme-widget-side-shine-left: rgba(255, 255, 255, 0.2);
+  --reward-theme-widget-side-shine-right: rgba(255, 255, 255, 0.16);
+  --reward-theme-widget-radial-shine: rgba(255, 255, 255, 0.22);
+  --reward-theme-widget-top-shine: rgba(255, 255, 255, 0.22);
+  --reward-theme-widget-bottom-shine: rgba(255, 255, 255, 0.12);
+  --reward-theme-widget-after-left-shine: rgba(255, 255, 255, 0.2);
+  --reward-theme-widget-after-right-shine: rgba(255, 255, 255, 0.14);
+  --reward-theme-widget-top: rgba(54, 58, 61, 0.72);
+  --reward-theme-widget-mid: rgba(12, 12, 18, 0.78);
+  --reward-theme-widget-bottom: rgba(83, 28, 123, 0.68);
+  --reward-theme-widget-base: rgba(10, 9, 14, 0.62);
+  --reward-theme-card-border: rgba(255, 255, 255, 0.2);
+  --reward-theme-card-shine: rgba(255, 255, 255, 0.16);
+  --reward-theme-card-base: rgba(13, 15, 20, 0.58);
+  --reward-theme-card-text: rgba(255, 255, 255, 0.96);
+  --reward-theme-card-active-glow: rgba(196, 71, 255, 0.38);
+  --reward-theme-card-active-accent: rgba(3, 245, 216, 0.18);
+  --reward-theme-callout-border: rgba(255, 255, 255, 0.26);
+  --reward-theme-callout-start: rgba(3, 245, 216, 0.22);
+  --reward-theme-callout-end: rgba(196, 71, 255, 0.34);
+  --reward-theme-callout-base: rgba(12, 8, 22, 0.84);
+  --reward-theme-callout-glow: rgba(196, 71, 255, 0.48);
 }
 
 * {
@@ -1228,15 +1254,15 @@ body.show-status .status {
   height: calc(var(--reward-top-offset) + var(--reward-bottom-offset) + (var(--reward-visible-count) * 68px) + ((var(--reward-visible-count) - 1) * 8px));
   overflow: hidden;
   color: var(--reward-theme-text);
-  border: 1px solid var(--reward-theme-border);
+  border: 1px solid var(--reward-theme-widget-border);
   border-radius: 18px;
   background:
-    linear-gradient(165deg, var(--reward-theme-shine), transparent 32%),
-    linear-gradient(180deg, var(--reward-theme-background), var(--reward-theme-background-deep) 58%, var(--reward-theme-secondary-soft)),
-    var(--reward-theme-card-soft);
+    linear-gradient(165deg, var(--reward-theme-widget-shine), transparent 32%),
+    linear-gradient(180deg, var(--reward-theme-widget-top), var(--reward-theme-widget-mid) 58%, var(--reward-theme-widget-bottom)),
+    var(--reward-theme-widget-base);
   box-shadow:
-    0 0 24px var(--reward-theme-glow),
-    0 0 18px var(--reward-theme-shine) inset,
+    0 0 24px var(--reward-theme-widget-glow),
+    0 0 18px var(--reward-theme-widget-inset-shine) inset,
     0 0 0 1px rgba(0, 0, 0, 0.42) inset,
     0 14px 24px rgba(0, 0, 0, 0.36);
   backdrop-filter: blur(16px) saturate(150%);
@@ -1251,8 +1277,8 @@ body.show-status .status {
   content: "";
   border-radius: 14px;
   background:
-    linear-gradient(90deg, var(--reward-theme-shine), transparent 20%, transparent 80%, var(--reward-theme-shine)),
-    radial-gradient(circle at 50% 18%, var(--reward-theme-shine), transparent 36%);
+    linear-gradient(90deg, var(--reward-theme-widget-side-shine-left), transparent 20%, transparent 80%, var(--reward-theme-widget-side-shine-right)),
+    radial-gradient(circle at 50% 18%, var(--reward-theme-widget-radial-shine), transparent 36%);
   pointer-events: none;
 }
 
@@ -1264,8 +1290,8 @@ body.show-status .status {
   pointer-events: none;
   border-radius: 18px;
   background:
-    linear-gradient(180deg, var(--reward-theme-shine), transparent 18%, transparent 84%, var(--reward-theme-shine)),
-    linear-gradient(90deg, var(--reward-theme-shine), transparent 18%, transparent 82%, var(--reward-theme-shine));
+    linear-gradient(180deg, var(--reward-theme-widget-top-shine), transparent 18%, transparent 84%, var(--reward-theme-widget-bottom-shine)),
+    linear-gradient(90deg, var(--reward-theme-widget-after-left-shine), transparent 18%, transparent 82%, var(--reward-theme-widget-after-right-shine));
   box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.1) inset;
 }
 
@@ -1301,11 +1327,11 @@ body.show-status .status {
   height: 68px;
   padding: 5px 5px 6px;
   overflow: hidden;
-  border: 1px solid var(--reward-theme-border);
+  border: 1px solid var(--reward-theme-card-border);
   border-radius: 12px;
   background:
-    linear-gradient(160deg, var(--reward-theme-shine), rgba(255, 255, 255, 0.03) 40%, rgba(0, 0, 0, 0.2)),
-    var(--reward-theme-card);
+    linear-gradient(160deg, var(--reward-theme-card-shine), rgba(255, 255, 255, 0.03) 40%, rgba(0, 0, 0, 0.2)),
+    var(--reward-theme-card-base);
   box-shadow:
     0 8px 14px rgba(0, 0, 0, 0.28),
     0 0 0 1px rgba(255, 255, 255, 0.08) inset;
@@ -1320,12 +1346,13 @@ body.show-status .status {
 }
 
 .reward-card.is-active {
+  border-color: var(--reward-theme-accent-strong);
   opacity: 1;
   filter: brightness(1.12);
   transform: scale(1);
   box-shadow:
-    0 0 18px var(--reward-theme-glow),
-    0 0 14px var(--reward-theme-accent-soft),
+    0 0 18px var(--reward-theme-card-active-glow),
+    0 0 14px var(--reward-theme-card-active-accent),
     0 0 0 1px rgba(255, 255, 255, 0.16) inset;
 }
 
@@ -1352,7 +1379,7 @@ body.show-status .status {
   display: block;
   width: 100%;
   overflow: hidden;
-  color: var(--reward-theme-text);
+  color: var(--reward-theme-card-text);
   font-size: 10px;
   font-weight: 900;
   line-height: 1.02;
@@ -1375,13 +1402,13 @@ body.show-status .status {
   min-height: 38px;
   padding: 5px 7px;
   overflow: hidden;
-  border: 1px solid var(--reward-theme-border);
+  border: 1px solid var(--reward-theme-callout-border);
   border-radius: 10px;
   background:
-    linear-gradient(135deg, var(--reward-theme-accent-soft), var(--reward-theme-secondary-soft)),
-    var(--reward-theme-background-deep);
+    linear-gradient(135deg, var(--reward-theme-callout-start), var(--reward-theme-callout-end)),
+    var(--reward-theme-callout-base);
   box-shadow:
-    0 0 14px var(--reward-theme-glow),
+    0 0 14px var(--reward-theme-callout-glow),
     0 0 0 1px rgba(255, 255, 255, 0.1) inset;
   opacity: 0;
   transform: translateY(14px) scale(0.96);
@@ -1412,7 +1439,7 @@ body.show-status .status {
 }
 
 .reward-callout strong {
-  color: var(--reward-theme-text);
+  color: var(--reward-theme-card-text);
   font-size: 9px;
   font-weight: 800;
 }
@@ -1904,6 +1931,52 @@ body.show-status .status {
   padding: 20px;
 }
 
+.config-collapse {
+  padding: 0;
+  overflow: hidden;
+}
+
+.config-collapse summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.config-collapse summary::-webkit-details-marker {
+  display: none;
+}
+
+.config-collapse summary .section-title {
+  margin: 0;
+}
+
+.config-collapse .collapse-indicator {
+  flex: 0 0 auto;
+  color: rgba(255, 255, 255, 0.64);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.config-collapse[open] .collapse-indicator {
+  color: var(--cyan);
+  font-size: 0;
+}
+
+.config-collapse[open] .collapse-indicator::before {
+  content: "Hide";
+  font-size: 11px;
+}
+
+.config-collapse > .config-globals {
+  padding: 0 20px 20px;
+}
+
 .section-title {
   margin: 0 0 16px;
   color: var(--cyan);
@@ -2155,6 +2228,38 @@ button {
 
 .theme-config-grid {
   grid-template-columns: repeat(5, minmax(150px, 1fr));
+}
+
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.section-header-row .section-title {
+  margin-bottom: 0;
+}
+
+.preview-test-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 10px;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 6px;
+  background: rgba(3, 5, 10, 0.54);
+}
+
+.preview-test-toggle input {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--cyan);
 }
 
 .color-control {

@@ -1,6 +1,6 @@
 const rewardStorageKey = 'reward-overlay-config:v1';
 const baseConfig = cloneConfig(window.rewardOverlayConfig || {});
-let draftConfig = loadDraftConfig();
+let draftConfig;
 
 const rewardList = document.querySelector('#reward-list');
 const template = document.querySelector('#reward-editor-template');
@@ -32,6 +32,8 @@ const copyRowsUrlButton = document.querySelector('#copy-rows-url');
 const copyConfigUrlButton = document.querySelector('#copy-config-url');
 const carouselPreview = document.querySelector('#carousel-preview');
 const rowsPreview = document.querySelector('#rows-preview');
+const carouselPreviewTest = document.querySelector('#carousel-preview-test');
+const rowsPreviewTest = document.querySelector('#rows-preview-test');
 const themePreset = document.querySelector('#theme-preset');
 const themeOpacity = document.querySelector('#theme-opacity');
 const themeOpacityLabel = document.querySelector('#theme-opacity-label');
@@ -46,14 +48,28 @@ const themeColorFields = [
   { key: 'border', color: document.querySelector('#theme-border'), hex: document.querySelector('#theme-border-hex') },
   { key: 'glow', color: document.querySelector('#theme-glow'), hex: document.querySelector('#theme-glow-hex') }
 ];
+const rowsThemePreset = document.querySelector('#rows-theme-preset');
+const rowsThemeOpacity = document.querySelector('#rows-theme-opacity');
+const rowsThemeOpacityLabel = document.querySelector('#rows-theme-opacity-label');
+const rowsThemeGlowStrength = document.querySelector('#rows-theme-glow-strength');
+const rowsThemeGlowStrengthLabel = document.querySelector('#rows-theme-glow-strength-label');
+const rowsThemeColorFields = [
+  { key: 'accent', color: document.querySelector('#rows-theme-accent'), hex: document.querySelector('#rows-theme-accent-hex') },
+  { key: 'secondary', color: document.querySelector('#rows-theme-secondary'), hex: document.querySelector('#rows-theme-secondary-hex') },
+  { key: 'background', color: document.querySelector('#rows-theme-background'), hex: document.querySelector('#rows-theme-background-hex') },
+  { key: 'card', color: document.querySelector('#rows-theme-card'), hex: document.querySelector('#rows-theme-card-hex') },
+  { key: 'text', color: document.querySelector('#rows-theme-text'), hex: document.querySelector('#rows-theme-text-hex') },
+  { key: 'border', color: document.querySelector('#rows-theme-border'), hex: document.querySelector('#rows-theme-border-hex') },
+  { key: 'glow', color: document.querySelector('#rows-theme-glow'), hex: document.querySelector('#rows-theme-glow-hex') }
+];
 const imageCatalog = new Map();
 const giftGridLimit = 80;
 const themePresets = {
   'glass-purple': {
     preset: 'glass-purple',
     accent: '#03f5d8',
-    secondary: '#c447ff',
-    background: '#1b1f2b',
+    secondary: '#531c7b',
+    background: '#363a3d',
     card: '#0d0f14',
     text: '#ffffff',
     border: '#ffffff',
@@ -65,8 +81,8 @@ const themePresets = {
     preset: 'neon-cyan',
     accent: '#10f4ff',
     secondary: '#3cff9e',
-    background: '#071c22',
-    card: '#081216',
+    background: '#07343a',
+    card: '#08242b',
     text: '#f2ffff',
     border: '#55f7ff',
     glow: '#10f4ff',
@@ -77,8 +93,8 @@ const themePresets = {
     preset: 'hot-pink',
     accent: '#ff4fd8',
     secondary: '#ffb347',
-    background: '#271123',
-    card: '#1a0b17',
+    background: '#3a1230',
+    card: '#240e1e',
     text: '#fff7fd',
     border: '#ff9ee8',
     glow: '#ff4fd8',
@@ -89,8 +105,8 @@ const themePresets = {
     preset: 'gold',
     accent: '#ffd83d',
     secondary: '#34d8ff',
-    background: '#241d10',
-    card: '#171307',
+    background: '#342714',
+    card: '#241b0c',
     text: '#fff8de',
     border: '#ffe58a',
     glow: '#ffd83d',
@@ -101,8 +117,8 @@ const themePresets = {
     preset: 'minimal-dark',
     accent: '#ffffff',
     secondary: '#8aa0b8',
-    background: '#101218',
-    card: '#0b0d12',
+    background: '#151923',
+    card: '#10131b',
     text: '#f4f6fb',
     border: '#586174',
     glow: '#ffffff',
@@ -125,6 +141,8 @@ let interactionScrollState = { x: 0, y: 0, focusTarget: null };
 let pageFocusTarget = null;
 let previewRefreshTimer;
 let previewRefreshIndex = 0;
+
+draftConfig = loadDraftConfig();
 
 function getPageScrollState() {
   const activeElement = document.activeElement;
@@ -254,11 +272,13 @@ themePreset.addEventListener('change', () => {
   const preset = themePresets[themePreset.value];
 
   if (preset) {
-    draftConfig.theme = normalizeTheme(preset);
+    const normalized = normalizeTheme(preset);
+    draftConfig.carouselTheme = normalized;
+    draftConfig.theme = normalized;
     renderThemeForm();
-    applyThemeToDocument(draftConfig.theme);
-    markDirty();
-    scheduleOverlayPreviewRefresh();
+    applyThemeToDocument(getCarouselTheme());
+    setState('⚠ Unsaved changes');
+    refreshOverlayPreviews();
   }
 });
 
@@ -291,9 +311,53 @@ themeColorFields.forEach(field => {
   });
 });
 
+rowsThemePreset.addEventListener('change', () => {
+  const preset = themePresets[rowsThemePreset.value];
+
+  if (preset) {
+    draftConfig.rowsTheme = normalizeTheme(preset);
+    renderThemeForm();
+    setState('âš  Unsaved changes');
+    refreshOverlayPreviews();
+  }
+});
+
+rowsThemeColorFields.forEach(field => {
+  field.color.addEventListener('input', () => {
+    field.hex.value = field.color.value;
+    updateRowsThemeFromForm();
+    markDirty();
+    scheduleOverlayPreviewRefresh();
+  });
+
+  field.hex.addEventListener('input', () => {
+    const hex = normalizeHex(field.hex.value, '');
+
+    if (hex) {
+      field.color.value = hex;
+    }
+
+    updateRowsThemeFromForm();
+    markDirty();
+    scheduleOverlayPreviewRefresh();
+  });
+});
+
+[rowsThemeOpacity, rowsThemeGlowStrength].forEach(input => {
+  input.addEventListener('input', () => {
+    updateRowsThemeFromForm();
+    markDirty();
+    scheduleOverlayPreviewRefresh();
+  });
+});
+
+[carouselPreviewTest, rowsPreviewTest].forEach(input => {
+  input?.addEventListener('input', refreshOverlayPreviews);
+});
+
 seedImageCatalog();
 ensureRowsGiftDefaults();
-applyThemeToDocument(draftConfig.theme);
+applyThemeToDocument(getCarouselTheme());
 render();
 
 function loadDraftConfig() {
@@ -1216,7 +1280,7 @@ function updateRowsFromForm() {
 }
 
 function renderThemeForm() {
-  const theme = normalizeTheme(draftConfig.theme);
+  const theme = getCarouselTheme();
   themePreset.value = themePresets[theme.preset] ? theme.preset : 'custom';
 
   themeColorFields.forEach(field => {
@@ -1229,6 +1293,20 @@ function renderThemeForm() {
   themeGlowStrength.value = String(theme.glowStrength);
   themeOpacityLabel.textContent = `${Math.round(theme.opacity * 100)}%`;
   themeGlowStrengthLabel.textContent = `${Math.round(theme.glowStrength * 100)}%`;
+
+  const rowsTheme = getRowsTheme();
+  rowsThemePreset.value = themePresets[rowsTheme.preset] ? rowsTheme.preset : 'custom';
+
+  rowsThemeColorFields.forEach(field => {
+    const value = normalizeHex(rowsTheme[field.key], defaultTheme[field.key]);
+    field.color.value = value;
+    field.hex.value = value;
+  });
+
+  rowsThemeOpacity.value = String(rowsTheme.opacity);
+  rowsThemeGlowStrength.value = String(rowsTheme.glowStrength);
+  rowsThemeOpacityLabel.textContent = `${Math.round(rowsTheme.opacity * 100)}%`;
+  rowsThemeGlowStrengthLabel.textContent = `${Math.round(rowsTheme.glowStrength * 100)}%`;
 }
 
 function updateThemeFromForm() {
@@ -1248,10 +1326,35 @@ function updateThemeFromForm() {
     themePreset.value = 'custom';
   }
 
-  draftConfig.theme = normalizeTheme(nextTheme);
-  themeOpacityLabel.textContent = `${Math.round(draftConfig.theme.opacity * 100)}%`;
-  themeGlowStrengthLabel.textContent = `${Math.round(draftConfig.theme.glowStrength * 100)}%`;
-  applyThemeToDocument(draftConfig.theme);
+  const normalized = normalizeTheme(nextTheme);
+  draftConfig.carouselTheme = normalized;
+  draftConfig.theme = normalized;
+  themeOpacityLabel.textContent = `${Math.round(draftConfig.carouselTheme.opacity * 100)}%`;
+  themeGlowStrengthLabel.textContent = `${Math.round(draftConfig.carouselTheme.glowStrength * 100)}%`;
+  applyThemeToDocument(getCarouselTheme());
+}
+
+function updateRowsThemeFromForm() {
+  const nextTheme = {
+    preset: rowsThemePreset.value,
+    opacity: clamp(Number(rowsThemeOpacity.value), 0.35, 1),
+    glowStrength: clamp(Number(rowsThemeGlowStrength.value), 0, 1.5)
+  };
+
+  rowsThemeColorFields.forEach(field => {
+    nextTheme[field.key] = normalizeHex(field.hex.value, defaultTheme[field.key]);
+  });
+
+  const preset = themePresets[nextTheme.preset];
+  if (!preset || !themesMatch(nextTheme, preset)) {
+    nextTheme.preset = 'custom';
+    rowsThemePreset.value = 'custom';
+  }
+
+  const normalized = normalizeTheme(nextTheme);
+  draftConfig.rowsTheme = normalized;
+  rowsThemeOpacityLabel.textContent = `${Math.round(draftConfig.rowsTheme.opacity * 100)}%`;
+  rowsThemeGlowStrengthLabel.textContent = `${Math.round(draftConfig.rowsTheme.glowStrength * 100)}%`;
 }
 
 function updateRewardFromEditor(index, editor) {
@@ -1423,6 +1526,7 @@ function deleteRowsBoardRow(row) {
 function saveConfig() {
   updateGlobalsFromForm();
   updateRowsFromForm();
+  updateRowsThemeFromForm();
   localStorage.setItem(rewardStorageKey, JSON.stringify(draftConfig));
   setState('✓ Saved for this browser');
 }
@@ -1431,6 +1535,9 @@ function resetConfig() {
   if (!confirm('Reset all rewards to file config? This cannot be undone.')) return;
   draftConfig = normalizeConfig(baseConfig);
   localStorage.removeItem(rewardStorageKey);
+  if (window.location.hash) {
+    history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
+  }
   setState('✓ Reset to file config');
   renderPreservingScroll();
 }
@@ -1438,6 +1545,7 @@ function resetConfig() {
 function exportConfig() {
   updateGlobalsFromForm();
   updateRowsFromForm();
+  updateRowsThemeFromForm();
   const content = `window.rewardOverlayConfig = ${JSON.stringify(draftConfig, null, 2)};\n`;
   const blob = new Blob([content], { type: 'text/javascript' });
   const link = document.createElement('a');
@@ -1451,6 +1559,7 @@ function exportConfig() {
 function copyOverlayUrl(page, successText) {
   updateGlobalsFromForm();
   updateRowsFromForm();
+  updateRowsThemeFromForm();
 
   const url = getUrlForPage(page, draftConfig);
 
@@ -1467,7 +1576,10 @@ function getUrlForPage(page, config = draftConfig, options = {}) {
   pathParts[pathParts.length - 1] = page;
   url.pathname = pathParts.join('/');
   const search = new URLSearchParams(getShareSearchParams());
-  if (options.preview) {
+  if (options.test) {
+    search.set('test', '1');
+    search.set('previewRefresh', String(options.previewRefresh || 0));
+  } else if (options.preview) {
     search.set('preview', '1');
     search.set('previewRefresh', String(options.previewRefresh || 0));
   }
@@ -1534,14 +1646,16 @@ function refreshOverlayPreviews() {
 
   if (carouselPreview) {
     setPreviewUrl(carouselPreview, getUrlForPage('index-rewards.html', previewConfig, {
-      preview: true,
+      preview: !carouselPreviewTest?.checked,
+      test: Boolean(carouselPreviewTest?.checked),
       previewRefresh: previewRefreshIndex
     }));
   }
 
   if (rowsPreview) {
     setPreviewUrl(rowsPreview, getUrlForPage('index-rewards-rows.html', previewConfig, {
-      preview: true,
+      preview: !rowsPreviewTest?.checked,
+      test: Boolean(rowsPreviewTest?.checked),
       previewRefresh: previewRefreshIndex
     }));
   }
@@ -1570,7 +1684,11 @@ function setState(text) {
 }
 
 function normalizeConfig(config) {
-  const rewards = Array.isArray(config.rewards) ? config.rewards : [];
+  const fallbackRewards = Array.isArray(baseConfig.rewards) ? baseConfig.rewards : [];
+  const rewards = Array.isArray(config.rewards) && config.rewards.length ? config.rewards : fallbackRewards;
+  const themeSource = config.theme || config.carouselTheme || {};
+  const carouselThemeSource = config.carouselTheme || config.theme || {};
+  const rowsThemeSource = config.rowsTheme || config.theme || config.carouselTheme || {};
 
   return {
     rotateMs: numberOrDefault(config.rotateMs, 2600),
@@ -1578,14 +1696,33 @@ function normalizeConfig(config) {
     labelMs: numberOrDefault(config.labelMs, 2600),
     visibleNext: clamp(numberOrDefault(config.visibleNext, 3), 0, 3),
     soundsEnabled: config.soundsEnabled !== false,
-    theme: normalizeTheme(config.theme || {}),
+    theme: normalizeTheme(themeSource),
+    carouselTheme: normalizeTheme(carouselThemeSource),
+    rowsTheme: normalizeTheme(rowsThemeSource),
     rowsOverlay: normalizeRowsOverlay(config.rowsOverlay || {}),
     rewards: rewards.map(normalizeReward)
   };
 }
 
+function getCarouselTheme() {
+  return normalizeTheme(draftConfig.carouselTheme || draftConfig.theme || {});
+}
+
+function getRowsTheme() {
+  return normalizeTheme(draftConfig.rowsTheme || draftConfig.theme || draftConfig.carouselTheme || {});
+}
+
+function getPresetFromTheme(theme) {
+  const candidate = theme?.preset;
+  if (themePresets[candidate]) {
+    return candidate;
+  }
+
+  return Object.keys(themePresets).find(preset => themesMatch(theme, themePresets[preset])) || null;
+}
+
 function normalizeTheme(theme) {
-  const preset = themePresets[theme.preset] ? theme.preset : 'custom';
+  const preset = getPresetFromTheme(theme) || 'custom';
   const presetTheme = themePresets[preset] || defaultTheme;
 
   return {
@@ -1633,6 +1770,63 @@ function applyThemeToDocument(themeInput) {
   root.style.setProperty('--reward-theme-glow-soft', hexToRgba(theme.glow, 0.22 * glow));
   root.style.setProperty('--reward-theme-glow-strong', hexToRgba(theme.glow, 0.78 * glow));
   root.style.setProperty('--reward-theme-shine', hexToRgba(theme.text, 0.18));
+
+  if (theme.preset === 'glass-purple') {
+    root.style.setProperty('--reward-theme-widget-border', hexToRgba(theme.border, 0.28));
+    root.style.setProperty('--reward-theme-widget-glow', hexToRgba(theme.glow, 0.44 * glow));
+    root.style.setProperty('--reward-theme-widget-inset-shine', hexToRgba(theme.text, 0.16));
+    root.style.setProperty('--reward-theme-widget-shine', hexToRgba(theme.text, 0.2));
+    root.style.setProperty('--reward-theme-widget-side-shine-left', hexToRgba(theme.text, 0.2));
+    root.style.setProperty('--reward-theme-widget-side-shine-right', hexToRgba(theme.text, 0.16));
+    root.style.setProperty('--reward-theme-widget-radial-shine', hexToRgba(theme.text, 0.22));
+    root.style.setProperty('--reward-theme-widget-top-shine', hexToRgba(theme.text, 0.22));
+    root.style.setProperty('--reward-theme-widget-bottom-shine', hexToRgba(theme.text, 0.12));
+    root.style.setProperty('--reward-theme-widget-after-left-shine', hexToRgba(theme.text, 0.2));
+    root.style.setProperty('--reward-theme-widget-after-right-shine', hexToRgba(theme.text, 0.14));
+    root.style.setProperty('--reward-theme-widget-top', hexToRgba(theme.background, Math.min(0.92, opacity - 0.06)));
+    root.style.setProperty('--reward-theme-widget-mid', hexToRgba(theme.card, opacity));
+    root.style.setProperty('--reward-theme-widget-bottom', hexToRgba(theme.secondary, Math.max(0.35, opacity - 0.1)));
+    root.style.setProperty('--reward-theme-widget-base', hexToRgba(theme.card, Math.max(0.35, opacity - 0.16)));
+    root.style.setProperty('--reward-theme-card-border', hexToRgba(theme.border, 0.2));
+    root.style.setProperty('--reward-theme-card-shine', hexToRgba(theme.text, 0.16));
+    root.style.setProperty('--reward-theme-card-base', hexToRgba(theme.card, Math.max(0.35, opacity - 0.2)));
+    root.style.setProperty('--reward-theme-card-text', hexToRgba(theme.text, 0.96));
+    root.style.setProperty('--reward-theme-card-active-glow', hexToRgba(theme.glow, 0.38 * glow));
+    root.style.setProperty('--reward-theme-card-active-accent', hexToRgba(theme.accent, 0.18));
+    root.style.setProperty('--reward-theme-callout-border', hexToRgba(theme.border, 0.26));
+    root.style.setProperty('--reward-theme-callout-start', hexToRgba(theme.accent, 0.22));
+    root.style.setProperty('--reward-theme-callout-end', hexToRgba(theme.glow, 0.34 * glow));
+    root.style.setProperty('--reward-theme-callout-base', hexToRgba(theme.card, Math.min(0.94, opacity + 0.06)));
+    root.style.setProperty('--reward-theme-callout-glow', hexToRgba(theme.glow, 0.48 * glow));
+    return;
+  }
+
+  root.style.setProperty('--reward-theme-widget-border', hexToRgba(theme.border, 0.7));
+  root.style.setProperty('--reward-theme-widget-glow', hexToRgba(theme.glow, 1 * glow));
+  root.style.setProperty('--reward-theme-widget-inset-shine', hexToRgba(theme.accent, 0.34));
+  root.style.setProperty('--reward-theme-widget-shine', hexToRgba(theme.accent, 0.54));
+  root.style.setProperty('--reward-theme-widget-side-shine-left', hexToRgba(theme.accent, 0.48));
+  root.style.setProperty('--reward-theme-widget-side-shine-right', hexToRgba(theme.secondary, 0.52));
+  root.style.setProperty('--reward-theme-widget-radial-shine', hexToRgba(theme.accent, 0.46));
+  root.style.setProperty('--reward-theme-widget-top-shine', hexToRgba(theme.text, 0.18));
+  root.style.setProperty('--reward-theme-widget-bottom-shine', hexToRgba(theme.secondary, 0.44));
+  root.style.setProperty('--reward-theme-widget-after-left-shine', hexToRgba(theme.accent, 0.46));
+  root.style.setProperty('--reward-theme-widget-after-right-shine', hexToRgba(theme.secondary, 0.5));
+  root.style.setProperty('--reward-theme-widget-top', hexToRgba(theme.background, Math.min(0.98, opacity + 0.12)));
+  root.style.setProperty('--reward-theme-widget-mid', hexToRgba(theme.secondary, 0.46));
+  root.style.setProperty('--reward-theme-widget-bottom', hexToRgba(theme.accent, 0.34));
+  root.style.setProperty('--reward-theme-widget-base', hexToRgba(theme.card, Math.max(0.82, opacity)));
+  root.style.setProperty('--reward-theme-card-border', hexToRgba(theme.border, 0.64));
+  root.style.setProperty('--reward-theme-card-shine', hexToRgba(theme.accent, 0.38));
+  root.style.setProperty('--reward-theme-card-base', hexToRgba(theme.card, Math.max(0.82, opacity)));
+  root.style.setProperty('--reward-theme-card-text', hexToRgba(theme.text, 0.96));
+  root.style.setProperty('--reward-theme-card-active-glow', hexToRgba(theme.glow, 0.78 * glow));
+  root.style.setProperty('--reward-theme-card-active-accent', hexToRgba(theme.accent, 0.54));
+  root.style.setProperty('--reward-theme-callout-border', hexToRgba(theme.border, 0.42));
+  root.style.setProperty('--reward-theme-callout-start', hexToRgba(theme.accent, 0.48));
+  root.style.setProperty('--reward-theme-callout-end', hexToRgba(theme.secondary, 0.62));
+  root.style.setProperty('--reward-theme-callout-base', hexToRgba(theme.background, Math.min(0.96, opacity + 0.1)));
+  root.style.setProperty('--reward-theme-callout-glow', hexToRgba(theme.glow, 0.62 * glow));
 }
 
 function normalizeRowsOverlay(config) {
@@ -1780,6 +1974,10 @@ function findCatalogEntryForReward(reward) {
 }
 
 function numberOrDefault(value, fallback) {
+  if (value === '' || value === null || value === undefined) {
+    return fallback;
+  }
+
   const number = Number(value);
   return Number.isFinite(number) ? number : fallback;
 }

@@ -374,7 +374,7 @@ function loadRowsOverlayConfig() {
   if (urlConfig?.rowsOverlay) {
     return {
       ...urlConfig.rowsOverlay,
-      theme: urlConfig.theme
+      theme: urlConfig.rowsTheme || urlConfig.theme || urlConfig.carouselTheme
     };
   }
 
@@ -384,12 +384,12 @@ function loadRowsOverlayConfig() {
     const saved = JSON.parse(localStorage.getItem('reward-overlay-config:v1') || 'null');
     return {
       ...(saved?.rowsOverlay || fallback),
-      theme: saved?.theme || window.rewardOverlayConfig?.theme
+      theme: saved?.rowsTheme || saved?.theme || saved?.carouselTheme || window.rewardOverlayConfig?.rowsTheme || window.rewardOverlayConfig?.theme
     };
   } catch {
     return {
       ...fallback,
-      theme: window.rewardOverlayConfig?.theme
+      theme: window.rewardOverlayConfig?.rowsTheme || window.rewardOverlayConfig?.theme
     };
   }
 }
@@ -411,8 +411,8 @@ function readConfigFromHash() {
 function applyThemeToDocument(theme = {}) {
   const defaults = {
     accent: '#03f5d8',
-    secondary: '#c447ff',
-    background: '#1b1f2b',
+    secondary: '#531c7b',
+    background: '#363a3d',
     card: '#0d0f14',
     text: '#ffffff',
     border: '#ffffff',
@@ -421,6 +421,7 @@ function applyThemeToDocument(theme = {}) {
     glowStrength: 1
   };
   const normalized = {
+    preset: theme.preset || 'custom',
     accent: normalizeHex(theme.accent, defaults.accent),
     secondary: normalizeHex(theme.secondary, defaults.secondary),
     background: normalizeHex(theme.background, defaults.background),
@@ -431,7 +432,14 @@ function applyThemeToDocument(theme = {}) {
     opacity: clampDecimal(Number(theme.opacity ?? defaults.opacity), 0.35, 1),
     glowStrength: clampDecimal(Number(theme.glowStrength ?? defaults.glowStrength), 0, 1.5)
   };
-  const root = document.documentElement;
+  const themeTargets = [document.documentElement, rewardRowsWidget].filter(Boolean);
+  const root = {
+    style: {
+      setProperty(name, value) {
+        themeTargets.forEach(target => target.style.setProperty(name, value));
+      }
+    }
+  };
   const opacity = normalized.opacity;
   const glow = normalized.glowStrength;
 
@@ -452,6 +460,63 @@ function applyThemeToDocument(theme = {}) {
   root.style.setProperty('--reward-theme-glow-soft', hexToRgba(normalized.glow, 0.22 * glow));
   root.style.setProperty('--reward-theme-glow-strong', hexToRgba(normalized.glow, 0.78 * glow));
   root.style.setProperty('--reward-theme-shine', hexToRgba(normalized.text, 0.18));
+
+  if (normalized.preset === 'glass-purple') {
+    root.style.setProperty('--reward-theme-widget-border', hexToRgba(normalized.border, 0.28));
+    root.style.setProperty('--reward-theme-widget-glow', hexToRgba(normalized.glow, 0.44 * glow));
+    root.style.setProperty('--reward-theme-widget-inset-shine', hexToRgba(normalized.text, 0.16));
+    root.style.setProperty('--reward-theme-widget-shine', hexToRgba(normalized.text, 0.2));
+    root.style.setProperty('--reward-theme-widget-side-shine-left', hexToRgba(normalized.text, 0.2));
+    root.style.setProperty('--reward-theme-widget-side-shine-right', hexToRgba(normalized.text, 0.16));
+    root.style.setProperty('--reward-theme-widget-radial-shine', hexToRgba(normalized.text, 0.22));
+    root.style.setProperty('--reward-theme-widget-top-shine', hexToRgba(normalized.text, 0.22));
+    root.style.setProperty('--reward-theme-widget-bottom-shine', hexToRgba(normalized.text, 0.12));
+    root.style.setProperty('--reward-theme-widget-after-left-shine', hexToRgba(normalized.text, 0.2));
+    root.style.setProperty('--reward-theme-widget-after-right-shine', hexToRgba(normalized.text, 0.14));
+    root.style.setProperty('--reward-theme-widget-top', hexToRgba(normalized.background, Math.min(0.92, opacity - 0.06)));
+    root.style.setProperty('--reward-theme-widget-mid', hexToRgba(normalized.card, opacity));
+    root.style.setProperty('--reward-theme-widget-bottom', hexToRgba(normalized.secondary, Math.max(0.35, opacity - 0.1)));
+    root.style.setProperty('--reward-theme-widget-base', hexToRgba(normalized.card, Math.max(0.35, opacity - 0.16)));
+    root.style.setProperty('--reward-theme-card-border', hexToRgba(normalized.border, 0.2));
+    root.style.setProperty('--reward-theme-card-shine', hexToRgba(normalized.text, 0.16));
+    root.style.setProperty('--reward-theme-card-base', hexToRgba(normalized.card, Math.max(0.35, opacity - 0.2)));
+    root.style.setProperty('--reward-theme-card-text', hexToRgba(normalized.text, 0.96));
+    root.style.setProperty('--reward-theme-card-active-glow', hexToRgba(normalized.glow, 0.38 * glow));
+    root.style.setProperty('--reward-theme-card-active-accent', hexToRgba(normalized.accent, 0.18));
+    root.style.setProperty('--reward-theme-callout-border', hexToRgba(normalized.border, 0.26));
+    root.style.setProperty('--reward-theme-callout-start', hexToRgba(normalized.accent, 0.22));
+    root.style.setProperty('--reward-theme-callout-end', hexToRgba(normalized.glow, 0.34 * glow));
+    root.style.setProperty('--reward-theme-callout-base', hexToRgba(normalized.card, Math.min(0.94, opacity + 0.06)));
+    root.style.setProperty('--reward-theme-callout-glow', hexToRgba(normalized.glow, 0.48 * glow));
+    return;
+  }
+
+  root.style.setProperty('--reward-theme-widget-border', hexToRgba(normalized.border, 0.7));
+  root.style.setProperty('--reward-theme-widget-glow', hexToRgba(normalized.glow, 1 * glow));
+  root.style.setProperty('--reward-theme-widget-inset-shine', hexToRgba(normalized.accent, 0.34));
+  root.style.setProperty('--reward-theme-widget-shine', hexToRgba(normalized.accent, 0.54));
+  root.style.setProperty('--reward-theme-widget-side-shine-left', hexToRgba(normalized.accent, 0.48));
+  root.style.setProperty('--reward-theme-widget-side-shine-right', hexToRgba(normalized.secondary, 0.52));
+  root.style.setProperty('--reward-theme-widget-radial-shine', hexToRgba(normalized.accent, 0.46));
+  root.style.setProperty('--reward-theme-widget-top-shine', hexToRgba(normalized.text, 0.18));
+  root.style.setProperty('--reward-theme-widget-bottom-shine', hexToRgba(normalized.secondary, 0.44));
+  root.style.setProperty('--reward-theme-widget-after-left-shine', hexToRgba(normalized.accent, 0.46));
+  root.style.setProperty('--reward-theme-widget-after-right-shine', hexToRgba(normalized.secondary, 0.5));
+  root.style.setProperty('--reward-theme-widget-top', hexToRgba(normalized.background, Math.min(0.98, opacity + 0.12)));
+  root.style.setProperty('--reward-theme-widget-mid', hexToRgba(normalized.secondary, 0.46));
+  root.style.setProperty('--reward-theme-widget-bottom', hexToRgba(normalized.accent, 0.34));
+  root.style.setProperty('--reward-theme-widget-base', hexToRgba(normalized.card, Math.max(0.82, opacity)));
+  root.style.setProperty('--reward-theme-card-border', hexToRgba(normalized.border, 0.64));
+  root.style.setProperty('--reward-theme-card-shine', hexToRgba(normalized.accent, 0.38));
+  root.style.setProperty('--reward-theme-card-base', hexToRgba(normalized.card, Math.max(0.82, opacity)));
+  root.style.setProperty('--reward-theme-card-text', hexToRgba(normalized.text, 0.96));
+  root.style.setProperty('--reward-theme-card-active-glow', hexToRgba(normalized.glow, 0.78 * glow));
+  root.style.setProperty('--reward-theme-card-active-accent', hexToRgba(normalized.accent, 0.54));
+  root.style.setProperty('--reward-theme-callout-border', hexToRgba(normalized.border, 0.42));
+  root.style.setProperty('--reward-theme-callout-start', hexToRgba(normalized.accent, 0.48));
+  root.style.setProperty('--reward-theme-callout-end', hexToRgba(normalized.secondary, 0.62));
+  root.style.setProperty('--reward-theme-callout-base', hexToRgba(normalized.background, Math.min(0.96, opacity + 0.1)));
+  root.style.setProperty('--reward-theme-callout-glow', hexToRgba(normalized.glow, 0.62 * glow));
 }
 
 function normalizeHex(value, fallback = '#ffffff') {

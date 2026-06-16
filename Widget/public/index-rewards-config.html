@@ -32,85 +32,11 @@
         <button data-config-tab="rows" type="button">Rows Overlay</button>
       </nav>
 
-      <section class="config-section" aria-label="Overlay theme settings">
-        <h2 class="section-title">Theme</h2>
-        <div class="config-globals theme-config-grid">
-          <div class="config-field">
-            <label for="theme-preset">Preset</label>
-            <select id="theme-preset">
-              <option value="glass-purple">Glass Purple</option>
-              <option value="neon-cyan">Neon Cyan</option>
-              <option value="hot-pink">Hot Pink</option>
-              <option value="gold">Gold</option>
-              <option value="minimal-dark">Minimal Dark</option>
-              <option value="custom">Custom</option>
-            </select>
-            <span class="field-hint">Presets can still be edited below</span>
-          </div>
-          <div class="config-field color-config-field">
-            <label for="theme-accent">Accent</label>
-            <div class="color-control">
-              <input id="theme-accent" type="color">
-              <input id="theme-accent-hex" type="text" spellcheck="false" placeholder="#03f5d8">
-            </div>
-          </div>
-          <div class="config-field color-config-field">
-            <label for="theme-secondary">Secondary</label>
-            <div class="color-control">
-              <input id="theme-secondary" type="color">
-              <input id="theme-secondary-hex" type="text" spellcheck="false" placeholder="#c447ff">
-            </div>
-          </div>
-          <div class="config-field color-config-field">
-            <label for="theme-background">Background</label>
-            <div class="color-control">
-              <input id="theme-background" type="color">
-              <input id="theme-background-hex" type="text" spellcheck="false" placeholder="#1b1f2b">
-            </div>
-          </div>
-          <div class="config-field color-config-field">
-            <label for="theme-card">Card</label>
-            <div class="color-control">
-              <input id="theme-card" type="color">
-              <input id="theme-card-hex" type="text" spellcheck="false" placeholder="#0d0f14">
-            </div>
-          </div>
-          <div class="config-field color-config-field">
-            <label for="theme-text">Text</label>
-            <div class="color-control">
-              <input id="theme-text" type="color">
-              <input id="theme-text-hex" type="text" spellcheck="false" placeholder="#ffffff">
-            </div>
-          </div>
-          <div class="config-field color-config-field">
-            <label for="theme-border">Border</label>
-            <div class="color-control">
-              <input id="theme-border" type="color">
-              <input id="theme-border-hex" type="text" spellcheck="false" placeholder="#ffffff">
-            </div>
-          </div>
-          <div class="config-field color-config-field">
-            <label for="theme-glow">Glow</label>
-            <div class="color-control">
-              <input id="theme-glow" type="color">
-              <input id="theme-glow-hex" type="text" spellcheck="false" placeholder="#c447ff">
-            </div>
-          </div>
-          <div class="config-field">
-            <label for="theme-opacity">Glass Opacity</label>
-            <input id="theme-opacity" type="range" min="0.35" max="1" step="0.05">
-            <span class="field-hint"><span id="theme-opacity-label">80%</span></span>
-          </div>
-          <div class="config-field">
-            <label for="theme-glow-strength">Glow Strength</label>
-            <input id="theme-glow-strength" type="range" min="0" max="1.5" step="0.05">
-            <span class="field-hint"><span id="theme-glow-strength-label">100%</span></span>
-          </div>
-        </div>
-      </section>
-
-      <section class="config-section" data-config-panel="original" aria-label="Global reward settings">
-        <h2 class="section-title">⚙️ Global Settings</h2>
+      <details class="config-section config-collapse" data-config-panel="original" aria-label="Global reward settings">
+        <summary>
+          <h2 class="section-title">⚙️ Global Settings</h2>
+          <span class="collapse-indicator">Expand</span>
+        </summary>
         <div class="config-globals">
           <div class="config-field">
             <label for="rotate-ms">Card Rotation Speed (ms)</label>
@@ -146,10 +72,101 @@
             <span class="field-hint">Master sound toggle for carousel rewards</span>
           </div>
         </div>
-      </section>
+      </details>
+
+      <details class="config-section config-collapse" data-config-panel="original" aria-label="Carousel theme settings">
+        <summary>
+          <h2 class="section-title">Carousel Theme</h2>
+          <span class="collapse-indicator">Expand</span>
+        </summary>
+        <div class="config-globals theme-config-grid">
+          <div class="config-field">
+            <label for="theme-preset">Preset</label>
+            <select id="theme-preset">
+              <option value="glass-purple">Glass Purple</option>
+              <option value="neon-cyan">Neon Cyan</option>
+              <option value="hot-pink">Hot Pink</option>
+              <option value="gold">Gold</option>
+              <option value="minimal-dark">Minimal Dark</option>
+              <option value="custom">Custom</option>
+            </select>
+            <span class="field-hint">Glass Purple is the original look</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-accent">Lower Glow</label>
+            <div class="color-control">
+              <input id="theme-accent" type="color">
+              <input id="theme-accent-hex" type="text" spellcheck="false" placeholder="#03f5d8">
+            </div>
+            <span class="field-hint">Lower glass tint, hit highlights, and callout accent</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-secondary">Middle Glass</label>
+            <div class="color-control">
+              <input id="theme-secondary" type="color">
+              <input id="theme-secondary-hex" type="text" spellcheck="false" placeholder="#531c7b">
+            </div>
+            <span class="field-hint">Middle glass tint and secondary glow</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-background">Top Glass</label>
+            <div class="color-control">
+              <input id="theme-background" type="color">
+              <input id="theme-background-hex" type="text" spellcheck="false" placeholder="#363a3d">
+            </div>
+            <span class="field-hint">Upper glass body color</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-card">Card Fill</label>
+            <div class="color-control">
+              <input id="theme-card" type="color">
+              <input id="theme-card-hex" type="text" spellcheck="false" placeholder="#0d0f14">
+            </div>
+            <span class="field-hint">Reward tile fill</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-text">Text</label>
+            <div class="color-control">
+              <input id="theme-text" type="color">
+              <input id="theme-text-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-border">Edges</label>
+            <div class="color-control">
+              <input id="theme-border" type="color">
+              <input id="theme-border-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
+            <span class="field-hint">Outer and tile edge highlights</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-glow">Glow</label>
+            <div class="color-control">
+              <input id="theme-glow" type="color">
+              <input id="theme-glow-hex" type="text" spellcheck="false" placeholder="#c447ff">
+            </div>
+          </div>
+          <div class="config-field">
+            <label for="theme-opacity">Glass Opacity</label>
+            <input id="theme-opacity" type="range" min="0.35" max="1" step="0.05">
+            <span class="field-hint"><span id="theme-opacity-label">80%</span></span>
+          </div>
+          <div class="config-field">
+            <label for="theme-glow-strength">Glow Strength</label>
+            <input id="theme-glow-strength" type="range" min="0" max="1.5" step="0.05">
+            <span class="field-hint"><span id="theme-glow-strength-label">100%</span></span>
+          </div>
+        </div>
+      </details>
 
       <section class="config-section" data-config-panel="original" aria-label="Gift carousel preview">
-        <h2 class="section-title">Carousel Preview</h2>
+        <div class="section-header-row">
+          <h2 class="section-title">Carousel Preview</h2>
+          <label class="preview-test-toggle">
+            <input id="carousel-preview-test" type="checkbox">
+            <span>Test animations</span>
+          </label>
+        </div>
         <div class="overlay-preview-frame overlay-preview-frame-carousel">
           <iframe id="carousel-preview" title="Gift carousel preview"></iframe>
         </div>
@@ -212,8 +229,99 @@
         </div>
       </section>
 
+      <details class="config-section config-collapse" data-config-panel="rows" aria-label="Rows theme settings" hidden>
+        <summary>
+          <h2 class="section-title">Rows Theme</h2>
+          <span class="collapse-indicator">Expand</span>
+        </summary>
+        <div class="config-globals theme-config-grid">
+          <div class="config-field">
+            <label for="rows-theme-preset">Preset</label>
+            <select id="rows-theme-preset">
+              <option value="glass-purple">Glass Purple</option>
+              <option value="neon-cyan">Neon Cyan</option>
+              <option value="hot-pink">Hot Pink</option>
+              <option value="gold">Gold</option>
+              <option value="minimal-dark">Minimal Dark</option>
+              <option value="custom">Custom</option>
+            </select>
+            <span class="field-hint">Rows can use a separate theme from the carousel</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="rows-theme-accent">Lower Glow</label>
+            <div class="color-control">
+              <input id="rows-theme-accent" type="color">
+              <input id="rows-theme-accent-hex" type="text" spellcheck="false" placeholder="#03f5d8">
+            </div>
+            <span class="field-hint">Hit highlights and active accents</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="rows-theme-secondary">Middle Glass</label>
+            <div class="color-control">
+              <input id="rows-theme-secondary" type="color">
+              <input id="rows-theme-secondary-hex" type="text" spellcheck="false" placeholder="#531c7b">
+            </div>
+            <span class="field-hint">Middle glass tint and secondary glow</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="rows-theme-background">Top Glass</label>
+            <div class="color-control">
+              <input id="rows-theme-background" type="color">
+              <input id="rows-theme-background-hex" type="text" spellcheck="false" placeholder="#363a3d">
+            </div>
+            <span class="field-hint">Upper glass body color</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="rows-theme-card">Card Fill</label>
+            <div class="color-control">
+              <input id="rows-theme-card" type="color">
+              <input id="rows-theme-card-hex" type="text" spellcheck="false" placeholder="#0d0f14">
+            </div>
+            <span class="field-hint">Gift tile fill</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="rows-theme-text">Text</label>
+            <div class="color-control">
+              <input id="rows-theme-text" type="color">
+              <input id="rows-theme-text-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="rows-theme-border">Edges</label>
+            <div class="color-control">
+              <input id="rows-theme-border" type="color">
+              <input id="rows-theme-border-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
+            <span class="field-hint">Outer and tile edge highlights</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="rows-theme-glow">Glow</label>
+            <div class="color-control">
+              <input id="rows-theme-glow" type="color">
+              <input id="rows-theme-glow-hex" type="text" spellcheck="false" placeholder="#c447ff">
+            </div>
+          </div>
+          <div class="config-field">
+            <label for="rows-theme-opacity">Glass Opacity</label>
+            <input id="rows-theme-opacity" type="range" min="0.35" max="1" step="0.05">
+            <span class="field-hint"><span id="rows-theme-opacity-label">80%</span></span>
+          </div>
+          <div class="config-field">
+            <label for="rows-theme-glow-strength">Glow Strength</label>
+            <input id="rows-theme-glow-strength" type="range" min="0" max="1.5" step="0.05">
+            <span class="field-hint"><span id="rows-theme-glow-strength-label">100%</span></span>
+          </div>
+        </div>
+      </details>
+
       <section class="config-section" data-config-panel="rows" aria-label="Rows overlay preview" hidden>
-        <h2 class="section-title">Rows Preview</h2>
+        <div class="section-header-row">
+          <h2 class="section-title">Rows Preview</h2>
+          <label class="preview-test-toggle">
+            <input id="rows-preview-test" type="checkbox">
+            <span>Test animations</span>
+          </label>
+        </div>
         <div class="overlay-preview-frame overlay-preview-frame-rows">
           <iframe id="rows-preview" title="Rows overlay preview"></iframe>
         </div>
