@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>TikTok Live Reward Wheel</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css">
+  </head>
+  <body class="rewards-source">
+    <main id="rewards-widget" class="rewards-widget" aria-label="TikTok live reward list">
+      <div class="rewards-glass-sweep" aria-hidden="true"></div>
+      <div id="rewards-track" class="rewards-track"></div>
+      <div id="reward-callout" class="reward-callout" aria-live="polite">
+        <span id="reward-gifter">Waiting...</span>
+        <strong id="reward-action">Choose a reward</strong>
+      </div>
+    </main>
+
+    <div id="status" class="status">Starting</div>
+    <script src="./reward-image-catalog.js"></script>
+    <script src="./rewards-config.js"></script>
+    <script src="./rewards.js"></script>
+  </body>
+</html>

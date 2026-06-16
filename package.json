@@ -1,0 +1,11 @@
+{
+  "name": "stream-overlays",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "harvest:gifts": "node tools/harvest-gifts/harvest-gifts.mjs"
+  },
+  "dependencies": {
+    "tiktok-live-connector": "^2.4.0"
+  }
+}

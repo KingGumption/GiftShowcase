@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<style>
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+  font-family: Inter, Arial, sans-serif;
+}
+
+.overlay {
+  position: relative;
+  width: 1920px;
+  height: 1080px;
+  background: transparent;
+}
+
+/* Shared glass */
+.glass {
+  position: absolute;
+  overflow: hidden;
+  border-radius: 34px;
+
+  background:
+    linear-gradient(145deg,
+      rgba(255,255,255,.18),
+      rgba(255,255,255,.055) 32%,
+      rgba(0,0,0,.34) 100%
+    );
+
+  backdrop-filter: blur(28px) saturate(180%) contrast(110%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%) contrast(110%);
+
+  border: 1.5px solid rgba(255,255,255,.32);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.40),
+    inset 0 -22px 45px rgba(0,0,0,.22),
+    0 0 0 1px rgba(255,255,255,.08),
+    0 0 26px rgba(170,80,255,.36),
+    0 22px 70px rgba(0,0,0,.55);
+}
+
+.glass::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 12% 18%, rgba(255,255,255,.24), transparent 22%),
+    radial-gradient(circle at 8% 78%, rgba(170,75,255,.30), transparent 34%),
+    linear-gradient(90deg, rgba(255,255,255,.12), transparent 28%, rgba(255,255,255,.07));
+  pointer-events: none;
+}
+
+.glass::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  border: 1px solid rgba(255,255,255,.11);
+  pointer-events: none;
+}
+
+/* Chat background only */
+.chat-glass {
+  left: 80px;
+  top: 120px;
+  width: 330px;
+  height: 680px;
+}
+
+/* Small dots like reference */
+.chat-glass .dots {
+  position: absolute;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+}
+
+.chat-glass .dots span {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin: 0 5px;
+  border-radius: 50%;
+  background: rgba(255,255,255,.55);
+}
+
+/* Gift background only */
+.gift-glass {
+  left: 620px;
+  top: 120px;
+  width: 210px;
+  height: 620px;
+  padding: 16px;
+}
+
+.gift-slot {
+  height: 132px;
+  margin-bottom: 17px;
+  border-radius: 22px;
+
+  background:
+    linear-gradient(145deg,
+      rgba(255,255,255,.12),
+      rgba(255,255,255,.025) 40%,
+      rgba(0,0,0,.25)
+    );
+
+  border: 1px solid rgba(255,255,255,.22);
+
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.25),
+    inset 0 -18px 28px rgba(0,0,0,.18);
+}
+
+/* Bright neon divider line */
+.neon-divider {
+  position: absolute;
+  left: 80px;
+  top: 900px;
+  width: 900px;
+  height: 4px;
+
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(150,60,255,.15) 8%,
+    #8b3dff 24%,
+    #d76bff 50%,
+    #8b3dff 76%,
+    rgba(150,60,255,.15) 92%,
+    transparent 100%
+  );
+
+  border-radius: 999px;
+
+  box-shadow:
+    0 0 4px #ffffff,
+    0 0 10px #d76bff,
+    0 0 22px #a855ff,
+    0 0 45px rgba(168,85,255,.95),
+    0 0 85px rgba(168,85,255,.55);
+}
+
+.neon-divider::after {
+  content: "";
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  top: -18px;
+  height: 40px;
+  background: rgba(168,85,255,.22);
+  filter: blur(18px);
+  border-radius: 999px;
+}
+
+/* Optional crop guides - turn on only while positioning */
+/*
+.crop-guide {
+  outline: 1px dashed rgba(255,255,255,.25);
+}
+*/
+</style>
+</head>
+
+<body>
+  <div class="overlay">
+
+    <!-- Crop this area for your chat background -->
+    <div class="glass chat-glass crop-guide">
+      <div class="dots">
+        <span></span><span></span><span></span>
+      </div>
+    </div>
+
+    <!-- Crop this area for your gift/redeem background -->
+    <div class="glass gift-glass crop-guide">
+      <div class="gift-slot"></div>
+      <div class="gift-slot"></div>
+      <div class="gift-slot"></div>
+      <div class="gift-slot"></div>
+    </div>
+
+    <!-- Crop/use this as your purple divider line -->
+    <div class="neon-divider crop-guide"></div>
+
+  </div>
+</body>
+</html>
