@@ -11,6 +11,7 @@ const params = new URLSearchParams(window.location.search);
 const tikfinityUrl = params.get('endpoint') || 'ws://localhost:21213/';
 const testMode = params.get('test') === '1';
 const previewMode = params.get('preview') === '1';
+const muteMode = params.get('mute') === '1';
 const rotateMs = Math.max(1200, Number(params.get('rotateMs') || rewardConfig.rotateMs || 2600));
 const holdOnGiftMs = Math.max(2200, Number(params.get('holdMs') || rewardConfig.holdOnGiftMs || 6500));
 const labelMs = Math.max(900, Number(params.get('labelMs') || rewardConfig.labelMs || 2600));
@@ -46,8 +47,10 @@ setupGiftSimulator();
 if (previewMode) {
   updateStatus('Preview', true);
 } else if (testMode) {
-  setupRewardAudio();
-  setupRewardAudioUnlock();
+  if (!muteMode) {
+    setupRewardAudio();
+    setupRewardAudioUnlock();
+  }
   startTestMode();
 } else {
   setupRewardAudio();
@@ -447,7 +450,7 @@ function presentGift({ gift, rewardIndex }) {
 }
 
 function playRewardSound(reward) {
-  if (rewardConfig.soundsEnabled === false || !reward?.sound) {
+  if (muteMode || rewardConfig.soundsEnabled === false || !reward?.sound) {
     return;
   }
 

@@ -2242,6 +2242,13 @@ button {
   margin-bottom: 0;
 }
 
+.preview-toggle-group {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .preview-test-toggle {
   display: inline-flex;
   align-items: center;

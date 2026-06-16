@@ -34,6 +34,8 @@ const carouselPreview = document.querySelector('#carousel-preview');
 const rowsPreview = document.querySelector('#rows-preview');
 const carouselPreviewTest = document.querySelector('#carousel-preview-test');
 const rowsPreviewTest = document.querySelector('#rows-preview-test');
+const carouselPreviewMute = document.querySelector('#carousel-preview-mute');
+const rowsPreviewMute = document.querySelector('#rows-preview-mute');
 const themePreset = document.querySelector('#theme-preset');
 const themeOpacity = document.querySelector('#theme-opacity');
 const themeOpacityLabel = document.querySelector('#theme-opacity-label');
@@ -134,6 +136,7 @@ const soundCatalog = [
   { label: 'Heart Me', sound: './sounds/heartmesound.mp3' },
   { label: 'I\'m Fine', sound: './sounds/imfine.mp3' }
 ];
+const availableSounds = new Set(soundCatalog.map(item => item.sound));
 let activeConfigTab = 'original';
 let rowsBoardScrollState = new Map();
 let pageScrollState = { x: 0, y: 0 };
@@ -351,7 +354,7 @@ rowsThemeColorFields.forEach(field => {
   });
 });
 
-[carouselPreviewTest, rowsPreviewTest].forEach(input => {
+[carouselPreviewTest, rowsPreviewTest, carouselPreviewMute, rowsPreviewMute].forEach(input => {
   input?.addEventListener('input', refreshOverlayPreviews);
 });
 
@@ -1578,9 +1581,15 @@ function getUrlForPage(page, config = draftConfig, options = {}) {
   const search = new URLSearchParams(getShareSearchParams());
   if (options.test) {
     search.set('test', '1');
-    search.set('previewRefresh', String(options.previewRefresh || 0));
   } else if (options.preview) {
     search.set('preview', '1');
+  }
+
+  if (options.mute) {
+    search.set('mute', '1');
+  }
+
+  if (options.preview || options.test) {
     search.set('previewRefresh', String(options.previewRefresh || 0));
   }
   url.search = search.toString();
@@ -1648,6 +1657,7 @@ function refreshOverlayPreviews() {
     setPreviewUrl(carouselPreview, getUrlForPage('index-rewards.html', previewConfig, {
       preview: !carouselPreviewTest?.checked,
       test: Boolean(carouselPreviewTest?.checked),
+      mute: Boolean(carouselPreviewMute?.checked),
       previewRefresh: previewRefreshIndex
     }));
   }
@@ -1656,6 +1666,7 @@ function refreshOverlayPreviews() {
     setPreviewUrl(rowsPreview, getUrlForPage('index-rewards-rows.html', previewConfig, {
       preview: !rowsPreviewTest?.checked,
       test: Boolean(rowsPreviewTest?.checked),
+      mute: Boolean(rowsPreviewMute?.checked),
       previewRefresh: previewRefreshIndex
     }));
   }
@@ -1874,7 +1885,7 @@ function normalizeRowsGift(gift) {
     giftIds: Array.isArray(gift.giftIds) ? gift.giftIds.map(normalizeId).filter(Boolean) : [],
     image: getCatalogImageForReward(gift),
     row: Number.isInteger(Number(gift.row)) ? Number(gift.row) : undefined,
-    sound: String(gift.sound || ''),
+    sound: normalizeSound(gift.sound),
     volume: clamp(Number(gift.volume ?? 0.85), 0, 1)
   };
 }
@@ -1889,13 +1900,18 @@ function normalizeReward(reward) {
     useGiftImage: Boolean(reward.useGiftImage),
     giftImageNames: Array.isArray(reward.giftImageNames) ? reward.giftImageNames.map(String) : [],
     giftImageIds: Array.isArray(reward.giftImageIds) ? reward.giftImageIds.map(String) : [],
-    sound: String(reward.sound || ''),
+    sound: normalizeSound(reward.sound),
     volume: clamp(Number(reward.volume ?? 0.85), 0, 1)
   };
 }
 
 function splitList(value) {
   return String(value || '').split(',').map(item => item.trim()).filter(Boolean);
+}
+
+function normalizeSound(sound) {
+  const value = String(sound || '').trim();
+  return availableSounds.has(value) ? value : '';
 }
 
 function normalizeCsv(value, fallback) {

@@ -162,18 +162,24 @@
       <section class="config-section" data-config-panel="original" aria-label="Gift carousel preview">
         <div class="section-header-row">
           <h2 class="section-title">Carousel Preview</h2>
-          <label class="preview-test-toggle">
-            <input id="carousel-preview-test" type="checkbox">
-            <span>Test animations</span>
-          </label>
+          <div class="preview-toggle-group">
+            <label class="preview-test-toggle">
+              <input id="carousel-preview-test" type="checkbox">
+              <span>Test animations</span>
+            </label>
+            <label class="preview-test-toggle">
+              <input id="carousel-preview-mute" type="checkbox" checked>
+              <span>Mute</span>
+            </label>
+          </div>
         </div>
         <div class="overlay-preview-frame overlay-preview-frame-carousel">
           <iframe id="carousel-preview" title="Gift carousel preview"></iframe>
         </div>
       </section>
 
-      <section class="config-section" data-config-panel="rows" aria-label="Rows overlay settings" hidden>
-        <h2 class="section-title">Rows Layout</h2>
+      <section class="config-section" data-config-panel="rows" aria-label="Rows global settings" hidden>
+        <h2 class="section-title">Rows Global Settings</h2>
         <div class="config-globals">
           <div class="config-field">
             <label for="rows-count">Rows</label>
@@ -317,10 +323,16 @@
       <section class="config-section" data-config-panel="rows" aria-label="Rows overlay preview" hidden>
         <div class="section-header-row">
           <h2 class="section-title">Rows Preview</h2>
-          <label class="preview-test-toggle">
-            <input id="rows-preview-test" type="checkbox">
-            <span>Test animations</span>
-          </label>
+          <div class="preview-toggle-group">
+            <label class="preview-test-toggle">
+              <input id="rows-preview-test" type="checkbox">
+              <span>Test animations</span>
+            </label>
+            <label class="preview-test-toggle">
+              <input id="rows-preview-mute" type="checkbox" checked>
+              <span>Mute</span>
+            </label>
+          </div>
         </div>
         <div class="overlay-preview-frame overlay-preview-frame-rows">
           <iframe id="rows-preview" title="Rows overlay preview"></iframe>

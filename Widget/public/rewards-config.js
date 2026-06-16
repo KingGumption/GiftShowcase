@@ -216,7 +216,7 @@ window.rewardOverlayConfig = {
       ],
       "image": "./rewards/817_Gold_Boxing_Gloves.png",
       "useGiftImage": false,
-      "sound": "./sounds/Punch-dom.mp3",
+      "sound": "",
       "volume": 0.85
     },
     {
@@ -230,7 +230,7 @@ window.rewardOverlayConfig = {
       ],
       "image": "./rewards/792_Finger_heart.png",
       "useGiftImage": false,
-      "sound": "./sounds/transform-dom.mp3",
+      "sound": "",
       "volume": 0.85
     },
     {

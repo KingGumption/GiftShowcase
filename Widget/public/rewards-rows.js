@@ -4,6 +4,7 @@ const params = new URLSearchParams(window.location.search);
 const tikfinityUrl = params.get('endpoint') || 'ws://localhost:21213/';
 const testMode = params.get('test') === '1';
 const previewMode = params.get('preview') === '1';
+const muteMode = params.get('mute') === '1';
 const highlightMs = clampInteger(Number(params.get('highlightMs') || 2600), 900, 9000);
 
 const catalogGifts = normalizeCatalog(window.rewardImageCatalog || []);
@@ -268,7 +269,7 @@ function highlightGift(gift) {
 }
 
 function playRowsGiftSound(tile) {
-  if (previewMode || savedRowsConfig.soundsEnabled === false) {
+  if (previewMode || muteMode || savedRowsConfig.soundsEnabled === false) {
     return;
   }
 
