@@ -2227,7 +2227,7 @@ button {
 }
 
 .theme-config-grid {
-  grid-template-columns: repeat(5, minmax(150px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .section-header-row {
@@ -2271,13 +2271,13 @@ button {
 
 .color-control {
   display: grid;
-  grid-template-columns: 38px minmax(0, 1fr);
+  grid-template-columns: 46px minmax(112px, 1fr);
   gap: 8px;
   align-items: center;
 }
 
 .config-field .color-control input[type="color"] {
-  width: 38px;
+  width: 46px;
   height: 34px;
   min-height: 34px;
   padding: 3px;
@@ -2285,6 +2285,7 @@ button {
 }
 
 .config-field .color-control input[type="text"] {
+  width: 100%;
   min-width: 0;
   text-transform: uppercase;
 }

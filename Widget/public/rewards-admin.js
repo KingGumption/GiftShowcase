@@ -1754,8 +1754,12 @@ function themesMatch(theme, preset) {
   return ['accent', 'secondary', 'background', 'card', 'text', 'border', 'glow'].every(key => {
     return normalizeHex(theme[key], '') === normalizeHex(preset[key], '');
   }) &&
-    Number(theme.opacity) === Number(preset.opacity) &&
-    Number(theme.glowStrength) === Number(preset.glowStrength);
+    decimalsMatch(theme.opacity, preset.opacity) &&
+    decimalsMatch(theme.glowStrength, preset.glowStrength);
+}
+
+function decimalsMatch(value, presetValue) {
+  return Math.abs(Number(value) - Number(presetValue)) < 0.026;
 }
 
 function applyThemeToDocument(themeInput) {
