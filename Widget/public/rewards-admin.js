@@ -998,7 +998,7 @@ function isHostedImagePath(path) {
 }
 
 function getImageLabel(imagePath) {
-  const filename = String(imagePath || '').replace(/^\.\/(?:rewards|gift-assets)\//, '').split('/').pop() || '';
+  const filename = String(imagePath || '').replace(/^\.\/rewards\//, '').split('/').pop() || '';
   return getDisplayLabel(filename);
 }
 

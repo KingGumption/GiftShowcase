@@ -76,7 +76,8 @@ Put reward sounds in `public\sounds`, then add `sound` and optional `volume` to 
 {
   title: 'Bean',
   giftNames: ['Super GG'],
-  image: './rewards/Super GG.png',
+  giftIds: [913],
+  image: './rewards/913_Super_GG.png',
   sound: './sounds/bean.mp3',
   volume: 0.85
 }
@@ -90,11 +91,11 @@ For customizable gifts such as Heart Me, set `useGiftImage: true`. If the reward
 {
   title: 'TTS',
   giftNames: ['Rose', 'Heart Me'],
-  giftIds: [],
-  image: './rewards/tts.png',
+  giftIds: [1, 33],
+  image: './rewards/033_Heart_Me.png',
   useGiftImage: true,
   giftImageNames: ['Heart Me'],
-  giftImageIds: []
+  giftImageIds: [33]
 }
 ```
 

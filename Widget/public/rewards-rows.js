@@ -316,7 +316,7 @@ function getGiftKeys({ ids = [], names = [] }) {
 
 function getDisplayLabel(label) {
   return String(label || '')
-    .replace(/^\.\/(?:rewards|gift-assets)\//, '')
+    .replace(/^\.\/rewards\//, '')
     .replace(/\.(avif|gif|jpe?g|png|svg|webp)$/i, '')
     .replace(/^\d+[_ -]+/, '')
     .replace(/[_-]+/g, ' ')
