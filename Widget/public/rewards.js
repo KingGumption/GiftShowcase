@@ -36,6 +36,7 @@ let rewardAudio = new Map();
 const streakSettleDelay = 2400;
 const rewardTransitionMs = 820;
 
+applyThemeToDocument(rewardConfig.theme);
 renderRewards();
 setVisibleRewardCount();
 setInitialReward(0);
@@ -87,6 +88,78 @@ function readConfigFromHash() {
   } catch {
     return null;
   }
+}
+
+function applyThemeToDocument(theme = {}) {
+  const defaults = {
+    accent: '#03f5d8',
+    secondary: '#c447ff',
+    background: '#1b1f2b',
+    card: '#0d0f14',
+    text: '#ffffff',
+    border: '#ffffff',
+    glow: '#c447ff',
+    opacity: 0.78,
+    glowStrength: 1
+  };
+  const normalized = {
+    accent: normalizeHex(theme.accent, defaults.accent),
+    secondary: normalizeHex(theme.secondary, defaults.secondary),
+    background: normalizeHex(theme.background, defaults.background),
+    card: normalizeHex(theme.card, defaults.card),
+    text: normalizeHex(theme.text, defaults.text),
+    border: normalizeHex(theme.border, defaults.border),
+    glow: normalizeHex(theme.glow, defaults.glow),
+    opacity: clampNumber(Number(theme.opacity ?? defaults.opacity), 0.35, 1),
+    glowStrength: clampNumber(Number(theme.glowStrength ?? defaults.glowStrength), 0, 1.5)
+  };
+  const root = document.documentElement;
+  const opacity = normalized.opacity;
+  const glow = normalized.glowStrength;
+
+  root.style.setProperty('--reward-theme-accent', normalized.accent);
+  root.style.setProperty('--reward-theme-accent-soft', hexToRgba(normalized.accent, 0.18));
+  root.style.setProperty('--reward-theme-accent-strong', hexToRgba(normalized.accent, 0.76));
+  root.style.setProperty('--reward-theme-secondary', normalized.secondary);
+  root.style.setProperty('--reward-theme-secondary-soft', hexToRgba(normalized.secondary, 0.2));
+  root.style.setProperty('--reward-theme-background', hexToRgba(normalized.background, opacity));
+  root.style.setProperty('--reward-theme-background-deep', hexToRgba(normalized.background, Math.min(0.95, opacity + 0.1)));
+  root.style.setProperty('--reward-theme-card', hexToRgba(normalized.card, Math.min(0.9, opacity + 0.04)));
+  root.style.setProperty('--reward-theme-card-soft', hexToRgba(normalized.card, Math.max(0.38, opacity - 0.16)));
+  root.style.setProperty('--reward-theme-text', normalized.text);
+  root.style.setProperty('--reward-theme-muted', hexToRgba(normalized.text, 0.74));
+  root.style.setProperty('--reward-theme-border', hexToRgba(normalized.border, 0.34));
+  root.style.setProperty('--reward-theme-border-strong', hexToRgba(normalized.border, 0.68));
+  root.style.setProperty('--reward-theme-glow', hexToRgba(normalized.glow, 0.5 * glow));
+  root.style.setProperty('--reward-theme-glow-soft', hexToRgba(normalized.glow, 0.22 * glow));
+  root.style.setProperty('--reward-theme-glow-strong', hexToRgba(normalized.glow, 0.78 * glow));
+  root.style.setProperty('--reward-theme-shine', hexToRgba(normalized.text, 0.18));
+}
+
+function normalizeHex(value, fallback = '#ffffff') {
+  const text = String(value || '').trim();
+  const fallbackHex = /^#[0-9a-f]{6}$/i.test(String(fallback || '')) ? fallback.toLowerCase() : '#ffffff';
+
+  if (/^#[0-9a-f]{6}$/i.test(text)) return text.toLowerCase();
+  if (/^#[0-9a-f]{3}$/i.test(text)) {
+    const [, r, g, b] = text.toLowerCase();
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+  if (/^[0-9a-f]{6}$/i.test(text)) return `#${text.toLowerCase()}`;
+  if (/^[0-9a-f]{3}$/i.test(text)) {
+    const [r, g, b] = text.toLowerCase();
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+
+  return fallbackHex;
+}
+
+function hexToRgba(hex, alpha) {
+  const normalized = normalizeHex(hex);
+  const red = parseInt(normalized.slice(1, 3), 16);
+  const green = parseInt(normalized.slice(3, 5), 16);
+  const blue = parseInt(normalized.slice(5, 7), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${clampNumber(Number(alpha), 0, 1)})`;
 }
 
 function connect() {

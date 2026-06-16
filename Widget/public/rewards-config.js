@@ -3,6 +3,18 @@ window.rewardOverlayConfig = {
   "holdOnGiftMs": 6500,
   "labelMs": 2600,
   "visibleNext": 3,
+  "theme": {
+    "preset": "glass-purple",
+    "accent": "#03f5d8",
+    "secondary": "#c447ff",
+    "background": "#1b1f2b",
+    "card": "#0d0f14",
+    "text": "#ffffff",
+    "border": "#ffffff",
+    "glow": "#c447ff",
+    "opacity": 0.78,
+    "glowStrength": 1
+  },
   "rowsOverlay": {
     "rows": 2,
     "perRow": "6,6",

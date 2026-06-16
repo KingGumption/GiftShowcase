@@ -32,8 +32,85 @@ const copyRowsUrlButton = document.querySelector('#copy-rows-url');
 const copyConfigUrlButton = document.querySelector('#copy-config-url');
 const carouselPreview = document.querySelector('#carousel-preview');
 const rowsPreview = document.querySelector('#rows-preview');
+const themePreset = document.querySelector('#theme-preset');
+const themeOpacity = document.querySelector('#theme-opacity');
+const themeOpacityLabel = document.querySelector('#theme-opacity-label');
+const themeGlowStrength = document.querySelector('#theme-glow-strength');
+const themeGlowStrengthLabel = document.querySelector('#theme-glow-strength-label');
+const themeColorFields = [
+  { key: 'accent', color: document.querySelector('#theme-accent'), hex: document.querySelector('#theme-accent-hex') },
+  { key: 'secondary', color: document.querySelector('#theme-secondary'), hex: document.querySelector('#theme-secondary-hex') },
+  { key: 'background', color: document.querySelector('#theme-background'), hex: document.querySelector('#theme-background-hex') },
+  { key: 'card', color: document.querySelector('#theme-card'), hex: document.querySelector('#theme-card-hex') },
+  { key: 'text', color: document.querySelector('#theme-text'), hex: document.querySelector('#theme-text-hex') },
+  { key: 'border', color: document.querySelector('#theme-border'), hex: document.querySelector('#theme-border-hex') },
+  { key: 'glow', color: document.querySelector('#theme-glow'), hex: document.querySelector('#theme-glow-hex') }
+];
 const imageCatalog = new Map();
 const giftGridLimit = 80;
+const themePresets = {
+  'glass-purple': {
+    preset: 'glass-purple',
+    accent: '#03f5d8',
+    secondary: '#c447ff',
+    background: '#1b1f2b',
+    card: '#0d0f14',
+    text: '#ffffff',
+    border: '#ffffff',
+    glow: '#c447ff',
+    opacity: 0.78,
+    glowStrength: 1
+  },
+  'neon-cyan': {
+    preset: 'neon-cyan',
+    accent: '#10f4ff',
+    secondary: '#3cff9e',
+    background: '#071c22',
+    card: '#081216',
+    text: '#f2ffff',
+    border: '#55f7ff',
+    glow: '#10f4ff',
+    opacity: 0.82,
+    glowStrength: 1.1
+  },
+  'hot-pink': {
+    preset: 'hot-pink',
+    accent: '#ff4fd8',
+    secondary: '#ffb347',
+    background: '#271123',
+    card: '#1a0b17',
+    text: '#fff7fd',
+    border: '#ff9ee8',
+    glow: '#ff4fd8',
+    opacity: 0.8,
+    glowStrength: 1.15
+  },
+  gold: {
+    preset: 'gold',
+    accent: '#ffd83d',
+    secondary: '#34d8ff',
+    background: '#241d10',
+    card: '#171307',
+    text: '#fff8de',
+    border: '#ffe58a',
+    glow: '#ffd83d',
+    opacity: 0.82,
+    glowStrength: 0.95
+  },
+  'minimal-dark': {
+    preset: 'minimal-dark',
+    accent: '#ffffff',
+    secondary: '#8aa0b8',
+    background: '#101218',
+    card: '#0b0d12',
+    text: '#f4f6fb',
+    border: '#586174',
+    glow: '#ffffff',
+    opacity: 0.72,
+    glowStrength: 0.28
+  }
+};
+const defaultTheme = themePresets['glass-purple'];
 const soundCatalog = [
   { label: 'No sound', sound: '' },
   { label: 'Disgusting', sound: './sounds/disgusting.mp3' },
@@ -173,8 +250,50 @@ tabButtons.forEach(button => {
   });
 });
 
+themePreset.addEventListener('change', () => {
+  const preset = themePresets[themePreset.value];
+
+  if (preset) {
+    draftConfig.theme = normalizeTheme(preset);
+    renderThemeForm();
+    applyThemeToDocument(draftConfig.theme);
+    markDirty();
+    scheduleOverlayPreviewRefresh();
+  }
+});
+
+themeColorFields.forEach(field => {
+  field.color.addEventListener('input', () => {
+    field.hex.value = field.color.value;
+    updateThemeFromForm();
+    markDirty();
+    scheduleOverlayPreviewRefresh();
+  });
+
+  field.hex.addEventListener('input', () => {
+    const hex = normalizeHex(field.hex.value, '');
+
+    if (hex) {
+      field.color.value = hex;
+    }
+
+    updateThemeFromForm();
+    markDirty();
+    scheduleOverlayPreviewRefresh();
+  });
+});
+
+[themeOpacity, themeGlowStrength].forEach(input => {
+  input.addEventListener('input', () => {
+    updateThemeFromForm();
+    markDirty();
+    scheduleOverlayPreviewRefresh();
+  });
+});
+
 seedImageCatalog();
 ensureRowsGiftDefaults();
+applyThemeToDocument(draftConfig.theme);
 render();
 
 function loadDraftConfig() {
@@ -207,6 +326,7 @@ function render() {
   rowsGap.value = draftConfig.rowsOverlay.gap;
   rowsNames.value = draftConfig.rowsOverlay.names ? '1' : '0';
   rowsSounds.value = draftConfig.rowsOverlay.soundsEnabled === false ? '0' : '1';
+  renderThemeForm();
   rewardList.innerHTML = '';
   rowsGiftList.innerHTML = '';
 
@@ -1076,6 +1196,7 @@ function updateGlobalsFromForm() {
   draftConfig.labelMs = numberOrDefault(labelMs.value, 2600);
   draftConfig.visibleNext = clamp(numberOrDefault(visibleNext.value, 3), 0, 3);
   draftConfig.soundsEnabled = carouselSounds.value !== '0';
+  updateThemeFromForm();
 }
 
 function updateRowsFromForm() {
@@ -1092,6 +1213,45 @@ function updateRowsFromForm() {
     gifts: draftConfig.rowsOverlay.gifts
   });
   ensureRowsGiftRows();
+}
+
+function renderThemeForm() {
+  const theme = normalizeTheme(draftConfig.theme);
+  themePreset.value = themePresets[theme.preset] ? theme.preset : 'custom';
+
+  themeColorFields.forEach(field => {
+    const value = normalizeHex(theme[field.key], defaultTheme[field.key]);
+    field.color.value = value;
+    field.hex.value = value;
+  });
+
+  themeOpacity.value = String(theme.opacity);
+  themeGlowStrength.value = String(theme.glowStrength);
+  themeOpacityLabel.textContent = `${Math.round(theme.opacity * 100)}%`;
+  themeGlowStrengthLabel.textContent = `${Math.round(theme.glowStrength * 100)}%`;
+}
+
+function updateThemeFromForm() {
+  const nextTheme = {
+    preset: themePreset.value,
+    opacity: clamp(Number(themeOpacity.value), 0.35, 1),
+    glowStrength: clamp(Number(themeGlowStrength.value), 0, 1.5)
+  };
+
+  themeColorFields.forEach(field => {
+    nextTheme[field.key] = normalizeHex(field.hex.value, defaultTheme[field.key]);
+  });
+
+  const preset = themePresets[nextTheme.preset];
+  if (!preset || !themesMatch(nextTheme, preset)) {
+    nextTheme.preset = 'custom';
+    themePreset.value = 'custom';
+  }
+
+  draftConfig.theme = normalizeTheme(nextTheme);
+  themeOpacityLabel.textContent = `${Math.round(draftConfig.theme.opacity * 100)}%`;
+  themeGlowStrengthLabel.textContent = `${Math.round(draftConfig.theme.glowStrength * 100)}%`;
+  applyThemeToDocument(draftConfig.theme);
 }
 
 function updateRewardFromEditor(index, editor) {
@@ -1418,9 +1578,61 @@ function normalizeConfig(config) {
     labelMs: numberOrDefault(config.labelMs, 2600),
     visibleNext: clamp(numberOrDefault(config.visibleNext, 3), 0, 3),
     soundsEnabled: config.soundsEnabled !== false,
+    theme: normalizeTheme(config.theme || {}),
     rowsOverlay: normalizeRowsOverlay(config.rowsOverlay || {}),
     rewards: rewards.map(normalizeReward)
   };
+}
+
+function normalizeTheme(theme) {
+  const preset = themePresets[theme.preset] ? theme.preset : 'custom';
+  const presetTheme = themePresets[preset] || defaultTheme;
+
+  return {
+    preset,
+    accent: normalizeHex(theme.accent, presetTheme.accent),
+    secondary: normalizeHex(theme.secondary, presetTheme.secondary),
+    background: normalizeHex(theme.background, presetTheme.background),
+    card: normalizeHex(theme.card, presetTheme.card),
+    text: normalizeHex(theme.text, presetTheme.text),
+    border: normalizeHex(theme.border, presetTheme.border),
+    glow: normalizeHex(theme.glow, presetTheme.glow),
+    opacity: clamp(numberOrDefault(theme.opacity, presetTheme.opacity), 0.35, 1),
+    glowStrength: clamp(numberOrDefault(theme.glowStrength, presetTheme.glowStrength), 0, 1.5)
+  };
+}
+
+function themesMatch(theme, preset) {
+  return ['accent', 'secondary', 'background', 'card', 'text', 'border', 'glow'].every(key => {
+    return normalizeHex(theme[key], '') === normalizeHex(preset[key], '');
+  }) &&
+    Number(theme.opacity) === Number(preset.opacity) &&
+    Number(theme.glowStrength) === Number(preset.glowStrength);
+}
+
+function applyThemeToDocument(themeInput) {
+  const theme = normalizeTheme(themeInput || {});
+  const root = document.documentElement;
+  const opacity = theme.opacity;
+  const glow = theme.glowStrength;
+
+  root.style.setProperty('--reward-theme-accent', theme.accent);
+  root.style.setProperty('--reward-theme-accent-soft', hexToRgba(theme.accent, 0.18));
+  root.style.setProperty('--reward-theme-accent-strong', hexToRgba(theme.accent, 0.76));
+  root.style.setProperty('--reward-theme-secondary', theme.secondary);
+  root.style.setProperty('--reward-theme-secondary-soft', hexToRgba(theme.secondary, 0.2));
+  root.style.setProperty('--reward-theme-background', hexToRgba(theme.background, opacity));
+  root.style.setProperty('--reward-theme-background-deep', hexToRgba(theme.background, Math.min(0.95, opacity + 0.1)));
+  root.style.setProperty('--reward-theme-card', hexToRgba(theme.card, Math.min(0.9, opacity + 0.04)));
+  root.style.setProperty('--reward-theme-card-soft', hexToRgba(theme.card, Math.max(0.38, opacity - 0.16)));
+  root.style.setProperty('--reward-theme-text', theme.text);
+  root.style.setProperty('--reward-theme-muted', hexToRgba(theme.text, 0.74));
+  root.style.setProperty('--reward-theme-border', hexToRgba(theme.border, 0.34));
+  root.style.setProperty('--reward-theme-border-strong', hexToRgba(theme.border, 0.68));
+  root.style.setProperty('--reward-theme-glow', hexToRgba(theme.glow, 0.5 * glow));
+  root.style.setProperty('--reward-theme-glow-soft', hexToRgba(theme.glow, 0.22 * glow));
+  root.style.setProperty('--reward-theme-glow-strong', hexToRgba(theme.glow, 0.78 * glow));
+  root.style.setProperty('--reward-theme-shine', hexToRgba(theme.text, 0.18));
 }
 
 function normalizeRowsOverlay(config) {
@@ -1504,6 +1716,39 @@ function normalizeName(name) {
 function normalizeId(id) {
   const value = String(id || '').trim();
   return /^\d+$/.test(value) ? String(Number(value)) : value;
+}
+
+function normalizeHex(value, fallback = '#ffffff') {
+  const text = String(value || '').trim();
+  const fallbackHex = /^#[0-9a-f]{6}$/i.test(String(fallback || '')) ? fallback.toLowerCase() : '#ffffff';
+
+  if (/^#[0-9a-f]{6}$/i.test(text)) {
+    return text.toLowerCase();
+  }
+
+  if (/^#[0-9a-f]{3}$/i.test(text)) {
+    const [, r, g, b] = text.toLowerCase();
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+
+  if (/^[0-9a-f]{6}$/i.test(text)) {
+    return `#${text.toLowerCase()}`;
+  }
+
+  if (/^[0-9a-f]{3}$/i.test(text)) {
+    const [r, g, b] = text.toLowerCase();
+    return `#${r}${r}${g}${g}${b}${b}`;
+  }
+
+  return fallbackHex;
+}
+
+function hexToRgba(hex, alpha) {
+  const normalized = normalizeHex(hex);
+  const red = parseInt(normalized.slice(1, 3), 16);
+  const green = parseInt(normalized.slice(3, 5), 16);
+  const blue = parseInt(normalized.slice(5, 7), 16);
+  return `rgba(${red}, ${green}, ${blue}, ${clamp(Number(alpha), 0, 1)})`;
 }
 
 function getCatalogImageForReward(reward) {

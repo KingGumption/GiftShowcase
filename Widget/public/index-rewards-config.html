@@ -32,6 +32,83 @@
         <button data-config-tab="rows" type="button">Rows Overlay</button>
       </nav>
 
+      <section class="config-section" aria-label="Overlay theme settings">
+        <h2 class="section-title">Theme</h2>
+        <div class="config-globals theme-config-grid">
+          <div class="config-field">
+            <label for="theme-preset">Preset</label>
+            <select id="theme-preset">
+              <option value="glass-purple">Glass Purple</option>
+              <option value="neon-cyan">Neon Cyan</option>
+              <option value="hot-pink">Hot Pink</option>
+              <option value="gold">Gold</option>
+              <option value="minimal-dark">Minimal Dark</option>
+              <option value="custom">Custom</option>
+            </select>
+            <span class="field-hint">Presets can still be edited below</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-accent">Accent</label>
+            <div class="color-control">
+              <input id="theme-accent" type="color">
+              <input id="theme-accent-hex" type="text" spellcheck="false" placeholder="#03f5d8">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-secondary">Secondary</label>
+            <div class="color-control">
+              <input id="theme-secondary" type="color">
+              <input id="theme-secondary-hex" type="text" spellcheck="false" placeholder="#c447ff">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-background">Background</label>
+            <div class="color-control">
+              <input id="theme-background" type="color">
+              <input id="theme-background-hex" type="text" spellcheck="false" placeholder="#1b1f2b">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-card">Card</label>
+            <div class="color-control">
+              <input id="theme-card" type="color">
+              <input id="theme-card-hex" type="text" spellcheck="false" placeholder="#0d0f14">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-text">Text</label>
+            <div class="color-control">
+              <input id="theme-text" type="color">
+              <input id="theme-text-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-border">Border</label>
+            <div class="color-control">
+              <input id="theme-border" type="color">
+              <input id="theme-border-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="theme-glow">Glow</label>
+            <div class="color-control">
+              <input id="theme-glow" type="color">
+              <input id="theme-glow-hex" type="text" spellcheck="false" placeholder="#c447ff">
+            </div>
+          </div>
+          <div class="config-field">
+            <label for="theme-opacity">Glass Opacity</label>
+            <input id="theme-opacity" type="range" min="0.35" max="1" step="0.05">
+            <span class="field-hint"><span id="theme-opacity-label">80%</span></span>
+          </div>
+          <div class="config-field">
+            <label for="theme-glow-strength">Glow Strength</label>
+            <input id="theme-glow-strength" type="range" min="0" max="1.5" step="0.05">
+            <span class="field-hint"><span id="theme-glow-strength-label">100%</span></span>
+          </div>
+        </div>
+      </section>
+
       <section class="config-section" data-config-panel="original" aria-label="Global reward settings">
         <h2 class="section-title">⚙️ Global Settings</h2>
         <div class="config-globals">
