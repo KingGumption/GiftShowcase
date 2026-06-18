@@ -38,6 +38,30 @@ if (previewMode) {
   connectRows();
 }
 
+// Listen for live title updates from the config editor (parent) and update tile text without reload.
+window.addEventListener('message', event => {
+  try {
+    const msg = event.data;
+    if (!msg || msg.type !== 'rows:updateTitles' || !Array.isArray(msg.updates)) return;
+
+    msg.updates.forEach(update => {
+      const keys = Array.isArray(update.keys) ? update.keys : [];
+      const title = String(update.title || '');
+      if (!keys.length) return;
+
+      [...document.querySelectorAll('.reward-gift-tile')].forEach(tile => {
+        const tileKeys = String(tile.dataset.giftKeys || '').split('|').filter(Boolean);
+        if (keys.some(k => tileKeys.includes(k))) {
+          const strong = tile.querySelector('strong');
+          if (strong) strong.textContent = title;
+        }
+      });
+    });
+  } catch (err) {
+    // ignore
+  }
+});
+
 function renderRows() {
   rewardRowsWidget.style.setProperty('--reward-row-gap', `${gap}px`);
   rewardRowsWidget.style.setProperty('--reward-row-height', `${rowHeight}px`);
@@ -272,7 +296,7 @@ function normalizeCatalog(list) {
 function normalizeRowsGifts(list) {
   return dedupeGifts(list.filter(gift => gift.enabled !== false).map(gift => ({
     id: normalizeId(gift.giftIds?.[0] || ''),
-    label: getDisplayLabel(gift.giftNames?.[0] || gift.title || gift.image || 'Gift'),
+    label: getDisplayLabel(gift.title || gift.giftNames?.[0] || gift.image || 'Gift'),
     image: getCatalogImageForGift(gift),
     row: Number.isInteger(Number(gift.row)) ? Number(gift.row) : undefined,
     sound: String(gift.sound || ''),

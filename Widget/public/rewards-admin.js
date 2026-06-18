@@ -256,7 +256,6 @@ tabButtons.forEach(button => {
   input.addEventListener('input', () => {
     updateGlobalsFromForm();
     markDirty();
-    scheduleOverlayPreviewRefresh();
   });
 });
 
@@ -264,7 +263,6 @@ tabButtons.forEach(button => {
   input.addEventListener('input', () => {
     updateRowsFromForm();
     markDirty();
-    scheduleOverlayPreviewRefresh();
     if (input === rowsCount && activeConfigTab === 'rows') {
       renderPreservingScroll();
     }
@@ -290,7 +288,6 @@ themeColorFields.forEach(field => {
     field.hex.value = field.color.value;
     updateThemeFromForm();
     markDirty();
-    scheduleOverlayPreviewRefresh();
   });
 
   field.hex.addEventListener('input', () => {
@@ -302,7 +299,6 @@ themeColorFields.forEach(field => {
 
     updateThemeFromForm();
     markDirty();
-    scheduleOverlayPreviewRefresh();
   });
 });
 
@@ -310,7 +306,6 @@ themeColorFields.forEach(field => {
   input.addEventListener('input', () => {
     updateThemeFromForm();
     markDirty();
-    scheduleOverlayPreviewRefresh();
   });
 });
 
@@ -320,7 +315,7 @@ rowsThemePreset.addEventListener('change', () => {
   if (preset) {
     draftConfig.rowsTheme = normalizeTheme(preset);
     renderThemeForm();
-    setState('âš  Unsaved changes');
+    setState('⚠ Unsaved changes');
     refreshOverlayPreviews();
   }
 });
@@ -330,7 +325,6 @@ rowsThemeColorFields.forEach(field => {
     field.hex.value = field.color.value;
     updateRowsThemeFromForm();
     markDirty();
-    scheduleOverlayPreviewRefresh();
   });
 
   field.hex.addEventListener('input', () => {
@@ -342,7 +336,6 @@ rowsThemeColorFields.forEach(field => {
 
     updateRowsThemeFromForm();
     markDirty();
-    scheduleOverlayPreviewRefresh();
   });
 });
 
@@ -350,7 +343,6 @@ rowsThemeColorFields.forEach(field => {
   input.addEventListener('input', () => {
     updateRowsThemeFromForm();
     markDirty();
-    scheduleOverlayPreviewRefresh();
   });
 });
 
@@ -580,7 +572,6 @@ function setupRowsGiftSettings(column, row) {
     input.addEventListener('input', () => {
       updateRowsGiftSetting(row, input.dataset.rowSetting, input);
       markDirty();
-      scheduleOverlayPreviewRefresh();
     });
   });
 }
@@ -1372,6 +1363,65 @@ function updateRewardFromEditor(index, editor) {
   reward.useGiftImage = false;
   reward.giftImageNames = [];
   reward.giftImageIds = [];
+
+  // Propagate title changes to any matching rows overlay gifts so rows names stay in sync.
+  if (draftConfig.rowsOverlay && Array.isArray(draftConfig.rowsOverlay.gifts)) {
+    try {
+      const rewardIds = (reward.giftIds || []).map(i => normalizeId(i)).filter(Boolean);
+      const rewardNames = (reward.giftNames || []).map(n => normalizeName(n)).filter(Boolean);
+
+      draftConfig.rowsOverlay.gifts.forEach(gift => {
+        const giftIds = (gift.giftIds || []).map(i => normalizeId(i)).filter(Boolean);
+        const giftNames = (gift.giftNames || []).map(n => normalizeName(n)).filter(Boolean);
+
+        const idMatch = giftIds.some(id => rewardIds.includes(id));
+        const nameMatch = giftNames.some(name => rewardNames.includes(name));
+
+        if (idMatch || nameMatch) {
+          gift.title = reward.title;
+        }
+      });
+    } catch (err) {
+      // ignore propagation errors
+    }
+  }
+
+  // Update any open rows editors in the config UI so their title inputs reflect the change.
+  try {
+    rowsGiftList.querySelectorAll('.reward-editor[data-mode="rows"]').forEach(editor => {
+      const idx = Number(editor.dataset.index);
+      const gift = draftConfig.rowsOverlay.gifts[idx];
+      if (!gift) return;
+
+      const giftIds = (gift.giftIds || []).map(normalizeId).filter(Boolean);
+      const giftNames = (gift.giftNames || []).map(normalizeName).filter(Boolean);
+      const idMatch = giftIds.some(id => (reward.giftIds || []).map(normalizeId).includes(id));
+      const nameMatch = giftNames.some(n => (reward.giftNames || []).map(normalizeName).includes(n));
+
+      if (idMatch || nameMatch) {
+        const titleInput = editor.querySelector('[data-field="title"]');
+        if (titleInput) titleInput.value = reward.title;
+        updateEditorState(editor, gift);
+        updatePreview(editor, gift);
+      }
+    });
+  } catch (err) {
+    // ignore UI sync errors
+  }
+
+  // Post a message to the rows preview iframe to update visible tile text without a reload.
+  try {
+    if (rowsPreview?.contentWindow) {
+      const updates = draftConfig.rowsOverlay.gifts.map(g => ({
+        keys: getGiftKeys({ ids: g.giftIds || [], names: g.giftNames || [] }),
+        title: g.title
+      }));
+
+      rowsPreview.contentWindow.postMessage({ type: 'rows:updateTitles', updates }, '*');
+    }
+  } catch (err) {
+    // ignore postMessage errors
+  }
 }
 
 function updateRowsGiftFromEditor(index, editor) {
