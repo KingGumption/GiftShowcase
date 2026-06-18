@@ -86,11 +86,112 @@ function readConfigFromHash() {
   }
 
   try {
-    const config = JSON.parse(decodeURIComponent(escape(atob(encoded))));
-    return config && typeof config === 'object' ? config : null;
+    const config = JSON.parse(decodeURIComponent(escape(atob(toBase64(encoded)))));
+    const expanded = expandCompactConfig(config);
+    return expanded && typeof expanded === 'object' ? expanded : null;
   } catch {
     return null;
   }
+}
+
+function toBase64(value) {
+  const base64 = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+  return base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+}
+
+function expandCompactConfig(config) {
+  if (!config || config._ !== 'r2') {
+    return config;
+  }
+
+  return removeEmptyUrlFields({
+    rotateMs: config.a,
+    holdOnGiftMs: config.b,
+    labelMs: config.c,
+    visibleNext: config.d,
+    soundsEnabled: config.e === 0 ? false : undefined,
+    theme: expandCompactTheme(config.t),
+    carouselTheme: expandCompactTheme(config.u),
+    rowsTheme: expandCompactTheme(config.v),
+    rowsOverlay: expandCompactRowsOverlay(config.o),
+    rewards: Array.isArray(config.g) ? config.g.map(expandCompactReward) : undefined
+  });
+}
+
+function expandCompactTheme(theme) {
+  if (!theme) {
+    return undefined;
+  }
+
+  return removeEmptyUrlFields({
+    preset: theme.p || 'glass-purple',
+    accent: theme.a,
+    secondary: theme.b,
+    background: theme.c,
+    card: theme.d,
+    text: theme.e,
+    border: theme.f,
+    glow: theme.g,
+    opacity: theme.h,
+    glowStrength: theme.i
+  });
+}
+
+function expandCompactRowsOverlay(rows) {
+  if (!rows) {
+    return undefined;
+  }
+
+  return removeEmptyUrlFields({
+    rows: rows.a,
+    perRow: rows.b,
+    scrollRows: rows.c,
+    directions: rows.d,
+    speeds: rows.e,
+    rowHeight: rows.f,
+    gap: rows.g,
+    names: rows.h === 0 ? false : undefined,
+    soundsEnabled: rows.i === 0 ? false : undefined,
+    gifts: Array.isArray(rows.j) ? rows.j.map(expandCompactRowsGift) : undefined
+  });
+}
+
+function expandCompactRowsGift(gift) {
+  return {
+    ...expandCompactGift(gift),
+    row: gift?.r
+  };
+}
+
+function expandCompactReward(gift) {
+  return {
+    ...expandCompactGift(gift),
+    useGiftImage: gift?.u === 1,
+    giftImageNames: Array.isArray(gift?.x) ? gift.x : [],
+    giftImageIds: Array.isArray(gift?.y) ? gift.y : []
+  };
+}
+
+function expandCompactGift(gift = {}) {
+  return removeEmptyUrlFields({
+    enabled: gift.e === 0 ? false : undefined,
+    title: gift.t,
+    giftNames: Array.isArray(gift.n) ? gift.n : [],
+    giftIds: Array.isArray(gift.i) ? gift.i : [],
+    image: gift.m,
+    sound: gift.s,
+    volume: gift.v
+  });
+}
+
+function removeEmptyUrlFields(value) {
+  Object.keys(value).forEach(key => {
+    if (value[key] === undefined || value[key] === null) {
+      delete value[key];
+    }
+  });
+
+  return value;
 }
 
 function normalizeRewardConfig(config = {}, fallback = {}) {

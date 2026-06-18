@@ -1684,14 +1684,205 @@ function readConfigFromHash() {
   }
 
   try {
-    return JSON.parse(decodeURIComponent(escape(atob(encoded))));
+    return expandCompactConfig(JSON.parse(decodeURIComponent(escape(atob(toBase64(encoded))))));
   } catch {
     return null;
   }
 }
 
 function encodeConfig(config) {
-  return btoa(unescape(encodeURIComponent(JSON.stringify(config))));
+  return btoa(unescape(encodeURIComponent(JSON.stringify(compactConfigForUrl(config)))))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/g, '');
+}
+
+function toBase64(value) {
+  const base64 = String(value || '').replace(/-/g, '+').replace(/_/g, '/');
+  return base64.padEnd(base64.length + ((4 - (base64.length % 4)) % 4), '=');
+}
+
+function compactConfigForUrl(inputConfig) {
+  const config = normalizeConfig(inputConfig || {});
+  return removeEmptyUrlFields({
+    _: 'r2',
+    a: config.rotateMs !== 2600 ? config.rotateMs : undefined,
+    b: config.holdOnGiftMs !== 6500 ? config.holdOnGiftMs : undefined,
+    c: config.labelMs !== 2600 ? config.labelMs : undefined,
+    d: config.visibleNext !== 3 ? config.visibleNext : undefined,
+    e: config.soundsEnabled === false ? 0 : undefined,
+    t: compactThemeForUrl(config.theme),
+    u: compactThemeForUrl(config.carouselTheme),
+    v: compactThemeForUrl(config.rowsTheme),
+    o: compactRowsOverlayForUrl(config.rowsOverlay),
+    g: config.rewards.map(compactRewardForUrl)
+  });
+}
+
+function compactThemeForUrl(theme) {
+  const normalized = normalizeTheme(theme || {});
+  const presetTheme = themePresets[normalized.preset] || defaultTheme;
+  return removeEmptyUrlFields({
+    p: normalized.preset !== 'glass-purple' ? normalized.preset : undefined,
+    a: normalizeHex(normalized.accent, '') !== normalizeHex(presetTheme.accent, '') ? normalized.accent : undefined,
+    b: normalizeHex(normalized.secondary, '') !== normalizeHex(presetTheme.secondary, '') ? normalized.secondary : undefined,
+    c: normalizeHex(normalized.background, '') !== normalizeHex(presetTheme.background, '') ? normalized.background : undefined,
+    d: normalizeHex(normalized.card, '') !== normalizeHex(presetTheme.card, '') ? normalized.card : undefined,
+    e: normalizeHex(normalized.text, '') !== normalizeHex(presetTheme.text, '') ? normalized.text : undefined,
+    f: normalizeHex(normalized.border, '') !== normalizeHex(presetTheme.border, '') ? normalized.border : undefined,
+    g: normalizeHex(normalized.glow, '') !== normalizeHex(presetTheme.glow, '') ? normalized.glow : undefined,
+    h: decimalsMatch(normalized.opacity, presetTheme.opacity) ? undefined : normalized.opacity,
+    i: decimalsMatch(normalized.glowStrength, presetTheme.glowStrength) ? undefined : normalized.glowStrength
+  });
+}
+
+function compactRowsOverlayForUrl(rowsOverlay) {
+  const rows = normalizeRowsOverlay(rowsOverlay || {});
+  return removeEmptyUrlFields({
+    a: rows.rows !== 2 ? rows.rows : undefined,
+    b: rows.perRow !== '6,6' ? rows.perRow : undefined,
+    c: rows.scrollRows || undefined,
+    d: rows.directions !== 'left,left' ? rows.directions : undefined,
+    e: rows.speeds !== '28,28' ? rows.speeds : undefined,
+    f: rows.rowHeight !== 96 ? rows.rowHeight : undefined,
+    g: rows.gap || undefined,
+    h: rows.names === false ? 0 : undefined,
+    i: rows.soundsEnabled === false ? 0 : undefined,
+    j: rows.gifts.map(compactRowsGiftForUrl)
+  });
+}
+
+function compactRowsGiftForUrl(gift) {
+  return compactGiftForUrl(gift, {
+    r: Number.isInteger(Number(gift.row)) ? Number(gift.row) : undefined
+  });
+}
+
+function compactRewardForUrl(reward) {
+  return compactGiftForUrl(reward, {
+    u: reward.useGiftImage ? 1 : undefined,
+    x: reward.giftImageNames?.length ? reward.giftImageNames : undefined,
+    y: reward.giftImageIds?.length ? reward.giftImageIds : undefined
+  });
+}
+
+function compactGiftForUrl(gift, extra = {}) {
+  const catalogMatch = findCatalogEntryForReward(gift);
+  const catalogImage = catalogMatch?.image || '';
+  const image = String(gift.image || '');
+  const names = Array.isArray(gift.giftNames) ? gift.giftNames : [];
+  const ids = Array.isArray(gift.giftIds) ? gift.giftIds : [];
+
+  return removeEmptyUrlFields({
+    t: gift.title,
+    n: names.length ? names : undefined,
+    i: ids.length ? ids : undefined,
+    m: image && image !== catalogImage ? image : undefined,
+    e: gift.enabled === false ? 0 : undefined,
+    s: gift.sound || undefined,
+    v: Number(gift.volume ?? 0.85) !== 0.85 ? gift.volume : undefined,
+    ...extra
+  });
+}
+
+function expandCompactConfig(config) {
+  if (!config || config._ !== 'r2') {
+    return config;
+  }
+
+  return removeEmptyUrlFields({
+    rotateMs: config.a,
+    holdOnGiftMs: config.b,
+    labelMs: config.c,
+    visibleNext: config.d,
+    soundsEnabled: config.e === 0 ? false : undefined,
+    theme: expandCompactTheme(config.t),
+    carouselTheme: expandCompactTheme(config.u),
+    rowsTheme: expandCompactTheme(config.v),
+    rowsOverlay: expandCompactRowsOverlay(config.o),
+    rewards: Array.isArray(config.g) ? config.g.map(expandCompactReward) : undefined
+  });
+}
+
+function expandCompactTheme(theme) {
+  if (!theme) {
+    return undefined;
+  }
+
+  return removeEmptyUrlFields({
+    preset: theme.p || 'glass-purple',
+    accent: theme.a,
+    secondary: theme.b,
+    background: theme.c,
+    card: theme.d,
+    text: theme.e,
+    border: theme.f,
+    glow: theme.g,
+    opacity: theme.h,
+    glowStrength: theme.i
+  });
+}
+
+function expandCompactRowsOverlay(rows) {
+  if (!rows) {
+    return undefined;
+  }
+
+  return removeEmptyUrlFields({
+    rows: rows.a,
+    perRow: rows.b,
+    scrollRows: rows.c,
+    directions: rows.d,
+    speeds: rows.e,
+    rowHeight: rows.f,
+    gap: rows.g,
+    names: rows.h === 0 ? false : undefined,
+    soundsEnabled: rows.i === 0 ? false : undefined,
+    gifts: Array.isArray(rows.j) ? rows.j.map(expandCompactRowsGift) : undefined
+  });
+}
+
+function expandCompactRowsGift(gift) {
+  return {
+    ...expandCompactGift(gift),
+    row: gift?.r
+  };
+}
+
+function expandCompactReward(gift) {
+  return {
+    ...expandCompactGift(gift),
+    useGiftImage: gift?.u === 1,
+    giftImageNames: Array.isArray(gift?.x) ? gift.x : [],
+    giftImageIds: Array.isArray(gift?.y) ? gift.y : []
+  };
+}
+
+function expandCompactGift(gift = {}) {
+  return removeEmptyUrlFields({
+    enabled: gift.e === 0 ? false : undefined,
+    title: gift.t,
+    giftNames: Array.isArray(gift.n) ? gift.n : [],
+    giftIds: Array.isArray(gift.i) ? gift.i : [],
+    image: gift.m,
+    sound: gift.s,
+    volume: gift.v
+  });
+}
+
+function removeEmptyUrlFields(value) {
+  Object.keys(value).forEach(key => {
+    if (value[key] === undefined || value[key] === null) {
+      delete value[key];
+      return;
+    }
+
+    if (typeof value[key] === 'object' && !Array.isArray(value[key]) && Object.keys(value[key]).length === 0) {
+      delete value[key];
+    }
+  });
+
+  return value;
 }
 
 function scheduleOverlayPreviewRefresh() {
