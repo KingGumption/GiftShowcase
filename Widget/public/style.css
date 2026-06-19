@@ -2286,13 +2286,8 @@ button {
 }
 
 .gift-catalog-card {
-  display: grid;
-  grid-template-rows: 56px minmax(24px, auto) auto;
-  gap: 5px;
-  align-items: center;
-  justify-items: center;
+  position: relative;
   min-height: 108px;
-  padding: 8px 6px;
   color: rgba(255, 255, 255, 0.86);
   border: 1px solid rgba(255, 255, 255, 0.12);
   border-radius: 6px;
@@ -2300,6 +2295,47 @@ button {
     linear-gradient(135deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02)),
     rgba(10, 8, 18, 0.72);
   box-shadow: 0 0 8px rgba(0, 0, 0, 0.22);
+}
+
+.gift-catalog-select {
+  display: grid;
+  grid-template-rows: 56px minmax(24px, auto);
+  gap: 5px;
+  align-items: center;
+  justify-items: center;
+  width: 100%;
+  min-height: 106px;
+  padding: 8px 6px;
+  color: inherit;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.gift-favorite-toggle {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.62);
+  font-size: 16px;
+  line-height: 1;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 5px;
+  background: rgba(3, 5, 10, 0.74);
+  cursor: pointer;
+}
+
+.gift-favorite-toggle:hover,
+.gift-catalog-card.is-favorite .gift-favorite-toggle {
+  color: #ffd83d;
+  border-color: rgba(255, 216, 61, 0.48);
+  box-shadow: 0 0 10px rgba(255, 216, 61, 0.22);
 }
 
 .gift-catalog-card:hover,
@@ -2324,16 +2360,6 @@ button {
   font-size: 10px;
   line-height: 1.15;
   text-align: center;
-}
-
-.gift-catalog-card span {
-  width: 100%;
-  overflow: hidden;
-  color: rgba(255, 255, 255, 0.45);
-  font-size: 9px;
-  text-align: center;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
 .gift-catalog-empty {
@@ -2647,8 +2673,12 @@ button {
 }
 
 .rows-gift-board .gift-catalog-card {
-  grid-template-rows: 46px minmax(22px, auto) auto;
   min-height: 92px;
+}
+
+.rows-gift-board .gift-catalog-select {
+  grid-template-rows: 46px minmax(22px, auto);
+  min-height: 90px;
 }
 
 .rows-gift-board .gift-catalog-card img {

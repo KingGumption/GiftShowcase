@@ -1,4 +1,5 @@
 const rewardStorageKey = 'reward-overlay-config:v1';
+const giftFavoritesStorageKey = 'reward-gift-favorites:v1';
 const baseConfig = cloneConfig(window.rewardOverlayConfig || {});
 let draftConfig;
 
@@ -144,6 +145,7 @@ let interactionScrollState = { x: 0, y: 0, focusTarget: null };
 let pageFocusTarget = null;
 let previewRefreshTimer;
 let previewRefreshIndex = 0;
+let giftFavorites = loadGiftFavorites();
 
 draftConfig = loadDraftConfig();
 
@@ -455,6 +457,12 @@ function renderRewardsList() {
         return;
       }
 
+      if (action === 'toggle-gift-favorite') {
+        toggleGiftFavorite(actionButton.dataset.image);
+        populateGiftGrid(editor, draftConfig.rewards[index], editor.querySelector('[data-gift-search]')?.value || '');
+        return;
+      }
+
       if (action === 'play-sound') {
         playSoundPreview(editor, draftConfig.rewards[index]);
         return;
@@ -739,6 +747,12 @@ function createRowsGiftEditor(gift, index) {
 
       if (action === 'select-gift-catalog') {
         applyRowsGiftSelection(index, editor, actionButton.dataset.image);
+        return;
+      }
+
+      if (action === 'toggle-gift-favorite') {
+        toggleGiftFavorite(actionButton.dataset.image);
+        populateGiftGrid(editor, draftConfig.rowsOverlay.gifts[index], editor.querySelector('[data-gift-search]')?.value || '');
         return;
       }
 
@@ -1059,7 +1073,8 @@ function populateGiftGrid(editor, reward, filter = '') {
 
     return normalizeName(haystack).includes(query);
   });
-  const entries = getVisibleGiftEntries(matches, selectedEntry);
+  const sortedMatches = sortGiftEntriesForPicker(matches);
+  const entries = getVisibleGiftEntries(sortedMatches, selectedEntry);
 
   if (!matches.length) {
     grid.innerHTML = '<p class="gift-catalog-empty">No gifts found</p>';
@@ -1068,16 +1083,20 @@ function populateGiftGrid(editor, reward, filter = '') {
 
   grid.innerHTML = entries.map(entry => {
     const selected = entry.image === selectedImage ? ' is-selected' : '';
-    const idText = entry.id || entry.giftId ? `<span>${escapeHtml(entry.id || entry.giftId)}</span>` : '';
+    const favorite = isGiftFavorite(entry.image);
+    const favoriteClass = favorite ? ' is-favorite' : '';
+    const favoriteLabel = favorite ? 'Remove from favourites' : 'Add to favourites';
 
     return `
-      <button data-action="select-gift-catalog" data-image="${escapeAttribute(entry.image)}" type="button" class="gift-catalog-card${selected}" title="${escapeAttribute(entry.label)}">
-        <img src="${escapeAttribute(entry.image)}" alt="" loading="lazy" decoding="async">
-        <strong>${escapeHtml(entry.label)}</strong>
-        ${idText}
-      </button>
+      <div class="gift-catalog-card${selected}${favoriteClass}" title="${escapeAttribute(entry.label)}">
+        <button data-action="toggle-gift-favorite" data-image="${escapeAttribute(entry.image)}" type="button" class="gift-favorite-toggle" title="${favoriteLabel}" aria-label="${favoriteLabel}">${favorite ? '★' : '☆'}</button>
+        <button data-action="select-gift-catalog" data-image="${escapeAttribute(entry.image)}" type="button" class="gift-catalog-select">
+          <img src="${escapeAttribute(entry.image)}" alt="" loading="lazy" decoding="async">
+          <strong>${escapeHtml(entry.label)}</strong>
+        </button>
+      </div>
     `;
-  }).join('') + getGiftGridSummary(matches.length, entries.length);
+  }).join('') + getGiftGridSummary(sortedMatches.length, entries.length);
 }
 
 function getVisibleGiftEntries(matches, selectedEntry) {
@@ -1088,6 +1107,59 @@ function getVisibleGiftEntries(matches, selectedEntry) {
   }
 
   return visible;
+}
+
+function sortGiftEntriesForPicker(entries) {
+  return [...entries].sort((first, second) => {
+    const firstFavorite = isGiftFavorite(first.image) ? 0 : 1;
+    const secondFavorite = isGiftFavorite(second.image) ? 0 : 1;
+
+    if (firstFavorite !== secondFavorite) {
+      return firstFavorite - secondFavorite;
+    }
+
+    return first.label.localeCompare(second.label);
+  });
+}
+
+function getGiftFavoriteKey(imagePath) {
+  return normalizePath(imagePath).toLowerCase();
+}
+
+function isGiftFavorite(imagePath) {
+  return giftFavorites.has(getGiftFavoriteKey(imagePath));
+}
+
+function toggleGiftFavorite(imagePath) {
+  const key = getGiftFavoriteKey(imagePath);
+  const entry = getImageCatalogEntry(imagePath);
+
+  if (!key || !entry) {
+    return;
+  }
+
+  if (giftFavorites.has(key)) {
+    giftFavorites.delete(key);
+    setState(`Removed favourite: ${entry.label}`);
+  } else {
+    giftFavorites.add(key);
+    setState(`Added favourite: ${entry.label}`);
+  }
+
+  saveGiftFavorites();
+}
+
+function loadGiftFavorites() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(giftFavoritesStorageKey) || '[]');
+    return new Set(Array.isArray(saved) ? saved.map(getGiftFavoriteKey).filter(Boolean) : []);
+  } catch {
+    return new Set();
+  }
+}
+
+function saveGiftFavorites() {
+  localStorage.setItem(giftFavoritesStorageKey, JSON.stringify([...giftFavorites]));
 }
 
 function getGiftGridSummary(total, visible) {
