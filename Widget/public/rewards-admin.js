@@ -11,6 +11,7 @@ const holdMs = document.querySelector('#hold-ms');
 const labelMs = document.querySelector('#label-ms');
 const visibleNext = document.querySelector('#visible-next');
 const carouselSounds = document.querySelector('#carousel-sounds');
+const carouselAnimations = document.querySelector('#carousel-animations');
 const rewardTotal = document.querySelector('#reward-total');
 const rewardEnabled = document.querySelector('#reward-enabled');
 const rowsGiftList = document.querySelector('#rows-gift-list');
@@ -27,10 +28,13 @@ const rowsHeight = document.querySelector('#rows-height');
 const rowsGap = document.querySelector('#rows-gap');
 const rowsNames = document.querySelector('#rows-names');
 const rowsSounds = document.querySelector('#rows-sounds');
+const rowsAnimations = document.querySelector('#rows-animations');
 const addRewardButton = document.querySelector('#add-reward');
 const copyCarouselUrlButton = document.querySelector('#copy-carousel-url');
 const copyRowsUrlButton = document.querySelector('#copy-rows-url');
 const copyConfigUrlButton = document.querySelector('#copy-config-url');
+const loadConfigUrlInput = document.querySelector('#load-config-url');
+const loadConfigUrlButton = document.querySelector('#load-config-url-button');
 const carouselPreview = document.querySelector('#carousel-preview');
 const rowsPreview = document.querySelector('#rows-preview');
 const carouselPreviewTest = document.querySelector('#carousel-preview-test');
@@ -248,20 +252,27 @@ document.querySelector('#export-config').addEventListener('click', exportConfig)
 copyCarouselUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards.html', 'Carousel URL copied'));
 copyRowsUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards-rows.html', 'Rows URL copied'));
 copyConfigUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards-config.html', 'Config URL copied'));
+loadConfigUrlButton.addEventListener('click', loadConfigFromUrlInput);
+loadConfigUrlInput.addEventListener('keydown', event => {
+  if (event.key === 'Enter') {
+    event.preventDefault();
+    loadConfigFromUrlInput();
+  }
+});
 document.querySelector('#reset-config').addEventListener('click', resetConfig);
 
 tabButtons.forEach(button => {
   button.addEventListener('click', () => setActiveTab(button.dataset.configTab));
 });
 
-[rotateMs, holdMs, labelMs, visibleNext, carouselSounds].forEach(input => {
+[rotateMs, holdMs, labelMs, visibleNext, carouselSounds, carouselAnimations].forEach(input => {
   input.addEventListener('input', () => {
     updateGlobalsFromForm();
     markDirty();
   });
 });
 
-[rowsCount, rowsPerRow, rowsScrolling, rowsDirections, rowsSpeeds, rowsHeight, rowsGap, rowsNames, rowsSounds].forEach(input => {
+[rowsCount, rowsPerRow, rowsScrolling, rowsDirections, rowsSpeeds, rowsHeight, rowsGap, rowsNames, rowsSounds, rowsAnimations].forEach(input => {
   input.addEventListener('input', () => {
     updateRowsFromForm();
     markDirty();
@@ -378,6 +389,7 @@ function render() {
   labelMs.value = draftConfig.labelMs;
   visibleNext.value = draftConfig.visibleNext;
   carouselSounds.value = draftConfig.soundsEnabled === false ? '0' : '1';
+  carouselAnimations.value = draftConfig.animationsEnabled === false ? '0' : '1';
   rowsCount.value = draftConfig.rowsOverlay.rows;
   rowsPerRow.value = draftConfig.rowsOverlay.perRow;
   rowsScrolling.value = draftConfig.rowsOverlay.scrollRows;
@@ -387,6 +399,7 @@ function render() {
   rowsGap.value = draftConfig.rowsOverlay.gap;
   rowsNames.value = draftConfig.rowsOverlay.names ? '1' : '0';
   rowsSounds.value = draftConfig.rowsOverlay.soundsEnabled === false ? '0' : '1';
+  rowsAnimations.value = draftConfig.rowsOverlay.animationsEnabled === false ? '0' : '1';
   renderThemeForm();
   rewardList.innerHTML = '';
   rowsGiftList.innerHTML = '';
@@ -416,6 +429,12 @@ function renderRewardsList() {
     // Setup header
     editor.querySelector('[data-field="enabled"]').checked = reward.enabled !== false;
     editor.querySelector('[data-field="title"]').value = reward.title;
+    editor.querySelector('[data-field="triggerType"]').value = reward.triggerType;
+    editor.querySelector('[data-field="likesRequired"]').value = reward.likesRequired;
+    editor.querySelector('[data-field="likesHeartColor"]').value = reward.likesHeartColor;
+    editor.querySelector('[data-field="likesNumberColor"]').value = reward.likesNumberColor;
+    editor.querySelector('[data-field="likesHeartSize"]').value = reward.likesHeartSize;
+    editor.querySelector('[data-field="likesNumberSize"]').value = reward.likesNumberSize;
 
     // Setup form fields
     editor.querySelector('[data-field="giftNames"]').value = reward.giftNames.join(', ');
@@ -425,6 +444,7 @@ function renderRewardsList() {
     editor.querySelector('[data-field="sound"]').value = reward.sound;
     editor.querySelector('[data-field="volume"]').value = reward.volume;
     populateGiftGrid(editor, reward);
+    updateTriggerFields(editor, reward);
     alignAudioPreview(editor);
 
     // Setup preview
@@ -441,7 +461,7 @@ function renderRewardsList() {
         updateRewardFromEditor(index, editor);
         markDirty();
         updateEditorState(editor, draftConfig.rewards[index]);
-        if (event.target.matches('[data-field="image"], [data-field="sound"], [data-field="volume"]')) {
+        if (event.target.matches('[data-field="image"], [data-field="sound"], [data-field="volume"], [data-field="triggerType"], [data-field^="likes"]')) {
           updatePreview(editor, draftConfig.rewards[index]);
         }
       }
@@ -713,6 +733,12 @@ function createRowsGiftEditor(gift, index) {
     editor.querySelector('.reward-number').textContent = String(index + 1);
     editor.querySelector('[data-field="enabled"]').checked = gift.enabled !== false;
     editor.querySelector('[data-field="title"]').value = gift.title;
+    editor.querySelector('[data-field="triggerType"]').value = gift.triggerType;
+    editor.querySelector('[data-field="likesRequired"]').value = gift.likesRequired;
+    editor.querySelector('[data-field="likesHeartColor"]').value = gift.likesHeartColor;
+    editor.querySelector('[data-field="likesNumberColor"]').value = gift.likesNumberColor;
+    editor.querySelector('[data-field="likesHeartSize"]').value = gift.likesHeartSize;
+    editor.querySelector('[data-field="likesNumberSize"]').value = gift.likesNumberSize;
     editor.querySelector('[data-field="giftNames"]').value = gift.giftNames.join(', ');
     editor.querySelector('[data-field="giftIds"]').value = gift.giftIds.join(', ');
     editor.querySelector('[data-field="image"]').value = gift.image;
@@ -721,6 +747,7 @@ function createRowsGiftEditor(gift, index) {
     editor.querySelector('[data-field="volume"]').value = gift.volume;
 
     populateGiftGrid(editor, gift);
+    updateTriggerFields(editor, gift);
     alignAudioPreview(editor);
     updatePreview(editor, gift);
 
@@ -734,7 +761,7 @@ function createRowsGiftEditor(gift, index) {
         updateRowsGiftFromEditor(index, editor);
         markDirty();
         updateEditorState(editor, draftConfig.rowsOverlay.gifts[index]);
-        if (event.target.matches('[data-field="image"], [data-field="sound"], [data-field="volume"]')) {
+        if (event.target.matches('[data-field="image"], [data-field="sound"], [data-field="volume"], [data-field="triggerType"], [data-field^="likes"]')) {
           updatePreview(editor, draftConfig.rowsOverlay.gifts[index]);
         }
       }
@@ -930,13 +957,14 @@ function seedImageCatalog() {
 
 function updatePreview(editor, reward) {
   const imagePreview = editor.querySelector('[data-preview="image"]');
+  const displayImage = getTriggerIcon(reward) || reward.image;
   imagePreview.onload = () => {
     imagePreview.alt = 'Reward image';
     imagePreview.style.opacity = '1';
   };
 
-  if (reward.image) {
-    imagePreview.src = reward.image;
+  if (displayImage) {
+    imagePreview.src = displayImage;
     imagePreview.onerror = () => {
       imagePreview.alt = 'Image not found';
       imagePreview.style.opacity = '0.4';
@@ -1326,6 +1354,7 @@ function updateGlobalsFromForm() {
   draftConfig.labelMs = numberOrDefault(labelMs.value, 2600);
   draftConfig.visibleNext = clamp(numberOrDefault(visibleNext.value, 3), 0, 3);
   draftConfig.soundsEnabled = carouselSounds.value !== '0';
+  draftConfig.animationsEnabled = carouselAnimations.value !== '0';
   updateThemeFromForm();
 }
 
@@ -1340,6 +1369,7 @@ function updateRowsFromForm() {
     gap: rowsGap.value,
     names: rowsNames.value !== '0',
     soundsEnabled: rowsSounds.value !== '0',
+    animationsEnabled: rowsAnimations.value !== '0',
     gifts: draftConfig.rowsOverlay.gifts
   });
   ensureRowsGiftRows();
@@ -1427,6 +1457,12 @@ function updateRewardFromEditor(index, editor) {
   const reward = draftConfig.rewards[index];
   reward.enabled = editor.querySelector('[data-field="enabled"]').checked;
   reward.title = editor.querySelector('[data-field="title"]').value.trim() || 'Reward';
+  reward.triggerType = normalizeTriggerType(editor.querySelector('[data-field="triggerType"]').value);
+  reward.likesRequired = clamp(Math.floor(Number(editor.querySelector('[data-field="likesRequired"]').value) || 50), 1, 1000000000);
+  reward.likesHeartColor = normalizeHex(editor.querySelector('[data-field="likesHeartColor"]').value, '#ef233c');
+  reward.likesNumberColor = normalizeHex(editor.querySelector('[data-field="likesNumberColor"]').value, '#ffffff');
+  reward.likesHeartSize = clamp(Math.floor(Number(editor.querySelector('[data-field="likesHeartSize"]').value) || 160), 40, 160);
+  reward.likesNumberSize = clamp(Math.floor(Number(editor.querySelector('[data-field="likesNumberSize"]').value) || 96), 16, 96);
   reward.giftNames = splitList(editor.querySelector('[data-field="giftNames"]').value);
   reward.giftIds = splitList(editor.querySelector('[data-field="giftIds"]').value);
   reward.image = editor.querySelector('[data-field="image"]').value.trim();
@@ -1435,6 +1471,7 @@ function updateRewardFromEditor(index, editor) {
   reward.useGiftImage = false;
   reward.giftImageNames = [];
   reward.giftImageIds = [];
+  updateTriggerFields(editor, reward);
 
   // Propagate title changes to any matching rows overlay gifts so rows names stay in sync.
   if (draftConfig.rowsOverlay && Array.isArray(draftConfig.rowsOverlay.gifts)) {
@@ -1449,7 +1486,7 @@ function updateRewardFromEditor(index, editor) {
         const idMatch = giftIds.some(id => rewardIds.includes(id));
         const nameMatch = giftNames.some(name => rewardNames.includes(name));
 
-        if (idMatch || nameMatch) {
+        if (reward.triggerType === 'gift' && normalizeTriggerType(gift.triggerType) === 'gift' && (idMatch || nameMatch)) {
           gift.title = reward.title;
         }
       });
@@ -1470,7 +1507,7 @@ function updateRewardFromEditor(index, editor) {
       const idMatch = giftIds.some(id => (reward.giftIds || []).map(normalizeId).includes(id));
       const nameMatch = giftNames.some(n => (reward.giftNames || []).map(normalizeName).includes(n));
 
-      if (idMatch || nameMatch) {
+      if (reward.triggerType === 'gift' && normalizeTriggerType(gift.triggerType) === 'gift' && (idMatch || nameMatch)) {
         const titleInput = editor.querySelector('[data-field="title"]');
         if (titleInput) titleInput.value = reward.title;
         updateEditorState(editor, gift);
@@ -1500,12 +1537,34 @@ function updateRowsGiftFromEditor(index, editor) {
   const gift = draftConfig.rowsOverlay.gifts[index];
   gift.enabled = editor.querySelector('[data-field="enabled"]').checked;
   gift.title = editor.querySelector('[data-field="title"]').value.trim() || 'Row Gift';
+  gift.triggerType = normalizeTriggerType(editor.querySelector('[data-field="triggerType"]').value);
+  gift.likesRequired = clamp(Math.floor(Number(editor.querySelector('[data-field="likesRequired"]').value) || 50), 1, 1000000000);
+  gift.likesHeartColor = normalizeHex(editor.querySelector('[data-field="likesHeartColor"]').value, '#ef233c');
+  gift.likesNumberColor = normalizeHex(editor.querySelector('[data-field="likesNumberColor"]').value, '#ffffff');
+  gift.likesHeartSize = clamp(Math.floor(Number(editor.querySelector('[data-field="likesHeartSize"]').value) || 160), 40, 160);
+  gift.likesNumberSize = clamp(Math.floor(Number(editor.querySelector('[data-field="likesNumberSize"]').value) || 96), 16, 96);
   gift.giftNames = splitList(editor.querySelector('[data-field="giftNames"]').value);
   gift.giftIds = splitList(editor.querySelector('[data-field="giftIds"]').value);
   gift.image = editor.querySelector('[data-field="image"]').value.trim();
   gift.sound = editor.querySelector('[data-field="sound"]').value.trim();
   gift.volume = clamp(Number(editor.querySelector('[data-field="volume"]').value), 0, 1);
   gift.row = clamp(Number(gift.row || 1), 1, draftConfig.rowsOverlay.rows);
+  updateTriggerFields(editor, gift);
+}
+
+function updateTriggerFields(editor, item) {
+  const triggerType = normalizeTriggerType(item?.triggerType);
+  editor.dataset.triggerType = triggerType;
+  const likesField = editor.querySelector('[data-likes-settings]');
+  const imageFields = editor.querySelector('[data-gift-search]')?.closest('.config-field-group');
+
+  if (likesField) {
+    likesField.hidden = triggerType !== 'likes';
+  }
+
+  if (imageFields) {
+    imageFields.hidden = triggerType !== 'gift';
+  }
 }
 
 function handleRewardAction(action, index) {
@@ -1573,6 +1632,12 @@ function insertReward(index) {
   draftConfig.rewards.splice(index, 0, {
     enabled: false,
     title: 'New Reward',
+    triggerType: 'gift',
+    likesRequired: 50,
+    likesHeartColor: '#ef233c',
+    likesNumberColor: '#ffffff',
+    likesHeartSize: 160,
+    likesNumberSize: 96,
     giftNames: [],
     giftIds: [],
     image: '',
@@ -1591,6 +1656,12 @@ function addRowGift(row = draftConfig.rowsOverlay.rows) {
   draftConfig.rowsOverlay.gifts.push({
     enabled: true,
     title: 'New Row Gift',
+    triggerType: 'gift',
+    likesRequired: 50,
+    likesHeartColor: '#ef233c',
+    likesNumberColor: '#ffffff',
+    likesHeartSize: 160,
+    likesNumberSize: 96,
     giftNames: [],
     giftIds: [],
     image: '',
@@ -1695,6 +1766,28 @@ function copyOverlayUrl(page, successText) {
   });
 }
 
+function loadConfigFromUrlInput() {
+  const value = loadConfigUrlInput.value.trim();
+  if (!value) {
+    setState('Paste a config URL first');
+    loadConfigUrlInput.focus();
+    return;
+  }
+
+  const loadedConfig = readConfigFromUrl(value);
+  if (!loadedConfig) {
+    setState('Could not find a valid config in that URL');
+    loadConfigUrlInput.select();
+    return;
+  }
+
+  draftConfig = normalizeConfig(loadedConfig);
+  ensureRowsGiftDefaults();
+  applyThemeToDocument(getCarouselTheme());
+  render();
+  setState('✓ URL loaded — unsaved changes');
+}
+
 function getUrlForPage(page, config = draftConfig, options = {}) {
   const url = new URL(window.location.href);
   const pathParts = url.pathname.split('/');
@@ -1751,6 +1844,26 @@ function copyText(text) {
 function readConfigFromHash() {
   const encoded = new URLSearchParams(window.location.hash.slice(1)).get('config');
 
+  return decodeConfigValue(encoded);
+}
+
+function readConfigFromUrl(value) {
+  try {
+    const url = new URL(value, window.location.href);
+    const encoded = new URLSearchParams(url.hash.slice(1)).get('config');
+    if (encoded) {
+      return decodeConfigValue(encoded);
+    }
+  } catch {
+    // Fall through to accepting a copied hash or encoded config value.
+  }
+
+  const text = String(value || '').trim().replace(/^#/, '');
+  const encoded = new URLSearchParams(text).get('config') || text;
+  return decodeConfigValue(encoded);
+}
+
+function decodeConfigValue(encoded) {
   if (!encoded) {
     return null;
   }
@@ -1783,6 +1896,7 @@ function compactConfigForUrl(inputConfig) {
     c: config.labelMs !== 2600 ? config.labelMs : undefined,
     d: config.visibleNext !== 3 ? config.visibleNext : undefined,
     e: config.soundsEnabled === false ? 0 : undefined,
+    f: config.animationsEnabled === false ? 0 : undefined,
     t: compactThemeForUrl(config.theme),
     u: compactThemeForUrl(config.carouselTheme),
     v: compactThemeForUrl(config.rowsTheme),
@@ -1820,6 +1934,7 @@ function compactRowsOverlayForUrl(rowsOverlay) {
     g: rows.gap || undefined,
     h: rows.names === false ? 0 : undefined,
     i: rows.soundsEnabled === false ? 0 : undefined,
+    k: rows.animationsEnabled === false ? 0 : undefined,
     j: rows.gifts.map(compactRowsGiftForUrl)
   });
 }
@@ -1853,6 +1968,12 @@ function compactGiftForUrl(gift, extra = {}) {
     e: gift.enabled === false ? 0 : undefined,
     s: gift.sound || undefined,
     v: Number(gift.volume ?? 0.85) !== 0.85 ? gift.volume : undefined,
+    q: normalizeTriggerType(gift.triggerType) !== 'gift' ? normalizeTriggerType(gift.triggerType) : undefined,
+    l: normalizeTriggerType(gift.triggerType) === 'likes' ? gift.likesRequired : undefined,
+    j: normalizeTriggerType(gift.triggerType) === 'likes' && gift.likesHeartColor !== '#ef233c' ? gift.likesHeartColor : undefined,
+    k: normalizeTriggerType(gift.triggerType) === 'likes' && gift.likesNumberColor !== '#ffffff' ? gift.likesNumberColor : undefined,
+    o: normalizeTriggerType(gift.triggerType) === 'likes' && gift.likesHeartSize !== 160 ? gift.likesHeartSize : undefined,
+    p: normalizeTriggerType(gift.triggerType) === 'likes' && gift.likesNumberSize !== 96 ? gift.likesNumberSize : undefined,
     ...extra
   });
 }
@@ -1868,6 +1989,7 @@ function expandCompactConfig(config) {
     labelMs: config.c,
     visibleNext: config.d,
     soundsEnabled: config.e === 0 ? false : undefined,
+    animationsEnabled: config.f === 0 ? false : undefined,
     theme: expandCompactTheme(config.t),
     carouselTheme: expandCompactTheme(config.u),
     rowsTheme: expandCompactTheme(config.v),
@@ -1910,6 +2032,7 @@ function expandCompactRowsOverlay(rows) {
     gap: rows.g,
     names: rows.h === 0 ? false : undefined,
     soundsEnabled: rows.i === 0 ? false : undefined,
+    animationsEnabled: rows.k === 0 ? false : undefined,
     gifts: Array.isArray(rows.j) ? rows.j.map(expandCompactRowsGift) : undefined
   });
 }
@@ -1938,7 +2061,13 @@ function expandCompactGift(gift = {}) {
     giftIds: Array.isArray(gift.i) ? gift.i : [],
     image: gift.m,
     sound: gift.s,
-    volume: gift.v
+    volume: gift.v,
+    triggerType: gift.q,
+    likesRequired: gift.l,
+    likesHeartColor: gift.j,
+    likesNumberColor: gift.k,
+    likesHeartSize: gift.o,
+    likesNumberSize: gift.p
   });
 }
 
@@ -2020,6 +2149,7 @@ function normalizeConfig(config) {
     labelMs: numberOrDefault(config.labelMs, 2600),
     visibleNext: clamp(numberOrDefault(config.visibleNext, 3), 0, 3),
     soundsEnabled: config.soundsEnabled !== false,
+    animationsEnabled: config.animationsEnabled !== false,
     theme: normalizeTheme(themeSource),
     carouselTheme: normalizeTheme(carouselThemeSource),
     rowsTheme: normalizeTheme(rowsThemeSource),
@@ -2172,6 +2302,7 @@ function normalizeRowsOverlay(config) {
     gap: clamp(numberOrDefault(migratedGap, 0), 0, 32),
     names: config.names !== false,
     soundsEnabled: config.soundsEnabled !== false,
+    animationsEnabled: config.animationsEnabled !== false,
     gifts: gifts.map(normalizeRowsGift)
   };
 }
@@ -2195,9 +2326,16 @@ function getDefaultRowsGifts() {
 }
 
 function normalizeRowsGift(gift) {
+  const triggerType = normalizeTriggerType(gift.triggerType);
   return {
     enabled: gift.enabled !== false,
     title: String(gift.title || gift.name || 'Row Gift'),
+    triggerType,
+    likesRequired: clamp(Math.floor(numberOrDefault(gift.likesRequired, 50)), 1, 1000000000),
+    likesHeartColor: normalizeHex(gift.likesHeartColor, '#ef233c'),
+    likesNumberColor: normalizeHex(gift.likesNumberColor, '#ffffff'),
+    likesHeartSize: clamp(Math.floor(numberOrDefault(gift.likesHeartSize, 160)), 40, 160),
+    likesNumberSize: clamp(Math.floor(numberOrDefault(gift.likesNumberSize, 96)), 16, 96),
     giftNames: Array.isArray(gift.giftNames) ? gift.giftNames.map(String) : [],
     giftIds: Array.isArray(gift.giftIds) ? gift.giftIds.map(normalizeId).filter(Boolean) : [],
     image: getCatalogImageForReward(gift),
@@ -2208,9 +2346,16 @@ function normalizeRowsGift(gift) {
 }
 
 function normalizeReward(reward) {
+  const triggerType = normalizeTriggerType(reward.triggerType);
   return {
     enabled: reward.enabled !== false,
     title: String(reward.title || 'Reward'),
+    triggerType,
+    likesRequired: clamp(Math.floor(numberOrDefault(reward.likesRequired, 50)), 1, 1000000000),
+    likesHeartColor: normalizeHex(reward.likesHeartColor, '#ef233c'),
+    likesNumberColor: normalizeHex(reward.likesNumberColor, '#ffffff'),
+    likesHeartSize: clamp(Math.floor(numberOrDefault(reward.likesHeartSize, 160)), 40, 160),
+    likesNumberSize: clamp(Math.floor(numberOrDefault(reward.likesNumberSize, 96)), 16, 96),
     giftNames: Array.isArray(reward.giftNames) ? reward.giftNames.map(String) : [],
     giftIds: Array.isArray(reward.giftIds) ? reward.giftIds.map(normalizeId).filter(Boolean) : [],
     image: getCatalogImageForReward(reward),
@@ -2238,6 +2383,31 @@ function normalizeCsv(value, fallback) {
 
 function normalizeName(name) {
   return String(name || '').trim().toLowerCase();
+}
+
+function normalizeTriggerType(value) {
+  const type = String(value || '').trim().toLowerCase();
+  return type === 'follow' || type === 'likes' ? type : 'gift';
+}
+
+function getTriggerIcon(item) {
+  const type = normalizeTriggerType(item?.triggerType || item);
+  if (type === 'gift') {
+    return '';
+  }
+
+  const isFollow = type === 'follow';
+  const likes = Math.max(1, Math.floor(Number(item?.likesRequired || 50)));
+  const heartColor = normalizeHex(item?.likesHeartColor, '#ef233c');
+  const numberColor = normalizeHex(item?.likesNumberColor, '#ffffff');
+  const heartScale = clamp(Number(item?.likesHeartSize || 160), 40, 160) / 100;
+  const numberSize = clamp(Number(item?.likesNumberSize || 96), 16, 96);
+  const canvasWidth = Math.max(300, Math.ceil(180 + (String(likes).length * numberSize * 0.68)));
+  const svg = isFollow
+    ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 104"><circle cx="42" cy="31" r="17" fill="#25f4ee"/><path d="M13 86c2-24 14-37 29-37s27 13 29 37" fill="#25f4ee"/><circle cx="78" cy="61" r="20" fill="#fe2c55"/><path d="M78 49v24M66 61h24" stroke="white" stroke-width="7" stroke-linecap="round"/></svg>'
+    : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvasWidth} 160"><g transform="translate(40 27)"><g transform="translate(50 53) scale(${heartScale}) translate(-50 -53)"><path d="M50 91C21 73 8 58 8 40c0-14 10-24 24-24 8 0 15 4 18 11 3-7 10-11 18-11 14 0 24 10 24 24 0 18-13 33-42 51Z" fill="${heartColor}"/></g></g><text x="180" y="80" fill="${numberColor}" font-family="Arial, sans-serif" font-size="${numberSize}" font-weight="800" dominant-baseline="middle">${likes}</text></svg>`;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 function normalizeId(id) {

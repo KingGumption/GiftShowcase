@@ -27,6 +27,15 @@
         </div>
       </header>
 
+      <section class="config-url-loader" aria-label="Load a previously created configuration">
+        <label for="load-config-url">Load Previous Config URL</label>
+        <div class="config-url-loader-controls">
+          <input id="load-config-url" type="url" placeholder="Paste a carousel, rows, or config URL here">
+          <button id="load-config-url-button" type="button" class="btn-primary">Load URL</button>
+        </div>
+        <span class="field-hint">Loads the settings into this editor without saving over your browser config.</span>
+      </section>
+
       <nav class="config-tabs" aria-label="Reward config views">
         <button data-config-tab="original" type="button" class="is-active">Gift Carousel</button>
         <button data-config-tab="rows" type="button">Rows Overlay</button>
@@ -70,6 +79,14 @@
               <option value="0">Sounds off</option>
             </select>
             <span class="field-hint">Master sound toggle for carousel rewards</span>
+          </div>
+          <div class="config-field">
+            <label for="carousel-animations">Received Gift Animations</label>
+            <select id="carousel-animations">
+              <option value="1">Animations on</option>
+              <option value="0">Animations off</option>
+            </select>
+            <span class="field-hint">Toggle hit and hold animations for received rewards</span>
           </div>
         </div>
       </details>
@@ -235,6 +252,14 @@
             </select>
             <span class="field-hint">Master sound toggle for row gifts</span>
           </div>
+          <div class="config-field">
+            <label for="rows-animations">Received Gift Animations</label>
+            <select id="rows-animations">
+              <option value="1">Animations on</option>
+              <option value="0">Animations off</option>
+            </select>
+            <span class="field-hint">Toggle hit and focus animations for received row gifts</span>
+          </div>
         </div>
       </details>
 
@@ -392,12 +417,47 @@
           </div>
 
           <div class="reward-editor-form">
+            <div class="config-field-group reward-trigger-fields">
+              <div class="config-field">
+                <label>Triggered By</label>
+                <select data-field="triggerType">
+                  <option value="gift">TikTok Gift</option>
+                  <option value="follow">TikTok Follow</option>
+                  <option value="likes">TikTok Likes</option>
+                </select>
+                <span class="field-hint">Choose the TikTok event that activates this card</span>
+              </div>
+              <div class="config-field-group" data-likes-settings hidden>
+                <div class="config-field">
+                  <label>Likes Required</label>
+                  <input data-field="likesRequired" type="number" min="1" step="1" value="50">
+                  <span class="field-hint">Triggers again for every completed amount, e.g. every 50 likes</span>
+                </div>
+                <div class="config-field">
+                  <label>Heart Colour</label>
+                  <input data-field="likesHeartColor" type="color" value="#ef233c">
+                </div>
+                <div class="config-field">
+                  <label>Number Colour</label>
+                  <input data-field="likesNumberColor" type="color" value="#ffffff">
+                </div>
+                <div class="config-field">
+                  <label>Heart Size (%)</label>
+                  <input data-field="likesHeartSize" type="number" min="40" max="160" step="5" value="160">
+                </div>
+                <div class="config-field">
+                  <label>Number Size</label>
+                  <input data-field="likesNumberSize" type="number" min="16" max="96" step="1" value="96">
+                </div>
+              </div>
+            </div>
+
             <div class="config-field-group">
               <div class="config-field">
-                <label>Gift</label>
+                <label>Card Image</label>
                 <input data-gift-search type="search" placeholder="Search gift catalogue">
                 <div data-gift-grid class="gift-catalog-grid" aria-label="Gift catalogue"></div>
-                <span class="field-hint">Pick a gift by image/name; trigger fields fill automatically</span>
+                <span class="field-hint">For TikTok Gift triggers, the selected gift also becomes the trigger</span>
               </div>
               <input data-field="giftNames" type="hidden">
               <input data-field="giftIds" type="hidden">

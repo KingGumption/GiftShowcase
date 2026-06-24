@@ -33,11 +33,13 @@ let isPresentingGift = false;
 let pendingSoundReward = null;
 let audioUnlocked = false;
 let rewardAudio = new Map();
+let receivedLikeCount = 0;
 
 const streakSettleDelay = 2400;
 const rewardTransitionMs = 820;
 
 applyThemeToDocument(rewardConfig.carouselTheme || rewardConfig.theme);
+rewardWidget.classList.toggle('received-animations-disabled', rewardConfig.animationsEnabled === false);
 renderRewards();
 setVisibleRewardCount();
 setInitialReward(0);
@@ -110,6 +112,7 @@ function expandCompactConfig(config) {
     labelMs: config.c,
     visibleNext: config.d,
     soundsEnabled: config.e === 0 ? false : undefined,
+    animationsEnabled: config.f === 0 ? false : undefined,
     theme: expandCompactTheme(config.t),
     carouselTheme: expandCompactTheme(config.u),
     rowsTheme: expandCompactTheme(config.v),
@@ -152,6 +155,7 @@ function expandCompactRowsOverlay(rows) {
     gap: rows.g,
     names: rows.h === 0 ? false : undefined,
     soundsEnabled: rows.i === 0 ? false : undefined,
+    animationsEnabled: rows.k === 0 ? false : undefined,
     gifts: Array.isArray(rows.j) ? rows.j.map(expandCompactRowsGift) : undefined
   });
 }
@@ -180,7 +184,13 @@ function expandCompactGift(gift = {}) {
     giftIds: Array.isArray(gift.i) ? gift.i : [],
     image: gift.m,
     sound: gift.s,
-    volume: gift.v
+    volume: gift.v,
+    triggerType: gift.q,
+    likesRequired: gift.l,
+    likesHeartColor: gift.j,
+    likesNumberColor: gift.k,
+    likesHeartSize: gift.o,
+    likesNumberSize: gift.p
   });
 }
 
@@ -362,11 +372,11 @@ function connect() {
 
   ws.addEventListener('message', event => {
     const message = parseMessage(event.data);
-    if (!message || String(message.event || '').toLowerCase() !== 'gift') {
+    if (!message) {
       return;
     }
 
-    handleGiftEvent(message.data || {});
+    handleTikTokEvent(String(message.event || '').toLowerCase(), message.data || {});
   });
 
   ws.addEventListener('close', () => {
@@ -376,11 +386,76 @@ function connect() {
   });
 }
 
+function handleTikTokEvent(eventName, data) {
+  if (eventName === 'gift') {
+    handleGiftEvent(data);
+    return;
+  }
+
+  if (eventName === 'follow') {
+    applyEventReward('follow', data, 1);
+    return;
+  }
+
+  if (eventName === 'like') {
+    const increment = getLikeIncrement(data);
+    if (increment > 0) {
+      receivedLikeCount += increment;
+      applyEventReward('likes', data, increment);
+    }
+  }
+}
+
+function applyEventReward(triggerType, data, increment) {
+  rewards.forEach((reward, rewardIndex) => {
+    if (reward.triggerType !== triggerType) {
+      return;
+    }
+
+    if (triggerType === 'likes') {
+      const previousTotal = receivedLikeCount - increment;
+      const previousMilestone = Math.floor(previousTotal / reward.likesRequired);
+      const currentMilestone = Math.floor(receivedLikeCount / reward.likesRequired);
+
+      for (let milestone = previousMilestone; milestone < currentMilestone; milestone += 1) {
+        applyGift({
+          supporter: getSupporterName(data, 'TikTok viewers'),
+          giftName: reward.title,
+          giftId: '',
+          imageUrl: '',
+          triggerType,
+          rewardIndex,
+          streakKey: `likes|${rewardIndex}|${milestone + 1}`
+        });
+      }
+      return;
+    }
+
+    applyGift({
+      supporter: getSupporterName(data, 'New follower'),
+      giftName: reward.title,
+      giftId: '',
+      imageUrl: '',
+      triggerType,
+      rewardIndex,
+      streakKey: `${triggerType}|${rewardIndex}|${Date.now()}`
+    });
+  });
+}
+
+function getLikeIncrement(data) {
+  return Math.max(0, Math.floor(Number(data.likeCount || data.likes || data.count || 0)));
+}
+
+function getSupporterName(data, fallback) {
+  return data.user?.nickname || data.user?.uniqueId || data.nickname || data.uniqueId || data.username || fallback;
+}
+
 function renderRewards() {
   const loopedRewards = Array.from({ length: 5 }, () => rewards).flat();
 
   rewardTrack.innerHTML = loopedRewards.map((reward, index) => `
-    <article class="reward-card" data-reward-index="${index % rewards.length}">
+    <article class="reward-card reward-trigger-${escapeAttribute(reward.triggerType)}" data-reward-index="${index % rewards.length}">
       <div class="reward-image">
         ${getRewardImageMarkup(reward)}
       </div>
@@ -444,8 +519,10 @@ function advanceToReward(index, giftEvent = null) {
   clearTimeout(hitTimer);
   clearTimeout(labelTimer);
   rewardWidget.classList.remove('reward-hit');
-  void rewardWidget.offsetWidth;
-  rewardWidget.classList.add('reward-hit');
+  if (rewardConfig.animationsEnabled !== false) {
+    void rewardWidget.offsetWidth;
+    rewardWidget.classList.add('reward-hit');
+  }
 
   rewardGifter.textContent = giftEvent.supporter;
   rewardAction.textContent = reward.title;
@@ -545,7 +622,9 @@ function presentGift({ gift, rewardIndex }) {
   updateRewardGiftImage(rewardIndex, gift);
   advanceToReward(rewardIndex, gift);
   playRewardSound(rewards[rewardIndex]);
-  rewardWidget.classList.add('reward-hold');
+  if (rewardConfig.animationsEnabled !== false) {
+    rewardWidget.classList.add('reward-hold');
+  }
 
   presentationTimer = setTimeout(resumeRotation, holdOnGiftMs);
 }
@@ -661,6 +740,8 @@ function startTestMode() {
       giftName,
       giftId,
       imageUrl: reward.useGiftImage ? getTestGiftImage(reward, testIndex) : '',
+      triggerType: reward.triggerType,
+      rewardIndex: rewards.indexOf(reward),
       streakKey: `test|${giftId || giftName}`
     });
 
@@ -689,12 +770,15 @@ function setupGiftSimulator() {
     const reward = rewards[rewardIndex !== -1 ? rewardIndex : Math.max(fallbackIndex, 0)];
     const giftName = options.giftName || options.name || reward.giftNames[0] || reward.title;
     const giftId = options.giftId || options.id || reward.giftIds[0] || '';
+    const triggerType = normalizeTriggerType(options.triggerType || options.trigger || reward.triggerType);
 
     applyGift({
       supporter: options.supporter || options.user || 'Test Gifter',
       giftName,
       giftId,
       imageUrl: options.imageUrl || options.image || '',
+      triggerType,
+      rewardIndex: rewards.indexOf(reward),
       streakKey: `manual|${giftId || giftName}`
     });
 
@@ -762,7 +846,15 @@ function shouldUseGiftImage(reward, gift) {
 }
 
 function findRewardIndex(gift) {
+  if (Number.isInteger(gift.rewardIndex) && rewards[gift.rewardIndex]?.triggerType === gift.triggerType) {
+    return gift.rewardIndex;
+  }
+
   return rewards.findIndex(reward => {
+    if (reward.triggerType !== 'gift') {
+      return false;
+    }
+
     const giftId = normalizeId(gift.giftId);
     const giftName = normalizeName(gift.giftName);
 
@@ -772,18 +864,34 @@ function findRewardIndex(gift) {
 
 function normalizeRewards(nextRewards) {
   const list = Array.isArray(nextRewards) ? nextRewards : [];
-  const normalized = list.filter(reward => reward.enabled !== false).map(reward => ({
-    enabled: true,
-    title: String(reward.title || 'Reward'),
-    image: getCatalogImageForReward(reward),
-    useGiftImage: Boolean(reward.useGiftImage),
-    sound: String(reward.sound || ''),
-    volume: clampDecimal(Number(reward.volume ?? 0.85), 0, 1),
-    giftImageNames: (reward.giftImageNames || []).map(normalizeName),
-    giftImageIds: (reward.giftImageIds || []).map(normalizeId).filter(Boolean),
-    giftNames: (reward.giftNames || []).map(normalizeName),
-    giftIds: (reward.giftIds || []).map(normalizeId).filter(Boolean)
-  }));
+  const normalized = list.filter(reward => reward.enabled !== false).map(reward => {
+    const triggerType = normalizeTriggerType(reward.triggerType);
+    return {
+      enabled: true,
+      title: String(reward.title || 'Reward'),
+      triggerType,
+      likesRequired: clampNumber(Number(reward.likesRequired || 50), 1, 1000000000),
+      likesHeartColor: normalizeHex(reward.likesHeartColor, '#ef233c'),
+      likesNumberColor: normalizeHex(reward.likesNumberColor, '#ffffff'),
+      likesHeartSize: clampNumber(Number(reward.likesHeartSize || 160), 40, 160),
+      likesNumberSize: clampNumber(Number(reward.likesNumberSize || 96), 16, 96),
+      image: getTriggerIcon({
+        triggerType,
+        likesRequired: reward.likesRequired,
+        likesHeartColor: reward.likesHeartColor,
+        likesNumberColor: reward.likesNumberColor,
+        likesHeartSize: reward.likesHeartSize,
+        likesNumberSize: reward.likesNumberSize
+      }) || getCatalogImageForReward(reward),
+      useGiftImage: triggerType === 'gift' && Boolean(reward.useGiftImage),
+      sound: String(reward.sound || ''),
+      volume: clampDecimal(Number(reward.volume ?? 0.85), 0, 1),
+      giftImageNames: (reward.giftImageNames || []).map(normalizeName),
+      giftImageIds: (reward.giftImageIds || []).map(normalizeId).filter(Boolean),
+      giftNames: (reward.giftNames || []).map(normalizeName),
+      giftIds: (reward.giftIds || []).map(normalizeId).filter(Boolean)
+    };
+  });
 
   return normalized.length ? normalized : [{
     title: 'Reward',
@@ -801,6 +909,31 @@ function normalizeGift(data) {
     imageUrl: findGiftImage(data),
     streakKey: getGiftStreakKey(data)
   };
+}
+
+function normalizeTriggerType(value) {
+  const type = String(value || '').trim().toLowerCase();
+  return type === 'follow' || type === 'likes' ? type : 'gift';
+}
+
+function getTriggerIcon(item) {
+  const type = normalizeTriggerType(item?.triggerType || item);
+  if (type === 'gift') {
+    return '';
+  }
+
+  const isFollow = type === 'follow';
+  const likes = Math.max(1, Math.floor(Number(item?.likesRequired || 50)));
+  const heartColor = normalizeHex(item?.likesHeartColor, '#ef233c');
+  const numberColor = normalizeHex(item?.likesNumberColor, '#ffffff');
+  const heartScale = clampNumber(Number(item?.likesHeartSize || 160), 40, 160) / 100;
+  const numberSize = clampNumber(Number(item?.likesNumberSize || 96), 16, 96);
+  const canvasWidth = Math.max(300, Math.ceil(180 + (String(likes).length * numberSize * 0.68)));
+  const svg = isFollow
+    ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 104"><circle cx="42" cy="31" r="17" fill="#25f4ee"/><path d="M13 86c2-24 14-37 29-37s27 13 29 37" fill="#25f4ee"/><circle cx="78" cy="61" r="20" fill="#fe2c55"/><path d="M78 49v24M66 61h24" stroke="white" stroke-width="7" stroke-linecap="round"/></svg>'
+    : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvasWidth} 160"><g transform="translate(40 27)"><g transform="translate(50 53) scale(${heartScale}) translate(-50 -53)"><path d="M50 91C21 73 8 58 8 40c0-14 10-24 24-24 8 0 15 4 18 11 3-7 10-11 18-11 14 0 24 10 24 24 0 18-13 33-42 51Z" fill="${heartColor}"/></g></g><text x="180" y="80" fill="${numberColor}" font-family="Arial, sans-serif" font-size="${numberSize}" font-weight="800" dominant-baseline="middle">${likes}</text></svg>`;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 function findGiftImage(data) {

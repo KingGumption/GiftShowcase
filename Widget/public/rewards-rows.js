@@ -23,10 +23,12 @@ let highlightTimer;
 let releaseFocusTimer;
 let reconnectTimer;
 let lastTestGiftIndex = -1;
+let receivedLikeCount = 0;
 const rowScrollStates = new WeakMap();
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 applyThemeToDocument(savedRowsConfig.theme);
+rewardRowsWidget.classList.toggle('received-animations-disabled', savedRowsConfig.animationsEnabled === false);
 renderRows();
 setupRowsGiftSimulator();
 
@@ -229,7 +231,7 @@ function getLoopableRowGifts(rowGifts, visibleCount) {
 
 function getRowMarkup(rowGifts) {
   return rowGifts.map((gift, index) => `
-    <article class="reward-gift-tile" data-gift-index="${index}" data-gift-keys="${escapeAttribute(gift.keys.join('|'))}" data-sound="${escapeAttribute(gift.sound)}" data-volume="${escapeAttribute(gift.volume)}">
+    <article class="reward-gift-tile reward-trigger-${escapeAttribute(gift.triggerType)}" data-gift-index="${index}" data-gift-keys="${escapeAttribute(gift.keys.join('|'))}" data-sound="${escapeAttribute(gift.sound)}" data-volume="${escapeAttribute(gift.volume)}">
       <img src="${escapeAttribute(gift.image)}" alt="">
       ${showNames ? `<strong>${escapeHtml(gift.label)}</strong>` : ''}
     </article>
@@ -294,18 +296,35 @@ function normalizeCatalog(list) {
 }
 
 function normalizeRowsGifts(list) {
-  return dedupeGifts(list.filter(gift => gift.enabled !== false).map(gift => ({
-    id: normalizeId(gift.giftIds?.[0] || ''),
-    label: getDisplayLabel(gift.title || gift.giftNames?.[0] || gift.image || 'Gift'),
-    image: getCatalogImageForGift(gift),
-    row: Number.isInteger(Number(gift.row)) ? Number(gift.row) : undefined,
-    sound: String(gift.sound || ''),
-    volume: clampDecimal(Number(gift.volume ?? 0.85), 0, 1),
-    keys: getGiftKeys({
-      ids: gift.giftIds || [],
-      names: [...(gift.giftNames || []), gift.title]
-    })
-  })).filter(gift => gift.image));
+  return dedupeGifts(list.filter(gift => gift.enabled !== false).map(gift => {
+    const triggerType = normalizeTriggerType(gift.triggerType);
+    return {
+      id: normalizeId(gift.giftIds?.[0] || ''),
+      label: getDisplayLabel(gift.title || gift.giftNames?.[0] || gift.image || 'Gift'),
+      triggerType,
+      likesRequired: clampInteger(Number(gift.likesRequired || 50), 1, 1000000000),
+      likesHeartColor: normalizeHex(gift.likesHeartColor, '#ef233c'),
+      likesNumberColor: normalizeHex(gift.likesNumberColor, '#ffffff'),
+      likesHeartSize: clampInteger(Number(gift.likesHeartSize || 160), 40, 160),
+      likesNumberSize: clampInteger(Number(gift.likesNumberSize || 96), 16, 96),
+      image: getTriggerIcon({
+        triggerType,
+        likesRequired: gift.likesRequired,
+        likesHeartColor: gift.likesHeartColor,
+        likesNumberColor: gift.likesNumberColor,
+        likesHeartSize: gift.likesHeartSize,
+        likesNumberSize: gift.likesNumberSize
+      }) || getCatalogImageForGift(gift),
+      row: Number.isInteger(Number(gift.row)) ? Number(gift.row) : undefined,
+      sound: String(gift.sound || ''),
+      volume: clampDecimal(Number(gift.volume ?? 0.85), 0, 1),
+      keys: getGiftKeys({
+        ids: gift.giftIds || [],
+        names: [...(gift.giftNames || []), gift.title],
+        triggers: [getTriggerKey(gift)]
+      })
+    };
+  }).filter(gift => gift.image));
 }
 
 function dedupeGifts(list) {
@@ -328,6 +347,10 @@ function dedupeGifts(list) {
 }
 
 function getGiftIdentity(gift) {
+  if (gift.triggerType !== 'gift') {
+    return `trigger:${getTriggerKey(gift)}`;
+  }
+
   if (gift.id) {
     return `id:${gift.id}`;
   }
@@ -340,16 +363,45 @@ function connectRows() {
 
   ws.addEventListener('message', event => {
     const message = parseMessage(event.data);
-    if (!message || String(message.event || '').toLowerCase() !== 'gift') {
+    if (!message) {
       return;
     }
 
-    highlightGift(normalizeGiftEvent(message.data || {}));
+    handleRowsTikTokEvent(String(message.event || '').toLowerCase(), message.data || {});
   });
 
   ws.addEventListener('close', () => {
     clearTimeout(reconnectTimer);
     reconnectTimer = setTimeout(connectRows, 1500);
+  });
+}
+
+function handleRowsTikTokEvent(eventName, data) {
+  if (eventName === 'gift') {
+    highlightGift(normalizeGiftEvent(data));
+    return;
+  }
+
+  if (eventName === 'follow') {
+    highlightGift({ triggerType: 'follow' });
+    return;
+  }
+
+  if (eventName !== 'like') {
+    return;
+  }
+
+  const increment = Math.max(0, Math.floor(Number(data.likeCount || data.likes || data.count || 0)));
+  if (!increment) {
+    return;
+  }
+
+  const previousTotal = receivedLikeCount;
+  receivedLikeCount += increment;
+  gifts.filter(gift => gift.triggerType === 'likes').forEach(gift => {
+    if (Math.floor(previousTotal / gift.likesRequired) < Math.floor(receivedLikeCount / gift.likesRequired)) {
+      highlightGift({ triggerKey: getTriggerKey(gift) });
+    }
   });
 }
 
@@ -359,10 +411,12 @@ function setupRowsGiftSimulator() {
       ? giftNameOrOptions
       : { giftName: giftNameOrOptions };
     const fallbackGift = gifts[0] || {};
+    const triggerType = normalizeTriggerType(options.triggerType || options.trigger || fallbackGift.triggerType);
 
     highlightGift({
       giftName: options.giftName || options.name || fallbackGift.label || 'Gift',
-      giftId: options.giftId || options.id || fallbackGift.id || ''
+      giftId: options.giftId || options.id || fallbackGift.id || '',
+      triggerKey: getTriggerKey({ triggerType, likesRequired: options.likesRequired || fallbackGift.likesRequired })
     });
   };
 }
@@ -375,7 +429,8 @@ function startRowsTestMode() {
     if (gift) {
       highlightGift({
         giftName: gift.label,
-        giftId: gift.id
+        giftId: gift.id,
+        triggerKey: getTriggerKey(gift)
       });
     }
 
@@ -409,7 +464,8 @@ function getRandomTestGift() {
 function highlightGift(gift) {
   const keys = getGiftKeys({
     ids: [gift.giftId],
-    names: [gift.giftName]
+    names: [gift.giftName],
+    triggers: gift.triggerKey ? [gift.triggerKey] : gift.triggerType ? [gift.triggerType] : []
   });
 
   if (!keys.length) {
@@ -429,7 +485,9 @@ function highlightGift(gift) {
 
   clearTimeout(highlightTimer);
   clearTimeout(releaseFocusTimer);
-  focusGiftTile(focusTile);
+  if (savedRowsConfig.animationsEnabled !== false) {
+    focusGiftTile(focusTile);
+  }
   playRowsGiftSound(focusTile);
   rewardRowsWidget.querySelectorAll('.reward-gift-tile.is-hit').forEach(tile => {
     tile.classList.remove('is-hit');
@@ -659,11 +717,12 @@ function normalizeGiftEvent(data) {
   };
 }
 
-function getGiftKeys({ ids = [], names = [] }) {
+function getGiftKeys({ ids = [], names = [], triggers = [] }) {
   const keys = [];
 
   ids.map(normalizeId).filter(Boolean).forEach(id => keys.push(`id:${id}`));
   names.filter(Boolean).forEach(name => keys.push(`name:${normalizeName(name)}`));
+  triggers.map(normalizeName).filter(type => type && type !== 'gift').forEach(type => keys.push(`trigger:${type}`));
 
   return [...new Set(keys)];
 }
@@ -680,6 +739,36 @@ function getDisplayLabel(label) {
 
 function normalizeName(name) {
   return String(name || '').trim().toLowerCase();
+}
+
+function normalizeTriggerType(value) {
+  const type = String(value || '').trim().toLowerCase();
+  return type === 'follow' || type === 'likes' ? type : 'gift';
+}
+
+function getTriggerKey(gift) {
+  const type = normalizeTriggerType(gift?.triggerType);
+  return type === 'likes' ? `likes:${gift.likesRequired}` : type;
+}
+
+function getTriggerIcon(item) {
+  const type = normalizeTriggerType(item?.triggerType || item);
+  if (type === 'gift') {
+    return '';
+  }
+
+  const isFollow = type === 'follow';
+  const likes = Math.max(1, Math.floor(Number(item?.likesRequired || 50)));
+  const heartColor = normalizeHex(item?.likesHeartColor, '#ef233c');
+  const numberColor = normalizeHex(item?.likesNumberColor, '#ffffff');
+  const heartScale = clampInteger(Number(item?.likesHeartSize || 160), 40, 160) / 100;
+  const numberSize = clampInteger(Number(item?.likesNumberSize || 96), 16, 96);
+  const canvasWidth = Math.max(300, Math.ceil(180 + (String(likes).length * numberSize * 0.68)));
+  const svg = isFollow
+    ? '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 104"><circle cx="42" cy="31" r="17" fill="#25f4ee"/><path d="M13 86c2-24 14-37 29-37s27 13 29 37" fill="#25f4ee"/><circle cx="78" cy="61" r="20" fill="#fe2c55"/><path d="M78 49v24M66 61h24" stroke="white" stroke-width="7" stroke-linecap="round"/></svg>'
+    : `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${canvasWidth} 160"><g transform="translate(40 27)"><g transform="translate(50 53) scale(${heartScale}) translate(-50 -53)"><path d="M50 91C21 73 8 58 8 40c0-14 10-24 24-24 8 0 15 4 18 11 3-7 10-11 18-11 14 0 24 10 24 24 0 18-13 33-42 51Z" fill="${heartColor}"/></g></g><text x="180" y="80" fill="${numberColor}" font-family="Arial, sans-serif" font-size="${numberSize}" font-weight="800" dominant-baseline="middle">${likes}</text></svg>`;
+
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
 function normalizeId(id) {
@@ -777,6 +866,7 @@ function expandCompactConfig(config) {
     labelMs: config.c,
     visibleNext: config.d,
     soundsEnabled: config.e === 0 ? false : undefined,
+    animationsEnabled: config.f === 0 ? false : undefined,
     theme: expandCompactTheme(config.t),
     carouselTheme: expandCompactTheme(config.u),
     rowsTheme: expandCompactTheme(config.v),
@@ -819,6 +909,7 @@ function expandCompactRowsOverlay(rows) {
     gap: rows.g,
     names: rows.h === 0 ? false : undefined,
     soundsEnabled: rows.i === 0 ? false : undefined,
+    animationsEnabled: rows.k === 0 ? false : undefined,
     gifts: Array.isArray(rows.j) ? rows.j.map(expandCompactRowsGift) : undefined
   });
 }
@@ -847,7 +938,13 @@ function expandCompactGift(gift = {}) {
     giftIds: Array.isArray(gift.i) ? gift.i : [],
     image: gift.m,
     sound: gift.s,
-    volume: gift.v
+    volume: gift.v,
+    triggerType: gift.q,
+    likesRequired: gift.l,
+    likesHeartColor: gift.j,
+    likesNumberColor: gift.k,
+    likesHeartSize: gift.o,
+    likesNumberSize: gift.p
   });
 }
 
