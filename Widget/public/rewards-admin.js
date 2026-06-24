@@ -12,6 +12,7 @@ const labelMs = document.querySelector('#label-ms');
 const visibleNext = document.querySelector('#visible-next');
 const carouselSounds = document.querySelector('#carousel-sounds');
 const carouselAnimations = document.querySelector('#carousel-animations');
+const carouselProfileAnimation = document.querySelector('#carousel-profile-animation');
 const rewardTotal = document.querySelector('#reward-total');
 const rewardEnabled = document.querySelector('#reward-enabled');
 const rowsGiftList = document.querySelector('#rows-gift-list');
@@ -29,6 +30,7 @@ const rowsGap = document.querySelector('#rows-gap');
 const rowsNames = document.querySelector('#rows-names');
 const rowsSounds = document.querySelector('#rows-sounds');
 const rowsAnimations = document.querySelector('#rows-animations');
+const rowsProfileAnimation = document.querySelector('#rows-profile-animation');
 const addRewardButton = document.querySelector('#add-reward');
 const copyCarouselUrlButton = document.querySelector('#copy-carousel-url');
 const copyRowsUrlButton = document.querySelector('#copy-rows-url');
@@ -265,14 +267,14 @@ tabButtons.forEach(button => {
   button.addEventListener('click', () => setActiveTab(button.dataset.configTab));
 });
 
-[rotateMs, holdMs, labelMs, visibleNext, carouselSounds, carouselAnimations].forEach(input => {
+[rotateMs, holdMs, labelMs, visibleNext, carouselSounds, carouselAnimations, carouselProfileAnimation].forEach(input => {
   input.addEventListener('input', () => {
     updateGlobalsFromForm();
     markDirty();
   });
 });
 
-[rowsCount, rowsPerRow, rowsScrolling, rowsDirections, rowsSpeeds, rowsHeight, rowsGap, rowsNames, rowsSounds, rowsAnimations].forEach(input => {
+[rowsCount, rowsPerRow, rowsScrolling, rowsDirections, rowsSpeeds, rowsHeight, rowsGap, rowsNames, rowsSounds, rowsAnimations, rowsProfileAnimation].forEach(input => {
   input.addEventListener('input', () => {
     updateRowsFromForm();
     markDirty();
@@ -390,6 +392,7 @@ function render() {
   visibleNext.value = draftConfig.visibleNext;
   carouselSounds.value = draftConfig.soundsEnabled === false ? '0' : '1';
   carouselAnimations.value = draftConfig.animationsEnabled === false ? '0' : '1';
+  carouselProfileAnimation.value = draftConfig.profileAnimationEnabled === true ? '1' : '0';
   rowsCount.value = draftConfig.rowsOverlay.rows;
   rowsPerRow.value = draftConfig.rowsOverlay.perRow;
   rowsScrolling.value = draftConfig.rowsOverlay.scrollRows;
@@ -400,6 +403,7 @@ function render() {
   rowsNames.value = draftConfig.rowsOverlay.names ? '1' : '0';
   rowsSounds.value = draftConfig.rowsOverlay.soundsEnabled === false ? '0' : '1';
   rowsAnimations.value = draftConfig.rowsOverlay.animationsEnabled === false ? '0' : '1';
+  rowsProfileAnimation.value = draftConfig.rowsOverlay.profileAnimationEnabled === true ? '1' : '0';
   renderThemeForm();
   rewardList.innerHTML = '';
   rowsGiftList.innerHTML = '';
@@ -1355,6 +1359,7 @@ function updateGlobalsFromForm() {
   draftConfig.visibleNext = clamp(numberOrDefault(visibleNext.value, 3), 0, 3);
   draftConfig.soundsEnabled = carouselSounds.value !== '0';
   draftConfig.animationsEnabled = carouselAnimations.value !== '0';
+  draftConfig.profileAnimationEnabled = carouselProfileAnimation.value === '1';
   updateThemeFromForm();
 }
 
@@ -1370,6 +1375,7 @@ function updateRowsFromForm() {
     names: rowsNames.value !== '0',
     soundsEnabled: rowsSounds.value !== '0',
     animationsEnabled: rowsAnimations.value !== '0',
+    profileAnimationEnabled: rowsProfileAnimation.value === '1',
     gifts: draftConfig.rowsOverlay.gifts
   });
   ensureRowsGiftRows();
@@ -1897,6 +1903,7 @@ function compactConfigForUrl(inputConfig) {
     d: config.visibleNext !== 3 ? config.visibleNext : undefined,
     e: config.soundsEnabled === false ? 0 : undefined,
     f: config.animationsEnabled === false ? 0 : undefined,
+    h: config.profileAnimationEnabled === true ? 1 : undefined,
     t: compactThemeForUrl(config.theme),
     u: compactThemeForUrl(config.carouselTheme),
     v: compactThemeForUrl(config.rowsTheme),
@@ -1935,6 +1942,7 @@ function compactRowsOverlayForUrl(rowsOverlay) {
     h: rows.names === false ? 0 : undefined,
     i: rows.soundsEnabled === false ? 0 : undefined,
     k: rows.animationsEnabled === false ? 0 : undefined,
+    l: rows.profileAnimationEnabled === true ? 1 : undefined,
     j: rows.gifts.map(compactRowsGiftForUrl)
   });
 }
@@ -1990,6 +1998,7 @@ function expandCompactConfig(config) {
     visibleNext: config.d,
     soundsEnabled: config.e === 0 ? false : undefined,
     animationsEnabled: config.f === 0 ? false : undefined,
+    profileAnimationEnabled: config.h === 1 ? true : undefined,
     theme: expandCompactTheme(config.t),
     carouselTheme: expandCompactTheme(config.u),
     rowsTheme: expandCompactTheme(config.v),
@@ -2033,6 +2042,7 @@ function expandCompactRowsOverlay(rows) {
     names: rows.h === 0 ? false : undefined,
     soundsEnabled: rows.i === 0 ? false : undefined,
     animationsEnabled: rows.k === 0 ? false : undefined,
+    profileAnimationEnabled: rows.l === 1 ? true : undefined,
     gifts: Array.isArray(rows.j) ? rows.j.map(expandCompactRowsGift) : undefined
   });
 }
@@ -2150,6 +2160,7 @@ function normalizeConfig(config) {
     visibleNext: clamp(numberOrDefault(config.visibleNext, 3), 0, 3),
     soundsEnabled: config.soundsEnabled !== false,
     animationsEnabled: config.animationsEnabled !== false,
+    profileAnimationEnabled: config.profileAnimationEnabled === true,
     theme: normalizeTheme(themeSource),
     carouselTheme: normalizeTheme(carouselThemeSource),
     rowsTheme: normalizeTheme(rowsThemeSource),
@@ -2303,6 +2314,7 @@ function normalizeRowsOverlay(config) {
     names: config.names !== false,
     soundsEnabled: config.soundsEnabled !== false,
     animationsEnabled: config.animationsEnabled !== false,
+    profileAnimationEnabled: config.profileAnimationEnabled === true,
     gifts: gifts.map(normalizeRowsGift)
   };
 }

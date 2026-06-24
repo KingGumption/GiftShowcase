@@ -18,6 +18,7 @@ const labelMs = Math.max(900, Number(params.get('labelMs') || rewardConfig.label
 const rewards = normalizeRewards(rewardConfig.rewards || []);
 const visibleNext = clampNumber(Number(params.get('visibleNext') ?? rewardConfig.visibleNext ?? 3), 0, 3);
 const visibleCount = visibleNext + 1;
+rewardWidget.style.setProperty('--reward-profile-duration', `${holdOnGiftMs}ms`);
 
 let activeIndex = 0;
 let visualIndex = rewards.length;
@@ -25,6 +26,7 @@ let rotateTimer;
 let holdTimer;
 let hitTimer;
 let labelTimer;
+let profileAnimationTimer;
 let presentationTimer;
 let reconnectTimer;
 let pendingGiftStreaks = new Map();
@@ -113,6 +115,7 @@ function expandCompactConfig(config) {
     visibleNext: config.d,
     soundsEnabled: config.e === 0 ? false : undefined,
     animationsEnabled: config.f === 0 ? false : undefined,
+    profileAnimationEnabled: config.h === 1 ? true : undefined,
     theme: expandCompactTheme(config.t),
     carouselTheme: expandCompactTheme(config.u),
     rowsTheme: expandCompactTheme(config.v),
@@ -156,6 +159,7 @@ function expandCompactRowsOverlay(rows) {
     names: rows.h === 0 ? false : undefined,
     soundsEnabled: rows.i === 0 ? false : undefined,
     animationsEnabled: rows.k === 0 ? false : undefined,
+    profileAnimationEnabled: rows.l === 1 ? true : undefined,
     gifts: Array.isArray(rows.j) ? rows.j.map(expandCompactRowsGift) : undefined
   });
 }
@@ -483,6 +487,8 @@ function startRotation() {
 function resumeRotation() {
   isPresentingGift = false;
   rewardWidget.classList.remove('reward-hold');
+  rewardWidget.classList.remove('profile-animation-active');
+  rewardWidget.classList.remove('profile-has-avatar');
 
   const nextGift = giftQueue.shift();
 
@@ -516,25 +522,35 @@ function advanceToReward(index, giftEvent = null) {
   }
 
   const reward = rewards[activeIndex];
+  const useProfileAnimation = shouldUseProfileAnimation(giftEvent);
   clearTimeout(hitTimer);
   clearTimeout(labelTimer);
+  clearTimeout(profileAnimationTimer);
   rewardWidget.classList.remove('reward-hit');
+  rewardWidget.classList.toggle('profile-animation-active', useProfileAnimation);
   if (rewardConfig.animationsEnabled !== false) {
     void rewardWidget.offsetWidth;
     rewardWidget.classList.add('reward-hit');
   }
 
-  rewardGifter.textContent = giftEvent.supporter;
-  rewardAction.textContent = reward.title;
   rewardCallout.classList.remove('is-visible');
-  void rewardCallout.offsetWidth;
-  rewardCallout.classList.add('is-visible');
+  if (!useProfileAnimation) {
+    rewardGifter.textContent = giftEvent.supporter;
+    rewardAction.textContent = reward.title;
+    void rewardCallout.offsetWidth;
+    rewardCallout.classList.add('is-visible');
+  }
   hitTimer = setTimeout(() => {
     rewardWidget.classList.remove('reward-hit');
   }, 1700);
   labelTimer = setTimeout(() => {
     rewardCallout.classList.remove('is-visible');
   }, labelMs);
+  profileAnimationTimer = setTimeout(() => {
+    rewardWidget.classList.remove('profile-animation-active');
+    rewardWidget.classList.remove('profile-has-avatar');
+    rewardTrack.querySelectorAll('.reward-profile-image').forEach(image => image.remove());
+  }, holdOnGiftMs);
   scheduleVisualReset();
 }
 
@@ -621,12 +637,43 @@ function presentGift({ gift, rewardIndex }) {
 
   updateRewardGiftImage(rewardIndex, gift);
   advanceToReward(rewardIndex, gift);
+  runGiftProfileAnimation(rewardIndex, gift);
   playRewardSound(rewards[rewardIndex]);
-  if (rewardConfig.animationsEnabled !== false) {
+  if (rewardConfig.animationsEnabled !== false && !shouldUseProfileAnimation(gift)) {
     rewardWidget.classList.add('reward-hold');
   }
 
   presentationTimer = setTimeout(resumeRotation, holdOnGiftMs);
+}
+
+function shouldUseProfileAnimation(gift) {
+  return rewardConfig.animationsEnabled !== false &&
+    rewardConfig.profileAnimationEnabled === true &&
+    gift?.triggerType === 'gift';
+}
+
+function runGiftProfileAnimation(rewardIndex, gift) {
+  if (!shouldUseProfileAnimation(gift)) {
+    return;
+  }
+
+  const imageContainer = rewardTrack.querySelector(`.reward-card.is-active[data-reward-index="${rewardIndex}"] .reward-image`);
+  if (!imageContainer) {
+    return;
+  }
+
+  imageContainer.querySelectorAll('.reward-profile-image').forEach(image => image.remove());
+  if (!gift.avatarUrl) {
+    return;
+  }
+
+  rewardWidget.classList.add('profile-has-avatar');
+  const profileImage = document.createElement('img');
+  profileImage.className = 'reward-profile-image';
+  profileImage.alt = '';
+  profileImage.src = gift.avatarUrl;
+  profileImage.addEventListener('error', () => profileImage.remove(), { once: true });
+  imageContainer.append(profileImage);
 }
 
 function playRewardSound(reward) {
@@ -722,30 +769,36 @@ function getRewardAudio(reward) {
 function startTestMode() {
   updateStatus('Test mode', true);
 
-  const matchingRewards = rewards.filter(reward => reward.giftNames.length || reward.giftIds.length);
-  const testRewards = matchingRewards.length ? matchingRewards : rewards;
+  const testRewards = [
+    ...rewards.filter(reward => reward.triggerType === 'follow'),
+    ...rewards.filter(reward => reward.triggerType === 'likes'),
+    ...rewards.filter(reward => reward.triggerType === 'gift')
+  ];
   let testIndex = 0;
-  let lastRewardIndex = -1;
 
   window.setTimeout(sendTestGift, getRandomTestDelay(700, 1800));
 
   function sendTestGift() {
-    const nextRewardIndex = getRandomTestRewardIndex(testRewards, lastRewardIndex);
-    const reward = testRewards[nextRewardIndex];
+    const reward = testRewards[testIndex % testRewards.length];
     const giftName = reward.giftImageNames[0] || reward.giftNames[0] || reward.title;
     const giftId = reward.giftImageIds[0] || reward.giftIds[0] || '';
+    const supporter = reward.triggerType === 'follow'
+      ? 'Test Follower'
+      : reward.triggerType === 'likes'
+        ? `Test ${reward.likesRequired} Likes`
+        : `Test Gifter ${testIndex + 1}`;
 
     applyGift({
-      supporter: `Test Gifter ${testIndex + 1}`,
+      supporter,
       giftName,
       giftId,
       imageUrl: reward.useGiftImage ? getTestGiftImage(reward, testIndex) : '',
       triggerType: reward.triggerType,
       rewardIndex: rewards.indexOf(reward),
+      avatarUrl: reward.triggerType === 'gift' ? getTestAvatarImage(testIndex) : '',
       streakKey: `test|${giftId || giftName}`
     });
 
-    lastRewardIndex = nextRewardIndex;
     testIndex += 1;
     window.setTimeout(sendTestGift, getRandomTestDelay(holdOnGiftMs + 700, holdOnGiftMs + 3200));
   }
@@ -777,12 +830,45 @@ function setupGiftSimulator() {
       giftName,
       giftId,
       imageUrl: options.imageUrl || options.image || '',
+      avatarUrl: options.avatarUrl || options.profilePictureUrl || getTestAvatarImage(0),
       triggerType,
       rewardIndex: rewards.indexOf(reward),
       streakKey: `manual|${giftId || giftName}`
     });
 
     updateStatus(`Simulated gift: ${giftName}`, true);
+  };
+
+  window.simulateRewardFollow = (supporter = 'Test Follower') => {
+    const rewardIndex = rewards.findIndex(reward => reward.triggerType === 'follow');
+    if (rewardIndex === -1) {
+      updateStatus('No enabled follow reward configured', false);
+      return;
+    }
+
+    applyGift({
+      supporter,
+      giftName: rewards[rewardIndex].title,
+      giftId: '',
+      imageUrl: '',
+      triggerType: 'follow',
+      rewardIndex,
+      streakKey: `manual-follow|${Date.now()}`
+    });
+    updateStatus('Simulated follow', true);
+  };
+
+  window.simulateRewardLikes = (count = null) => {
+    const likeRewards = rewards.filter(reward => reward.triggerType === 'likes');
+    if (!likeRewards.length) {
+      updateStatus('No enabled likes reward configured', false);
+      return;
+    }
+
+    const increment = Math.max(1, Math.floor(Number(count || likeRewards[0].likesRequired)));
+    receivedLikeCount += increment;
+    applyEventReward('likes', { nickname: `Test ${increment} Likes` }, increment);
+    updateStatus(`Simulated ${increment} likes`, true);
   };
 }
 
@@ -820,6 +906,12 @@ function getTestGiftImage(reward, index) {
     </svg>
   `;
 
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
+function getTestAvatarImage(index = 0) {
+  const hue = (Number(index) * 67 + 185) % 360;
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="48" fill="hsl(${hue} 72% 42%)"/><circle cx="48" cy="35" r="18" fill="white"/><path d="M17 88c3-25 16-38 31-38s28 13 31 38" fill="white"/></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
 }
 
@@ -903,12 +995,30 @@ function normalizeRewards(nextRewards) {
 
 function normalizeGift(data) {
   return {
+    triggerType: 'gift',
     supporter: data.user?.nickname || data.user?.uniqueId || data.nickname || data.uniqueId || data.username || 'Unknown',
     giftName: data.giftDetails?.giftName || data.gift?.name || data.giftName || data.extendedGiftInfo?.name || 'Gift',
     giftId: normalizeId(data.giftId || data.gift?.id || data.gift?.giftId || data.giftDetails?.giftId || data.extendedGiftInfo?.id || data.extendedGiftInfo?.gift_id || ''),
     imageUrl: findGiftImage(data),
+    avatarUrl: findAvatarImage(data),
     streakKey: getGiftStreakKey(data)
   };
+}
+
+function findAvatarImage(data) {
+  const user = data.user || {};
+  return data.profilePictureUrl ||
+    data.avatarUrl ||
+    data.profilePicture?.url ||
+    firstUrl(data.profilePicture?.urlList) ||
+    user.profilePictureUrl ||
+    user.avatarUrl ||
+    user.profilePicture?.url ||
+    firstUrl(user.profilePicture?.urlList) ||
+    firstUrl(user.avatarThumb?.urlList) ||
+    firstUrl(user.avatarMedium?.urlList) ||
+    firstUrl(user.avatarLarger?.urlList) ||
+    '';
 }
 
 function normalizeTriggerType(value) {

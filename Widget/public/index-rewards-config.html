@@ -7,7 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./style.css?v=20260624-2">
+    <link rel="stylesheet" href="./style.css?v=20260624-4">
   </head>
   <body class="reward-config-source">
     <main class="reward-config-app">
@@ -87,6 +87,14 @@
               <option value="0">Animations off</option>
             </select>
             <span class="field-hint">Toggle hit and hold animations for received rewards</span>
+          </div>
+          <div class="config-field">
+            <label for="carousel-profile-animation">Gift to Profile Animation</label>
+            <select id="carousel-profile-animation">
+              <option value="0">Off (standard animation)</option>
+              <option value="1">On (gift → profile → gift)</option>
+            </select>
+            <span class="field-hint">Alternative received-gift animation; hides the carousel gifter callout</span>
           </div>
         </div>
       </details>
@@ -259,6 +267,14 @@
               <option value="0">Animations off</option>
             </select>
             <span class="field-hint">Toggle hit and focus animations for received row gifts</span>
+          </div>
+          <div class="config-field">
+            <label for="rows-profile-animation">Gift to Profile Animation</label>
+            <select id="rows-profile-animation">
+              <option value="0">Off (standard animation)</option>
+              <option value="1">On (gift → profile → gift)</option>
+            </select>
+            <span class="field-hint">Alternative animation for matched row gifts</span>
           </div>
         </div>
       </details>
@@ -476,8 +492,8 @@
       </article>
     </template>
 
-    <script src="./rewards-config.js?v=20260624-2"></script>
-    <script src="./reward-image-catalog.js?v=20260624-2"></script>
-    <script src="./rewards-admin.js?v=20260624-2"></script>
+    <script src="./rewards-config.js?v=20260624-4"></script>
+    <script src="./reward-image-catalog.js?v=20260624-4"></script>
+    <script src="./rewards-admin.js?v=20260624-4"></script>
   </body>
 </html>

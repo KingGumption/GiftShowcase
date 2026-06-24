@@ -1357,6 +1357,7 @@ body.show-status .status {
 }
 
 .reward-image {
+  position: relative;
   display: grid;
   place-items: center;
   width: 38px;
@@ -1378,6 +1379,32 @@ body.show-status .status {
 .reward-card.reward-trigger-likes .reward-image {
   width: 82px;
   height: 40px;
+}
+
+.reward-image .reward-profile-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+  opacity: 0;
+}
+
+.rewards-widget.profile-animation-active .reward-card.is-active .reward-image {
+  animation: none;
+}
+
+.rewards-widget.profile-animation-active .reward-card.is-active .reward-image > img:not(.reward-profile-image) {
+  animation: rewardGiftToProfileFallback var(--reward-profile-duration, 6500ms) cubic-bezier(0.18, 0.9, 0.24, 1.12);
+}
+
+.rewards-widget.profile-animation-active.profile-has-avatar .reward-card.is-active .reward-image > img:not(.reward-profile-image) {
+  animation-name: rewardGiftToProfile;
+}
+
+.rewards-widget.profile-animation-active.profile-has-avatar .reward-card.is-active .reward-profile-image {
+  animation: rewardProfileToGift var(--reward-profile-duration, 6500ms) cubic-bezier(0.18, 0.9, 0.24, 1.12);
 }
 
 .reward-card strong {
@@ -1564,6 +1591,57 @@ body.show-status .status {
 
   100% {
     transform: translateY(0) scale(1) rotate(0deg);
+  }
+}
+
+@keyframes rewardGiftToProfile {
+  0%,
+  18% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+
+  45%,
+  58% {
+    opacity: 0;
+    transform: scale(0.38) rotate(360deg);
+  }
+
+  82%,
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(720deg);
+  }
+}
+
+@keyframes rewardProfileToGift {
+  0%,
+  24% {
+    opacity: 0;
+    transform: scale(0.38) rotate(-240deg);
+  }
+
+  45%,
+  58% {
+    opacity: 1;
+    transform: scale(1.12) rotate(0deg);
+  }
+
+  82%,
+  100% {
+    opacity: 0;
+    transform: scale(0.38) rotate(240deg);
+  }
+}
+
+@keyframes rewardGiftToProfileFallback {
+  0%,
+  100% {
+    transform: scale(1) rotate(0deg);
+  }
+
+  50% {
+    transform: scale(1.22) rotate(360deg);
   }
 }
 
@@ -1756,6 +1834,7 @@ body.show-status .status {
 }
 
 .reward-gift-tile {
+  position: relative;
   display: grid;
   grid-template-rows: minmax(0, 1fr) auto;
   align-items: center;
@@ -1790,12 +1869,33 @@ body.show-status .status {
 }
 
 .reward-gift-tile img {
+  grid-row: 1;
+  grid-column: 1;
   width: min(58px, 80%);
   height: min(58px, calc(var(--reward-row-height) - 42px));
   object-fit: contain;
   filter:
     drop-shadow(0 3px 3px rgba(0, 0, 0, 0.62))
     drop-shadow(0 0 8px rgba(255, 216, 61, 0.28));
+}
+
+.reward-gift-tile .reward-row-profile-image {
+  z-index: 1;
+  border-radius: 50%;
+  object-fit: cover;
+  opacity: 0;
+}
+
+.reward-gift-tile.profile-animation-active.is-hit > img:not(.reward-row-profile-image) {
+  animation: rewardGiftToProfileFallback var(--reward-profile-duration, 2600ms) cubic-bezier(0.18, 0.9, 0.24, 1.12);
+}
+
+.reward-gift-tile.profile-animation-active.profile-has-avatar.is-hit > img:not(.reward-row-profile-image) {
+  animation-name: rewardGiftToProfile;
+}
+
+.reward-gift-tile.profile-animation-active.profile-has-avatar.is-hit > .reward-row-profile-image {
+  animation: rewardProfileToGift var(--reward-profile-duration, 2600ms) cubic-bezier(0.18, 0.9, 0.24, 1.12);
 }
 
 .reward-gift-tile.reward-trigger-likes img {
