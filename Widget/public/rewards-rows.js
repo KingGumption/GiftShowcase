@@ -24,7 +24,6 @@ const showNames = savedRowsConfig.names !== false;
 let highlightTimer;
 let releaseFocusTimer;
 let reconnectTimer;
-let lastTestGiftIndex = -1;
 let receivedLikeCount = 0;
 const rowScrollStates = new WeakMap();
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -62,7 +61,7 @@ window.addEventListener('message', event => {
         const tileKeys = String(tile.dataset.giftKeys || '').split('|').filter(Boolean);
         if (keys.some(k => tileKeys.includes(k))) {
           const strong = tile.querySelector('strong');
-          if (strong) strong.textContent = title;
+          if (strong) updateRowTileLabel(strong, title);
         }
       });
     });
@@ -70,6 +69,25 @@ window.addEventListener('message', event => {
     // ignore
   }
 });
+
+function updateRowTileLabel(label, title) {
+  label.dataset.originalLabel = title;
+
+  let originalLabel = label.querySelector('.reward-label-original');
+  let profileLabel = label.querySelector('.reward-label-profile');
+
+  if (!originalLabel || !profileLabel) {
+    label.textContent = '';
+    originalLabel = document.createElement('span');
+    originalLabel.className = 'reward-label-original';
+    profileLabel = document.createElement('span');
+    profileLabel.className = 'reward-label-profile';
+    profileLabel.setAttribute('aria-hidden', 'true');
+    label.append(originalLabel, profileLabel);
+  }
+
+  originalLabel.textContent = title;
+}
 
 function renderRows() {
   rewardRowsWidget.style.setProperty('--reward-row-gap', `${gap}px`);
@@ -484,25 +502,6 @@ function getRandomTestDelay(min, max) {
 
 function getTestSupporterName(index = 0) {
   return longTestSupporters[index % longTestSupporters.length] || `Test Gifter ${index + 1}`;
-}
-
-function getRandomTestGift() {
-  if (!gifts.length) {
-    return null;
-  }
-
-  if (gifts.length === 1) {
-    lastTestGiftIndex = 0;
-    return gifts[0];
-  }
-
-  let nextIndex = lastTestGiftIndex;
-  while (nextIndex === lastTestGiftIndex) {
-    nextIndex = Math.floor(Math.random() * gifts.length);
-  }
-
-  lastTestGiftIndex = nextIndex;
-  return gifts[nextIndex];
 }
 
 function highlightGift(gift) {

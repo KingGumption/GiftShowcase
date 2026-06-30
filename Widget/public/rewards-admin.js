@@ -153,6 +153,10 @@ let interactionScrollState = { x: 0, y: 0, focusTarget: null };
 let pageFocusTarget = null;
 let previewRefreshTimer;
 let previewRefreshIndex = 0;
+let carouselDropTarget = null;
+let carouselDropPlacement = '';
+let rowsGiftDropTarget = null;
+let rowsGiftDropPlacement = '';
 let giftFavorites = loadGiftFavorites();
 
 draftConfig = loadDraftConfig();
@@ -200,32 +204,6 @@ function renderPreservingScroll() {
   const state = interactionScrollState || getPageScrollState();
   render();
   restorePageScroll(state);
-}
-
-function runPreservingScroll(action) {
-  const state = getPageScrollState();
-  action();
-  restorePageScroll(state);
-}
-
-function restoreFocusQuietly(target) {
-  if (target && document.contains(target)) {
-    try {
-      target.focus({ preventScroll: true });
-    } catch (error) {
-      // ignore focus errors
-    }
-  }
-}
-
-function restorePageScrollOnly(state) {
-  requestAnimationFrame(() => {
-    window.scrollTo(state.x, state.y);
-    setTimeout(() => {
-      window.scrollTo(state.x, state.y);
-      restoreFocusQuietly(state.focusTarget);
-    }, 80);
-  });
 }
 
 function preserveScrollDuring(action) {
@@ -441,11 +419,14 @@ function updateProfileNameToggleVisibility() {
 }
 
 function renderRewardsList() {
+  rewardList.classList.remove('rows-gift-board');
   rewardList.append(createInsertRewardControl(0));
 
   draftConfig.rewards.forEach((reward, index) => {
     const editor = template.content.firstElementChild.cloneNode(true);
     editor.dataset.index = String(index);
+    editor.dataset.mode = 'carousel';
+    editor.draggable = true;
 
     // Set reward number
     editor.querySelector('.reward-number').textContent = String(index + 1);
@@ -521,9 +502,83 @@ function renderRewardsList() {
     });
 
     updateEditorState(editor, reward);
+    setupCarouselRewardDrag(editor, index);
     rewardList.append(editor);
     rewardList.append(createInsertRewardControl(index + 1));
   });
+}
+
+function setupCarouselRewardDrag(editor, index) {
+  editor.addEventListener('dragstart', event => {
+    if (event.target.closest('input, select, textarea, button')) {
+      event.preventDefault();
+      return;
+    }
+
+    editor.classList.add('is-dragging');
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData('text/plain', String(index));
+    event.dataTransfer.setData('application/x-carousel-reward-index', String(index));
+  });
+
+  editor.addEventListener('dragover', event => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    updateCarouselDropTarget(editor, event);
+  });
+
+  editor.addEventListener('dragleave', event => {
+    if (!editor.contains(event.relatedTarget)) {
+      clearCarouselDropTarget(editor);
+    }
+  });
+
+  editor.addEventListener('drop', event => {
+    event.preventDefault();
+    const sourceIndex = Number(event.dataTransfer.getData('application/x-carousel-reward-index') || event.dataTransfer.getData('text/plain'));
+    const targetIndex = Number(editor.dataset.index);
+    const insertAfter = getCarouselDropPlacement(editor, event) === 'after';
+    clearCarouselDragState();
+    moveReward(sourceIndex, targetIndex + (insertAfter ? 1 : 0));
+  });
+
+  editor.addEventListener('dragend', clearCarouselDragState);
+}
+
+function updateCarouselDropTarget(editor, event) {
+  const placement = getCarouselDropPlacement(editor, event);
+  if (carouselDropTarget === editor && carouselDropPlacement === placement) {
+    return;
+  }
+
+  if (carouselDropTarget && carouselDropTarget !== editor) {
+    clearCarouselDropTarget(carouselDropTarget);
+  }
+
+  carouselDropTarget = editor;
+  carouselDropPlacement = placement;
+  editor.classList.toggle('is-drop-before', placement === 'before');
+  editor.classList.toggle('is-drop-after', placement === 'after');
+}
+
+function getCarouselDropPlacement(editor, event) {
+  const rect = editor.getBoundingClientRect();
+  return event.clientY > rect.top + (rect.height / 2) ? 'after' : 'before';
+}
+
+function clearCarouselDropTarget(editor) {
+  editor.classList.remove('is-drop-before', 'is-drop-after');
+  if (carouselDropTarget === editor) {
+    carouselDropTarget = null;
+    carouselDropPlacement = '';
+  }
+}
+
+function clearCarouselDragState() {
+  rewardList.querySelector('.reward-editor.is-dragging')?.classList.remove('is-dragging');
+  if (carouselDropTarget) {
+    clearCarouselDropTarget(carouselDropTarget);
+  }
 }
 
 function renderRowsGifts() {
@@ -822,17 +877,18 @@ function createRowsGiftEditor(gift, index) {
 
     updateEditorState(editor, gift);
     editor.addEventListener('dragstart', event => {
+      if (event.target.closest('input, select, textarea, button')) {
+        event.preventDefault();
+        return;
+      }
+
       editor.classList.add('is-dragging');
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData('text/plain', String(index));
+      event.dataTransfer.setData('application/x-rows-gift-index', String(index));
     });
 
-    editor.addEventListener('dragend', () => {
-      editor.classList.remove('is-dragging');
-      rowsGiftList.querySelectorAll('.rows-gift-dropzone.is-drag-over').forEach(zone => {
-        zone.classList.remove('is-drag-over');
-      });
-    });
+    editor.addEventListener('dragend', clearRowsGiftDragState);
 
     return editor;
 }
@@ -842,11 +898,21 @@ function setupRowsGiftDropzone(dropzone, row) {
     event.preventDefault();
     event.dataTransfer.dropEffect = 'move';
     dropzone.classList.add('is-drag-over');
+
+    const targetEditor = event.target.closest('.reward-editor[data-mode="rows"]');
+    if (targetEditor && dropzone.contains(targetEditor)) {
+      updateRowsGiftDropTarget(targetEditor, event);
+    } else if (rowsGiftDropTarget) {
+      clearRowsGiftDropTarget(rowsGiftDropTarget);
+    }
   });
 
   dropzone.addEventListener('dragleave', event => {
     if (!dropzone.contains(event.relatedTarget)) {
       dropzone.classList.remove('is-drag-over');
+      if (rowsGiftDropTarget && dropzone.contains(rowsGiftDropTarget)) {
+        clearRowsGiftDropTarget(rowsGiftDropTarget);
+      }
     }
   });
 
@@ -854,15 +920,60 @@ function setupRowsGiftDropzone(dropzone, row) {
     event.preventDefault();
     dropzone.classList.remove('is-drag-over');
 
-    const sourceIndex = Number(event.dataTransfer.getData('text/plain'));
+    const sourceIndex = Number(event.dataTransfer.getData('application/x-rows-gift-index') || event.dataTransfer.getData('text/plain'));
     const targetEditor = event.target.closest('.reward-editor[data-mode="rows"]');
     const beforeIndex = targetEditor ? Number(targetEditor.dataset.index) : null;
-    moveRowsGift(sourceIndex, row, beforeIndex);
+    const insertAfter = targetEditor ? getRowsGiftDropPlacement(targetEditor, event) === 'after' : false;
+    clearRowsGiftDragState();
+    moveRowsGift(sourceIndex, row, beforeIndex, insertAfter);
   });
 }
 
-function moveRowsGift(sourceIndex, row, beforeIndex = null) {
+function updateRowsGiftDropTarget(editor, event) {
+  const placement = getRowsGiftDropPlacement(editor, event);
+  if (rowsGiftDropTarget === editor && rowsGiftDropPlacement === placement) {
+    return;
+  }
+
+  if (rowsGiftDropTarget && rowsGiftDropTarget !== editor) {
+    clearRowsGiftDropTarget(rowsGiftDropTarget);
+  }
+
+  rowsGiftDropTarget = editor;
+  rowsGiftDropPlacement = placement;
+  editor.classList.toggle('is-drop-before', placement === 'before');
+  editor.classList.toggle('is-drop-after', placement === 'after');
+}
+
+function getRowsGiftDropPlacement(editor, event) {
+  const rect = editor.getBoundingClientRect();
+  return event.clientX > rect.left + (rect.width / 2) ? 'after' : 'before';
+}
+
+function clearRowsGiftDropTarget(editor) {
+  editor.classList.remove('is-drop-before', 'is-drop-after');
+  if (rowsGiftDropTarget === editor) {
+    rowsGiftDropTarget = null;
+    rowsGiftDropPlacement = '';
+  }
+}
+
+function clearRowsGiftDragState() {
+  rowsGiftList.querySelector('.reward-editor.is-dragging')?.classList.remove('is-dragging');
+  rowsGiftList.querySelectorAll('.rows-gift-dropzone.is-drag-over').forEach(zone => {
+    zone.classList.remove('is-drag-over');
+  });
+  if (rowsGiftDropTarget) {
+    clearRowsGiftDropTarget(rowsGiftDropTarget);
+  }
+}
+
+function moveRowsGift(sourceIndex, row, beforeIndex = null, insertAfter = false) {
   if (!Number.isInteger(sourceIndex) || !draftConfig.rowsOverlay.gifts[sourceIndex]) {
+    return;
+  }
+
+  if (beforeIndex === sourceIndex) {
     return;
   }
 
@@ -896,11 +1007,14 @@ function moveRowsGift(sourceIndex, row, beforeIndex = null) {
 
   const targetGroup = groups[targetRow - 1];
   const beforeGift = beforeIndex !== null ? gifts[beforeIndex] : null;
-  const insertIndex = beforeGift && beforeGift.row === targetRow ? targetGroup.indexOf(beforeGift) : -1;
+  let insertIndex = beforeGift && beforeGift.row === targetRow ? targetGroup.indexOf(beforeGift) : -1;
 
   if (insertIndex === -1) {
     targetGroup.push(movedGift);
   } else {
+    if (insertAfter) {
+      insertIndex += 1;
+    }
     targetGroup.splice(insertIndex, 0, movedGift);
   }
 
@@ -1652,6 +1766,24 @@ function swapRewards(first, second) {
   [rewards[first], rewards[second]] = [rewards[second], rewards[first]];
 }
 
+function moveReward(sourceIndex, targetIndex) {
+  if (!Number.isInteger(sourceIndex) || !draftConfig.rewards[sourceIndex]) {
+    return;
+  }
+
+  const boundedTarget = clamp(Number(targetIndex), 0, draftConfig.rewards.length);
+  if (sourceIndex === boundedTarget || sourceIndex + 1 === boundedTarget) {
+    return;
+  }
+
+  const [movedReward] = draftConfig.rewards.splice(sourceIndex, 1);
+  const adjustedTarget = sourceIndex < boundedTarget ? boundedTarget - 1 : boundedTarget;
+  draftConfig.rewards.splice(adjustedTarget, 0, movedReward);
+
+  markDirty();
+  renderPreservingScroll();
+}
+
 function addReward() {
   insertReward(draftConfig.rewards.length);
 }
@@ -2130,8 +2262,10 @@ function scheduleOverlayPreviewRefresh() {
 function refreshOverlayPreviews() {
   const previewConfig = cloneConfig(draftConfig);
   previewRefreshIndex += 1;
+  const refreshCarousel = activeConfigTab === 'original';
+  const refreshRows = activeConfigTab === 'rows';
 
-  if (carouselPreview) {
+  if (carouselPreview && refreshCarousel) {
     setPreviewUrl(carouselPreview, getUrlForPage('index-rewards.html', previewConfig, {
       preview: !carouselPreviewTest?.checked,
       test: Boolean(carouselPreviewTest?.checked),
@@ -2140,7 +2274,7 @@ function refreshOverlayPreviews() {
     }));
   }
 
-  if (rowsPreview) {
+  if (rowsPreview && refreshRows) {
     setPreviewUrl(rowsPreview, getUrlForPage('index-rewards-rows.html', previewConfig, {
       preview: !rowsPreviewTest?.checked,
       test: Boolean(rowsPreviewTest?.checked),
