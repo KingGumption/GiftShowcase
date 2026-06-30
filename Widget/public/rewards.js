@@ -39,6 +39,11 @@ let receivedLikeCount = 0;
 
 const streakSettleDelay = 2400;
 const rewardTransitionMs = 820;
+const longTestSupporters = [
+  'PrincessSparkleThunderstormTheThird',
+  'CaptainUnreasonablyLongDisplayName',
+  'VeryVeryLongGifterNameForOverlayTesting'
+];
 
 applyThemeToDocument(rewardConfig.carouselTheme || rewardConfig.theme);
 rewardWidget.classList.toggle('received-animations-disabled', rewardConfig.animationsEnabled === false);
@@ -116,6 +121,7 @@ function expandCompactConfig(config) {
     soundsEnabled: config.e === 0 ? false : undefined,
     animationsEnabled: config.f === 0 ? false : undefined,
     profileAnimationEnabled: config.h === 1 ? true : undefined,
+    profileNameEnabled: config.i === 1 ? true : undefined,
     theme: expandCompactTheme(config.t),
     carouselTheme: expandCompactTheme(config.u),
     rowsTheme: expandCompactTheme(config.v),
@@ -160,6 +166,7 @@ function expandCompactRowsOverlay(rows) {
     soundsEnabled: rows.i === 0 ? false : undefined,
     animationsEnabled: rows.k === 0 ? false : undefined,
     profileAnimationEnabled: rows.l === 1 ? true : undefined,
+    profileNameEnabled: rows.m === 1 ? true : undefined,
     gifts: Array.isArray(rows.j) ? rows.j.map(expandCompactRowsGift) : undefined
   });
 }
@@ -215,7 +222,7 @@ function normalizeRewardConfig(config = {}, fallback = {}) {
       ? fallback.rewards
       : [];
 
-  return {
+  const merged = {
     ...fallback,
     ...config,
     theme: {
@@ -228,6 +235,9 @@ function normalizeRewardConfig(config = {}, fallback = {}) {
     },
     rewards
   };
+
+  merged.profileNameEnabled = merged.profileAnimationEnabled === true && merged.profileNameEnabled === true;
+  return merged;
 }
 
 function applyThemeToDocument(theme = {}) {
@@ -463,7 +473,10 @@ function renderRewards() {
       <div class="reward-image">
         ${getRewardImageMarkup(reward)}
       </div>
-      <strong>${escapeHtml(reward.title)}</strong>
+      <strong data-original-label="${escapeAttribute(reward.title)}">
+        <span class="reward-label-original">${escapeHtml(reward.title)}</span>
+        <span class="reward-label-profile" aria-hidden="true"></span>
+      </strong>
     </article>
   `).join('');
 }
@@ -526,6 +539,7 @@ function advanceToReward(index, giftEvent = null) {
   clearTimeout(hitTimer);
   clearTimeout(labelTimer);
   clearTimeout(profileAnimationTimer);
+  restoreRewardProfileName();
   rewardWidget.classList.remove('reward-hit');
   rewardWidget.classList.toggle('profile-animation-active', useProfileAnimation);
   if (rewardConfig.animationsEnabled !== false) {
@@ -550,6 +564,7 @@ function advanceToReward(index, giftEvent = null) {
     rewardWidget.classList.remove('profile-animation-active');
     rewardWidget.classList.remove('profile-has-avatar');
     rewardTrack.querySelectorAll('.reward-profile-image').forEach(image => image.remove());
+    restoreRewardProfileName();
   }, holdOnGiftMs);
   scheduleVisualReset();
 }
@@ -663,6 +678,8 @@ function runGiftProfileAnimation(rewardIndex, gift) {
   }
 
   imageContainer.querySelectorAll('.reward-profile-image').forEach(image => image.remove());
+  runRewardProfileNameAnimation(rewardIndex, gift);
+
   if (!gift.avatarUrl) {
     return;
   }
@@ -674,6 +691,42 @@ function runGiftProfileAnimation(rewardIndex, gift) {
   profileImage.src = gift.avatarUrl;
   profileImage.addEventListener('error', () => profileImage.remove(), { once: true });
   imageContainer.append(profileImage);
+}
+
+function runRewardProfileNameAnimation(rewardIndex, gift) {
+  if (rewardConfig.profileNameEnabled !== true || !gift?.supporter) {
+    restoreRewardProfileName();
+    return;
+  }
+
+  const label = rewardTrack.querySelector(`.reward-card.is-active[data-reward-index="${rewardIndex}"] strong`);
+  if (!label) {
+    return;
+  }
+
+  const profileLabel = label.querySelector('.reward-label-profile');
+  if (!profileLabel) {
+    return;
+  }
+
+  profileLabel.textContent = gift.supporter;
+  label.classList.add('profile-name-active');
+}
+
+function restoreRewardProfileName() {
+  rewardTrack.querySelectorAll('.reward-card strong[data-original-label]').forEach(label => {
+    label.classList.remove('profile-name-active');
+    const originalLabel = label.querySelector('.reward-label-original');
+    const profileLabel = label.querySelector('.reward-label-profile');
+
+    if (originalLabel) {
+      originalLabel.textContent = label.dataset.originalLabel || originalLabel.textContent;
+    }
+
+    if (profileLabel) {
+      profileLabel.textContent = '';
+    }
+  });
 }
 
 function playRewardSound(reward) {
@@ -786,7 +839,7 @@ function startTestMode() {
       ? 'Test Follower'
       : reward.triggerType === 'likes'
         ? `Test ${reward.likesRequired} Likes`
-        : `Test Gifter ${testIndex + 1}`;
+        : getTestSupporterName(testIndex);
 
     applyGift({
       supporter,
@@ -808,6 +861,10 @@ function getRandomTestDelay(min, max) {
   return Math.round(min + (Math.random() * (max - min)));
 }
 
+function getTestSupporterName(index = 0) {
+  return longTestSupporters[index % longTestSupporters.length] || `Test Gifter ${index + 1}`;
+}
+
 function setupGiftSimulator() {
   window.simulateRewardGift = (giftNameOrOptions = '') => {
     const options = typeof giftNameOrOptions === 'object' && giftNameOrOptions !== null
@@ -826,7 +883,7 @@ function setupGiftSimulator() {
     const triggerType = normalizeTriggerType(options.triggerType || options.trigger || reward.triggerType);
 
     applyGift({
-      supporter: options.supporter || options.user || 'Test Gifter',
+      supporter: options.supporter || options.user || getTestSupporterName(0),
       giftName,
       giftId,
       imageUrl: options.imageUrl || options.image || '',

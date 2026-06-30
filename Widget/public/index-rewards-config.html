@@ -96,6 +96,14 @@
             </select>
             <span class="field-hint">Alternative received-gift animation; hides the carousel gifter callout</span>
           </div>
+          <div class="config-field" data-profile-name-toggle="carousel" hidden>
+            <label for="carousel-profile-name">Profile Animation Name</label>
+            <select id="carousel-profile-name">
+              <option value="0">Keep gift name</option>
+              <option value="1">Show gifter name</option>
+            </select>
+            <span class="field-hint">Temporarily swaps the gift label during the profile animation</span>
+          </div>
         </div>
       </details>
 
@@ -275,6 +283,14 @@
               <option value="1">On (gift → profile → gift)</option>
             </select>
             <span class="field-hint">Alternative animation for matched row gifts</span>
+          </div>
+          <div class="config-field" data-profile-name-toggle="rows" hidden>
+            <label for="rows-profile-name">Profile Animation Name</label>
+            <select id="rows-profile-name">
+              <option value="0">Keep gift name</option>
+              <option value="1">Show gifter name</option>
+            </select>
+            <span class="field-hint">Temporarily swaps matched row labels during the profile animation</span>
           </div>
         </div>
       </details>

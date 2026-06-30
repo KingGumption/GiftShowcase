@@ -1408,8 +1408,10 @@ body.show-status .status {
 }
 
 .reward-card strong {
+  position: relative;
   display: block;
   width: 100%;
+  min-height: 1.04em;
   overflow: hidden;
   color: var(--reward-theme-card-text);
   font-size: 10px;
@@ -1421,6 +1423,35 @@ body.show-status .status {
   text-shadow:
     0 2px 0 rgba(0, 0, 0, 0.82),
     0 0 5px rgba(255, 255, 255, 0.24);
+}
+
+.reward-label-original,
+.reward-label-profile {
+  display: block;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.reward-label-profile {
+  position: absolute;
+  inset: 0;
+  color: var(--reward-theme-accent);
+  opacity: 0;
+  transform: translateY(0.55em) scale(0.82);
+  text-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.86),
+    0 0 8px var(--reward-theme-accent-strong),
+    0 0 14px var(--reward-theme-glow-strong);
+}
+
+.profile-name-active .reward-label-original {
+  animation: rewardOriginalLabelToProfile var(--reward-profile-duration, 6500ms) ease-in-out;
+}
+
+.profile-name-active .reward-label-profile {
+  animation: rewardProfileNameReveal var(--reward-profile-duration, 6500ms) cubic-bezier(0.18, 0.9, 0.24, 1.12);
 }
 
 .reward-callout {
@@ -1642,6 +1673,58 @@ body.show-status .status {
 
   50% {
     transform: scale(1.22) rotate(360deg);
+  }
+}
+
+@keyframes rewardOriginalLabelToProfile {
+  0%,
+  16% {
+    opacity: 1;
+    filter: brightness(1);
+    transform: translateY(0) scale(1);
+  }
+
+  21%,
+  60% {
+    opacity: 0;
+    filter: brightness(1.45);
+    transform: translateY(-0.45em) scale(0.88);
+  }
+
+  78%,
+  100% {
+    opacity: 1;
+    filter: brightness(1);
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes rewardProfileNameReveal {
+  0%,
+  18% {
+    opacity: 0;
+    letter-spacing: 0;
+    transform: translateY(0.65em) scale(0.72);
+  }
+
+  30% {
+    opacity: 1;
+    letter-spacing: 0;
+    transform: translateY(-0.08em) scale(1.14);
+  }
+
+  36%,
+  58% {
+    opacity: 1;
+    letter-spacing: 0;
+    transform: translateY(0) scale(1);
+  }
+
+  70%,
+  100% {
+    opacity: 0;
+    letter-spacing: 0;
+    transform: translateY(-0.65em) scale(0.76);
   }
 }
 
@@ -1908,8 +1991,10 @@ body.show-status .status {
 }
 
 .reward-gift-tile strong {
+  position: relative;
   display: block;
   width: 100%;
+  min-height: 1.12em;
   overflow: hidden;
   color: var(--reward-theme-text);
   font-size: 11px;

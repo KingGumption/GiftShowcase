@@ -1,11 +1,12 @@
 const rewardRowsWidget = document.querySelector('#reward-rows-widget');
 const savedRowsConfig = loadRowsOverlayConfig();
+savedRowsConfig.profileNameEnabled = savedRowsConfig.profileAnimationEnabled === true && savedRowsConfig.profileNameEnabled === true;
 const params = new URLSearchParams(window.location.search);
 const tikfinityUrl = params.get('endpoint') || 'ws://localhost:21213/';
 const testMode = params.get('test') === '1';
 const previewMode = params.get('preview') === '1';
 const muteMode = params.get('mute') === '1';
-const highlightMs = clampInteger(Number(params.get('highlightMs') || 2600), 900, 9000);
+const highlightMs = Math.max(900, Number(params.get('highlightMs') || savedRowsConfig.holdOnGiftMs || 6500) || 6500);
 rewardRowsWidget.style.setProperty('--reward-profile-duration', `${highlightMs}ms`);
 
 const catalogGifts = normalizeCatalog(window.rewardImageCatalog || []);
@@ -27,6 +28,11 @@ let lastTestGiftIndex = -1;
 let receivedLikeCount = 0;
 const rowScrollStates = new WeakMap();
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const longTestSupporters = [
+  'PrincessSparkleThunderstormTheThird',
+  'CaptainUnreasonablyLongDisplayName',
+  'VeryVeryLongGifterNameForOverlayTesting'
+];
 
 applyThemeToDocument(savedRowsConfig.theme);
 rewardRowsWidget.classList.toggle('received-animations-disabled', savedRowsConfig.animationsEnabled === false);
@@ -234,7 +240,7 @@ function getRowMarkup(rowGifts) {
   return rowGifts.map((gift, index) => `
     <article class="reward-gift-tile reward-trigger-${escapeAttribute(gift.triggerType)}" data-gift-index="${index}" data-gift-keys="${escapeAttribute(gift.keys.join('|'))}" data-sound="${escapeAttribute(gift.sound)}" data-volume="${escapeAttribute(gift.volume)}">
       <img src="${escapeAttribute(gift.image)}" alt="">
-      ${showNames ? `<strong>${escapeHtml(gift.label)}</strong>` : ''}
+      ${showNames ? `<strong data-original-label="${escapeAttribute(gift.label)}"><span class="reward-label-original">${escapeHtml(gift.label)}</span><span class="reward-label-profile" aria-hidden="true"></span></strong>` : ''}
     </article>
   `).join('');
 }
@@ -419,6 +425,7 @@ function setupRowsGiftSimulator() {
       giftId: options.giftId || options.id || fallbackGift.id || '',
       triggerType,
       triggerKey: getTriggerKey({ triggerType, likesRequired: options.likesRequired || fallbackGift.likesRequired }),
+      supporter: options.supporter || options.user || getTestSupporterName(0),
       avatarUrl: options.avatarUrl || options.profilePictureUrl || getTestAvatarImage(0)
     });
   };
@@ -461,6 +468,7 @@ function startRowsTestMode() {
         giftId: gift.id,
         triggerType: gift.triggerType,
         triggerKey: getTriggerKey(gift),
+        supporter: gift.triggerType === 'gift' ? getTestSupporterName(testIndex) : '',
         avatarUrl: gift.triggerType === 'gift' ? getTestAvatarImage(testIndex) : ''
       });
       testIndex += 1;
@@ -472,6 +480,10 @@ function startRowsTestMode() {
 
 function getRandomTestDelay(min, max) {
   return Math.round(min + (Math.random() * (max - min)));
+}
+
+function getTestSupporterName(index = 0) {
+  return longTestSupporters[index % longTestSupporters.length] || `Test Gifter ${index + 1}`;
 }
 
 function getRandomTestGift() {
@@ -517,6 +529,7 @@ function highlightGift(gift) {
 
   clearTimeout(highlightTimer);
   clearTimeout(releaseFocusTimer);
+  clearRowProfileAnimations();
   if (savedRowsConfig.animationsEnabled !== false) {
     focusGiftTile(focusTile);
   }
@@ -549,9 +562,12 @@ function runRowsGiftProfileAnimation(tiles, gift) {
   }
 
   tiles.forEach(tile => {
+    clearTimeout(tile.profileAnimationTimer);
+    restoreRowProfileName(tile);
     tile.classList.add('profile-animation-active');
     tile.classList.toggle('profile-has-avatar', Boolean(gift.avatarUrl));
     tile.querySelectorAll('.reward-row-profile-image').forEach(image => image.remove());
+    runRowProfileNameAnimation(tile, gift);
 
     if (gift.avatarUrl) {
       const profileImage = document.createElement('img');
@@ -562,11 +578,54 @@ function runRowsGiftProfileAnimation(tiles, gift) {
       tile.append(profileImage);
     }
 
-    window.setTimeout(() => {
+    tile.profileAnimationTimer = window.setTimeout(() => {
       tile.classList.remove('profile-animation-active');
       tile.classList.remove('profile-has-avatar');
       tile.querySelectorAll('.reward-row-profile-image').forEach(image => image.remove());
+      restoreRowProfileName(tile);
+      tile.profileAnimationTimer = null;
     }, highlightMs);
+  });
+}
+
+function clearRowProfileAnimations() {
+  rewardRowsWidget.querySelectorAll('.reward-gift-tile.profile-animation-active').forEach(tile => {
+    clearTimeout(tile.profileAnimationTimer);
+    tile.profileAnimationTimer = null;
+    tile.classList.remove('profile-animation-active');
+    tile.classList.remove('profile-has-avatar');
+    tile.querySelectorAll('.reward-row-profile-image').forEach(image => image.remove());
+    restoreRowProfileName(tile);
+  });
+}
+
+function runRowProfileNameAnimation(tile, gift) {
+  if (savedRowsConfig.profileNameEnabled !== true || !gift?.supporter) {
+    return;
+  }
+
+  const label = tile.querySelector('strong');
+  const profileLabel = label?.querySelector('.reward-label-profile');
+  if (label && profileLabel) {
+    profileLabel.textContent = gift.supporter;
+    label.classList.add('profile-name-active');
+  }
+}
+
+function restoreRowProfileName(tile) {
+  const labels = tile ? tile.querySelectorAll('strong[data-original-label]') : rewardRowsWidget.querySelectorAll('.reward-gift-tile strong[data-original-label]');
+  labels.forEach(label => {
+    label.classList.remove('profile-name-active');
+    const originalLabel = label.querySelector('.reward-label-original');
+    const profileLabel = label.querySelector('.reward-label-profile');
+
+    if (originalLabel) {
+      originalLabel.textContent = label.dataset.originalLabel || originalLabel.textContent;
+    }
+
+    if (profileLabel) {
+      profileLabel.textContent = '';
+    }
   });
 }
 
@@ -777,8 +836,13 @@ function normalizeGiftEvent(data) {
     triggerType: 'gift',
     giftName: data.giftDetails?.giftName || data.gift?.name || data.giftName || data.extendedGiftInfo?.name || 'Gift',
     giftId: normalizeId(data.giftId || data.gift?.id || data.gift?.giftId || data.giftDetails?.giftId || data.extendedGiftInfo?.id || data.extendedGiftInfo?.gift_id || ''),
+    supporter: getSupporterName(data, 'Unknown'),
     avatarUrl: findAvatarImage(data)
   };
+}
+
+function getSupporterName(data, fallback) {
+  return data.user?.nickname || data.user?.uniqueId || data.nickname || data.uniqueId || data.username || fallback;
 }
 
 function findAvatarImage(data) {
@@ -906,6 +970,7 @@ function loadRowsOverlayConfig() {
   if (urlConfig?.rowsOverlay) {
     return {
       ...urlConfig.rowsOverlay,
+      holdOnGiftMs: urlConfig.holdOnGiftMs,
       theme: urlConfig.rowsTheme || urlConfig.theme || urlConfig.carouselTheme
     };
   }
@@ -916,11 +981,13 @@ function loadRowsOverlayConfig() {
     const saved = JSON.parse(localStorage.getItem('reward-overlay-config:v1') || 'null');
     return {
       ...(saved?.rowsOverlay || fallback),
+      holdOnGiftMs: saved?.holdOnGiftMs || window.rewardOverlayConfig?.holdOnGiftMs,
       theme: saved?.rowsTheme || saved?.theme || saved?.carouselTheme || window.rewardOverlayConfig?.rowsTheme || window.rewardOverlayConfig?.theme
     };
   } catch {
     return {
       ...fallback,
+      holdOnGiftMs: window.rewardOverlayConfig?.holdOnGiftMs,
       theme: window.rewardOverlayConfig?.rowsTheme || window.rewardOverlayConfig?.theme
     };
   }
@@ -958,6 +1025,7 @@ function expandCompactConfig(config) {
     soundsEnabled: config.e === 0 ? false : undefined,
     animationsEnabled: config.f === 0 ? false : undefined,
     profileAnimationEnabled: config.h === 1 ? true : undefined,
+    profileNameEnabled: config.i === 1 ? true : undefined,
     theme: expandCompactTheme(config.t),
     carouselTheme: expandCompactTheme(config.u),
     rowsTheme: expandCompactTheme(config.v),
@@ -1002,6 +1070,7 @@ function expandCompactRowsOverlay(rows) {
     soundsEnabled: rows.i === 0 ? false : undefined,
     animationsEnabled: rows.k === 0 ? false : undefined,
     profileAnimationEnabled: rows.l === 1 ? true : undefined,
+    profileNameEnabled: rows.m === 1 ? true : undefined,
     gifts: Array.isArray(rows.j) ? rows.j.map(expandCompactRowsGift) : undefined
   });
 }

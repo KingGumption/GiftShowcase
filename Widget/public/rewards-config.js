@@ -3,6 +3,7 @@ window.rewardOverlayConfig = {
   "holdOnGiftMs": 6500,
   "labelMs": 2600,
   "visibleNext": 3,
+  "profileNameEnabled": false,
   "theme": {
     "preset": "glass-purple",
     "accent": "#03f5d8",
@@ -48,6 +49,7 @@ window.rewardOverlayConfig = {
     "rowHeight": 96,
     "gap": 0,
     "names": true,
+    "profileNameEnabled": false,
     "gifts": [
       {
         "enabled": true,
