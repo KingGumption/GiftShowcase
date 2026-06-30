@@ -7978,5 +7978,10 @@ window.rewardImageCatalog = [
     "id": "1596",
     "name": "TikTok Universe",
     "image": "./rewards/1596_TikTok_Universe.png"
+  },
+  {
+    "id": "1597",
+    "name": "Misty Purr",
+    "image": "./rewards/1597_Misty_Purr.png"
   }
 ];
