@@ -2222,6 +2222,35 @@ body.show-status .status {
   gap: 10px;
 }
 
+.config-actions input,
+.config-actions select {
+  min-height: 36px;
+  min-width: 150px;
+  padding: 0 10px;
+  color: var(--white);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 6px;
+  background: rgba(8, 8, 14, 0.72);
+}
+
+.config-actions input {
+  width: 170px;
+}
+
+.config-actions select {
+  width: 210px;
+}
+
+.config-actions input:focus,
+.config-actions select:focus {
+  outline: none;
+  border-color: rgba(3, 245, 216, 0.72);
+  box-shadow: 0 0 0 2px rgba(3, 245, 216, 0.16);
+}
+
 .config-url-loader {
   display: grid;
   gap: 8px;
@@ -3295,7 +3324,9 @@ button {
     width: 100%;
   }
 
-  .config-actions button {
+  .config-actions button,
+  .config-actions input,
+  .config-actions select {
     width: 100%;
   }
 

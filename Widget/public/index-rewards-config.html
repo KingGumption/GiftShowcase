@@ -18,12 +18,17 @@
         </div>
         <div class="config-actions">
           <button id="add-reward" type="button" class="btn-primary" hidden>+ Add Reward</button>
-          <button id="save-config" type="button" class="btn-success">💾 Save</button>
-          <button id="export-config" type="button" class="btn-secondary">⬇️ Export</button>
+          <input id="config-version-name" type="text" placeholder="Version name">
+          <select id="config-version-select" aria-label="Saved config versions">
+            <option value="">Saved versions</option>
+          </select>
+          <button id="save-config" type="button" class="btn-success">Save</button>
+          <button id="load-config-version" type="button" class="btn-secondary">Load</button>
+          <button id="delete-config-version" type="button" class="btn-danger">Delete</button>
           <button id="copy-carousel-url" type="button" class="btn-secondary">Copy Carousel URL</button>
           <button id="copy-rows-url" type="button" class="btn-secondary">Copy Rows URL</button>
           <button id="copy-config-url" type="button" class="btn-secondary">Copy Config URL</button>
-          <button id="reset-config" type="button" class="btn-danger">🔄 Reset</button>
+          <button id="reset-config" type="button" class="btn-danger">Reset</button>
         </div>
       </header>
 

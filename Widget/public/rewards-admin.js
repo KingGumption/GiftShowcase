@@ -1,4 +1,5 @@
 const rewardStorageKey = 'reward-overlay-config:v1';
+const rewardVersionsStorageKey = 'reward-overlay-config-versions:v1';
 const giftFavoritesStorageKey = 'reward-gift-favorites:v1';
 const baseConfig = cloneConfig(window.rewardOverlayConfig || {});
 let draftConfig;
@@ -37,6 +38,10 @@ const addRewardButton = document.querySelector('#add-reward');
 const copyCarouselUrlButton = document.querySelector('#copy-carousel-url');
 const copyRowsUrlButton = document.querySelector('#copy-rows-url');
 const copyConfigUrlButton = document.querySelector('#copy-config-url');
+const configVersionName = document.querySelector('#config-version-name');
+const configVersionSelect = document.querySelector('#config-version-select');
+const loadConfigVersionButton = document.querySelector('#load-config-version');
+const deleteConfigVersionButton = document.querySelector('#delete-config-version');
 const loadConfigUrlInput = document.querySelector('#load-config-url');
 const loadConfigUrlButton = document.querySelector('#load-config-url-button');
 const carouselPreview = document.querySelector('#carousel-preview');
@@ -230,7 +235,12 @@ rowsGiftList.addEventListener('scroll', () => {
 addRewardButton.addEventListener('click', addReward);
 document.querySelector('#add-row-gift').addEventListener('click', () => addRowGift());
 document.querySelector('#save-config').addEventListener('click', saveConfig);
-document.querySelector('#export-config').addEventListener('click', exportConfig);
+loadConfigVersionButton.addEventListener('click', loadSelectedConfigVersion);
+deleteConfigVersionButton.addEventListener('click', deleteSelectedConfigVersion);
+configVersionSelect.addEventListener('change', () => {
+  const version = getSelectedConfigVersion();
+  configVersionName.value = version?.name || '';
+});
 copyCarouselUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards.html', 'Carousel URL copied'));
 copyRowsUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards-rows.html', 'Rows URL copied'));
 copyConfigUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards-config.html', 'Config URL copied'));
@@ -350,6 +360,7 @@ rowsThemeColorFields.forEach(field => {
 seedImageCatalog();
 ensureRowsGiftDefaults();
 applyThemeToDocument(getCarouselTheme());
+renderConfigVersions();
 render();
 
 function loadDraftConfig() {
@@ -1887,7 +1898,10 @@ function saveConfig() {
   updateRowsFromForm();
   updateRowsThemeFromForm();
   localStorage.setItem(rewardStorageKey, JSON.stringify(draftConfig));
-  setState('✓ Saved for this browser');
+
+  const version = saveNamedConfigVersion();
+  renderConfigVersions(version?.id);
+  setState(version ? `Saved version: ${version.name}` : 'Saved for this browser');
 }
 
 function resetConfig() {
@@ -1897,22 +1911,138 @@ function resetConfig() {
   if (window.location.hash) {
     history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
   }
-  setState('✓ Reset to file config');
+  setState('Reset to file config');
   renderPreservingScroll();
 }
 
-function exportConfig() {
-  updateGlobalsFromForm();
-  updateRowsFromForm();
-  updateRowsThemeFromForm();
-  const content = `window.rewardOverlayConfig = ${JSON.stringify(draftConfig, null, 2)};\n`;
-  const blob = new Blob([content], { type: 'text/javascript' });
-  const link = document.createElement('a');
-  link.href = URL.createObjectURL(blob);
-  link.download = 'rewards-config.js';
-  link.click();
-  URL.revokeObjectURL(link.href);
-  setState('✓ Exported');
+function saveNamedConfigVersion() {
+  const selectedVersion = getSelectedConfigVersion();
+  const name = normalizeVersionName(configVersionName.value || selectedVersion?.name || '');
+
+  if (!name) {
+    return null;
+  }
+
+  const versions = loadConfigVersions();
+  const selectedId = configVersionSelect.value;
+  const existingIndex = selectedId
+    ? versions.findIndex(version => version.id === selectedId)
+    : versions.findIndex(version => normalizeName(version.name) === normalizeName(name));
+  const now = new Date().toISOString();
+  const nextVersion = {
+    id: existingIndex >= 0 ? versions[existingIndex].id : createConfigVersionId(),
+    name,
+    updatedAt: now,
+    config: cloneConfig(draftConfig)
+  };
+
+  if (existingIndex >= 0) {
+    versions[existingIndex] = nextVersion;
+  } else {
+    versions.push(nextVersion);
+  }
+
+  saveConfigVersions(versions);
+  return nextVersion;
+}
+
+function loadSelectedConfigVersion() {
+  const version = getSelectedConfigVersion();
+  if (!version) {
+    setState('Choose a saved version first');
+    configVersionSelect.focus();
+    return;
+  }
+
+  draftConfig = normalizeConfig(version.config);
+  ensureRowsGiftDefaults();
+  localStorage.setItem(rewardStorageKey, JSON.stringify(draftConfig));
+  configVersionName.value = version.name;
+  applyThemeToDocument(getCarouselTheme());
+  render();
+  renderConfigVersions(version.id);
+  setState(`Loaded version: ${version.name}`);
+}
+
+function deleteSelectedConfigVersion() {
+  const version = getSelectedConfigVersion();
+  if (!version) {
+    setState('Choose a saved version first');
+    configVersionSelect.focus();
+    return;
+  }
+
+  if (!confirm(`Delete saved version "${version.name}"?`)) {
+    return;
+  }
+
+  saveConfigVersions(loadConfigVersions().filter(item => item.id !== version.id));
+  configVersionName.value = '';
+  renderConfigVersions();
+  setState(`Deleted version: ${version.name}`);
+}
+
+function getSelectedConfigVersion() {
+  const selectedId = configVersionSelect.value;
+  return loadConfigVersions().find(version => version.id === selectedId) || null;
+}
+
+function renderConfigVersions(selectedId = configVersionSelect.value) {
+  const versions = loadConfigVersions();
+  configVersionSelect.innerHTML = '<option value="">Saved versions</option>';
+
+  versions.forEach(version => {
+    const option = document.createElement('option');
+    option.value = version.id;
+    option.textContent = `${version.name} (${formatVersionDate(version.updatedAt)})`;
+    configVersionSelect.append(option);
+  });
+
+  configVersionSelect.value = versions.some(version => version.id === selectedId) ? selectedId : '';
+}
+
+function loadConfigVersions() {
+  try {
+    const versions = JSON.parse(localStorage.getItem(rewardVersionsStorageKey) || '[]');
+    return Array.isArray(versions)
+      ? versions
+        .filter(version => version && version.id && version.name && version.config)
+        .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
+      : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveConfigVersions(versions) {
+  localStorage.setItem(rewardVersionsStorageKey, JSON.stringify(versions));
+}
+
+function normalizeVersionName(value) {
+  return String(value || '').replace(/\s+/g, ' ').trim();
+}
+
+function createConfigVersionId() {
+  if (window.crypto?.randomUUID) {
+    return window.crypto.randomUUID();
+  }
+
+  return `version-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function formatVersionDate(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return 'saved';
+  }
+
+  return date.toLocaleString([], {
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 function copyOverlayUrl(page, successText) {
