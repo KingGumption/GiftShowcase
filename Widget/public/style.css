@@ -1434,6 +1434,18 @@ body.show-status .status {
   white-space: nowrap;
 }
 
+.reward-card strong.is-label-scrolling:not(.profile-name-active) .reward-label-original,
+.reward-card strong.is-label-scrolling:not(.profile-name-active) .reward-label-profile,
+.reward-gift-tile strong.is-label-scrolling:not(.profile-name-active) .reward-label-original,
+.reward-gift-tile strong.is-label-scrolling:not(.profile-name-active) .reward-label-profile {
+  width: max-content;
+  min-width: 100%;
+  overflow: visible;
+  text-align: left;
+  text-overflow: clip;
+  animation: rewardLabelScroll var(--reward-label-scroll-duration, 5.8s) ease-in-out infinite alternate;
+}
+
 .reward-label-profile {
   position: absolute;
   inset: 0;
@@ -1963,6 +1975,11 @@ body.show-status .status {
 }
 
 .reward-gift-tile .reward-row-profile-image {
+  width: min(52px, 72%, calc(var(--reward-row-height) - 48px));
+  height: auto;
+  aspect-ratio: 1;
+  justify-self: center;
+  align-self: center;
   z-index: 1;
   border-radius: 50%;
   object-fit: cover;
@@ -2005,6 +2022,27 @@ body.show-status .status {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.82);
+}
+
+@keyframes rewardLabelScroll {
+  0%,
+  18% {
+    transform: translateX(0);
+  }
+
+  82%,
+  100% {
+    transform: translateX(calc(-1 * var(--reward-label-scroll-distance, 0px)));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reward-card strong.is-label-scrolling:not(.profile-name-active) .reward-label-original,
+  .reward-card strong.is-label-scrolling:not(.profile-name-active) .reward-label-profile,
+  .reward-gift-tile strong.is-label-scrolling:not(.profile-name-active) .reward-label-original,
+  .reward-gift-tile strong.is-label-scrolling:not(.profile-name-active) .reward-label-profile {
+    animation: none;
+  }
 }
 
 .reward-rows-empty {

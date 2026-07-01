@@ -27,6 +27,7 @@ let holdTimer;
 let hitTimer;
 let labelTimer;
 let profileAnimationTimer;
+let labelScrollTimer;
 let presentationTimer;
 let reconnectTimer;
 let pendingGiftStreaks = new Map();
@@ -479,6 +480,7 @@ function renderRewards() {
       </strong>
     </article>
   `).join('');
+  scheduleRewardLabelScrollUpdate();
 }
 
 function getRewardImageMarkup(reward) {
@@ -713,6 +715,7 @@ function runRewardProfileNameAnimation(rewardIndex, gift) {
 
   profileLabel.textContent = gift.supporter;
   label.classList.add('profile-name-active');
+  scheduleRewardLabelScrollUpdate(label);
 }
 
 function restoreRewardProfileName() {
@@ -729,7 +732,47 @@ function restoreRewardProfileName() {
       profileLabel.textContent = '';
     }
   });
+  scheduleRewardLabelScrollUpdate();
 }
+
+function scheduleRewardLabelScrollUpdate(root = rewardTrack) {
+  clearTimeout(labelScrollTimer);
+  labelScrollTimer = setTimeout(() => updateRewardLabelScroll(root), 60);
+}
+
+function updateRewardLabelScroll(root = rewardTrack) {
+  const labels = root.matches?.('.reward-card strong')
+    ? [root]
+    : [...root.querySelectorAll('.reward-card strong')];
+
+  labels.forEach(label => {
+    const spans = [...label.querySelectorAll('.reward-label-original, .reward-label-profile')];
+    label.classList.remove('is-label-scrolling');
+    spans.forEach(span => {
+      span.style.removeProperty('--reward-label-scroll-distance');
+      span.style.removeProperty('--reward-label-scroll-duration');
+    });
+
+    const overflowingSpan = spans.find(span => span.textContent.trim() && span.scrollWidth - label.clientWidth > 1);
+    if (!overflowingSpan) {
+      return;
+    }
+
+    if (label.classList.contains('profile-name-active')) {
+      return;
+    }
+
+    const distance = Math.ceil(overflowingSpan.scrollWidth - label.clientWidth);
+    const duration = Math.min(10, Math.max(4.8, distance / 12));
+    label.classList.add('is-label-scrolling');
+    spans.forEach(span => {
+      span.style.setProperty('--reward-label-scroll-distance', `${distance}px`);
+      span.style.setProperty('--reward-label-scroll-duration', `${duration}s`);
+    });
+  });
+}
+
+window.addEventListener('resize', () => scheduleRewardLabelScrollUpdate());
 
 function playRewardSound(reward) {
   if (muteMode || rewardConfig.soundsEnabled === false || !reward?.sound) {

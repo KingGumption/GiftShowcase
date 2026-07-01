@@ -24,6 +24,7 @@ const showNames = savedRowsConfig.names !== false;
 let highlightTimer;
 let releaseFocusTimer;
 let reconnectTimer;
+let labelScrollTimer;
 let receivedLikeCount = 0;
 const rowScrollStates = new WeakMap();
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -87,6 +88,7 @@ function updateRowTileLabel(label, title) {
   }
 
   originalLabel.textContent = title;
+  scheduleRowLabelScrollUpdate();
 }
 
 function renderRows() {
@@ -128,6 +130,7 @@ function renderRows() {
       setupRowScrollLoop(row, track, loopGifts.length);
     }
   }
+  scheduleRowLabelScrollUpdate();
 }
 
 function setupRowScrollLoop(row, track, loopCount, options = {}) {
@@ -657,6 +660,7 @@ function runRowProfileNameAnimation(tile, gift) {
   if (label && profileLabel) {
     profileLabel.textContent = gift.supporter;
     label.classList.add('profile-name-active');
+    scheduleRowLabelScrollUpdate(label);
   }
 }
 
@@ -675,7 +679,47 @@ function restoreRowProfileName(tile) {
       profileLabel.textContent = '';
     }
   });
+  scheduleRowLabelScrollUpdate(tile || rewardRowsWidget);
 }
+
+function scheduleRowLabelScrollUpdate(root = rewardRowsWidget) {
+  clearTimeout(labelScrollTimer);
+  labelScrollTimer = setTimeout(() => updateRowLabelScroll(root), 60);
+}
+
+function updateRowLabelScroll(root = rewardRowsWidget) {
+  const labels = root.matches?.('.reward-gift-tile strong')
+    ? [root]
+    : [...root.querySelectorAll('.reward-gift-tile strong')];
+
+  labels.forEach(label => {
+    const spans = [...label.querySelectorAll('.reward-label-original, .reward-label-profile')];
+    label.classList.remove('is-label-scrolling');
+    spans.forEach(span => {
+      span.style.removeProperty('--reward-label-scroll-distance');
+      span.style.removeProperty('--reward-label-scroll-duration');
+    });
+
+    const overflowingSpan = spans.find(span => span.textContent.trim() && span.scrollWidth - label.clientWidth > 1);
+    if (!overflowingSpan) {
+      return;
+    }
+
+    if (label.classList.contains('profile-name-active')) {
+      return;
+    }
+
+    const distance = Math.ceil(overflowingSpan.scrollWidth - label.clientWidth);
+    const duration = Math.min(10, Math.max(4.8, distance / 12));
+    label.classList.add('is-label-scrolling');
+    spans.forEach(span => {
+      span.style.setProperty('--reward-label-scroll-distance', `${distance}px`);
+      span.style.setProperty('--reward-label-scroll-duration', `${duration}s`);
+    });
+  });
+}
+
+window.addEventListener('resize', () => scheduleRowLabelScrollUpdate());
 
 function getBestFocusTile(tiles) {
   return tiles.reduce((bestTile, tile) => {
