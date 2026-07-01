@@ -256,7 +256,7 @@ function getLoopableRowGifts(rowGifts, visibleCount) {
 
 function getRowMarkup(rowGifts) {
   return rowGifts.map((gift, index) => `
-    <article class="reward-gift-tile reward-trigger-${escapeAttribute(gift.triggerType)}" data-gift-index="${index}" data-gift-keys="${escapeAttribute(gift.keys.join('|'))}" data-sound="${escapeAttribute(gift.sound)}" data-volume="${escapeAttribute(gift.volume)}">
+    <article class="reward-gift-tile reward-trigger-${escapeAttribute(gift.triggerType)}" data-gift-index="${index}" data-gift-keys="${escapeAttribute(gift.keys.join('|'))}" data-gift-image-keys="${escapeAttribute(gift.giftImageKeys.join('|'))}" data-use-gift-image="${gift.useGiftImage ? '1' : '0'}" data-sound="${escapeAttribute(gift.sound)}" data-volume="${escapeAttribute(gift.volume)}">
       <img src="${escapeAttribute(gift.image)}" alt="">
       ${showNames ? `<strong data-original-label="${escapeAttribute(gift.label)}"><span class="reward-label-original">${escapeHtml(gift.label)}</span><span class="reward-label-profile" aria-hidden="true"></span></strong>` : ''}
     </article>
@@ -323,6 +323,7 @@ function normalizeCatalog(list) {
 function normalizeRowsGifts(list) {
   return dedupeGifts(list.filter(gift => gift.enabled !== false).map(gift => {
     const triggerType = normalizeTriggerType(gift.triggerType);
+    const hasUseGiftImage = Object.prototype.hasOwnProperty.call(gift, 'useGiftImage');
     return {
       id: normalizeId(gift.giftIds?.[0] || ''),
       label: getDisplayLabel(gift.title || gift.giftNames?.[0] || gift.image || 'Gift'),
@@ -343,6 +344,11 @@ function normalizeRowsGifts(list) {
       row: Number.isInteger(Number(gift.row)) ? Number(gift.row) : undefined,
       sound: String(gift.sound || ''),
       volume: clampDecimal(Number(gift.volume ?? 0.85), 0, 1),
+      useGiftImage: triggerType === 'gift' && (gift.useGiftImage === true || (!hasUseGiftImage && isHeartMeGift(gift))),
+      giftImageKeys: getGiftKeys({
+        ids: gift.giftImageIds || [],
+        names: gift.giftImageNames || []
+      }),
       keys: getGiftKeys({
         ids: gift.giftIds || [],
         names: [...(gift.giftNames || []), gift.title],
@@ -381,6 +387,17 @@ function getGiftIdentity(gift) {
   }
 
   return gift.label ? `name:${normalizeName(gift.label)}` : '';
+}
+
+function isHeartMeGift(gift) {
+  const ids = (gift.giftIds || []).map(normalizeId).filter(Boolean);
+  const names = [
+    ...(gift.giftNames || []),
+    gift.title,
+    gift.name
+  ].map(normalizeName).filter(Boolean);
+
+  return ids.includes('33') || names.includes('heart me');
 }
 
 function connectRows() {
@@ -529,6 +546,7 @@ function highlightGift(gift) {
   clearTimeout(highlightTimer);
   clearTimeout(releaseFocusTimer);
   clearRowProfileAnimations();
+  updateRowsGiftImage(matchingTiles, gift);
   if (savedRowsConfig.animationsEnabled !== false) {
     focusGiftTile(focusTile);
   }
@@ -551,6 +569,37 @@ function highlightGift(gift) {
       });
     }, 240);
   }, highlightMs);
+}
+
+function updateRowsGiftImage(tiles, gift) {
+  if (gift?.triggerType !== 'gift' || !gift.imageUrl) {
+    return;
+  }
+
+  tiles.filter(tile => shouldUseRowsGiftImage(tile, gift)).forEach(tile => {
+    const image = tile.querySelector('img:not(.reward-row-profile-image)');
+    if (image) {
+      image.src = gift.imageUrl;
+    }
+  });
+}
+
+function shouldUseRowsGiftImage(tile, gift) {
+  if (tile?.dataset.useGiftImage !== '1') {
+    return false;
+  }
+
+  const configuredKeys = String(tile.dataset.giftImageKeys || '').split('|').filter(Boolean);
+  if (!configuredKeys.length) {
+    return true;
+  }
+
+  const eventKeys = getGiftKeys({
+    ids: [gift.giftId],
+    names: [gift.giftName]
+  });
+
+  return eventKeys.some(key => configuredKeys.includes(key));
 }
 
 function runRowsGiftProfileAnimation(tiles, gift) {
@@ -588,14 +637,14 @@ function runRowsGiftProfileAnimation(tiles, gift) {
 }
 
 function clearRowProfileAnimations() {
-  rewardRowsWidget.querySelectorAll('.reward-gift-tile.profile-animation-active').forEach(tile => {
+  rewardRowsWidget.querySelectorAll('.reward-gift-tile.profile-animation-active, .reward-gift-tile.profile-has-avatar').forEach(tile => {
     clearTimeout(tile.profileAnimationTimer);
     tile.profileAnimationTimer = null;
     tile.classList.remove('profile-animation-active');
     tile.classList.remove('profile-has-avatar');
-    tile.querySelectorAll('.reward-row-profile-image').forEach(image => image.remove());
     restoreRowProfileName(tile);
   });
+  rewardRowsWidget.querySelectorAll('.reward-row-profile-image').forEach(image => image.remove());
 }
 
 function runRowProfileNameAnimation(tile, gift) {
@@ -836,6 +885,7 @@ function normalizeGiftEvent(data) {
     giftName: data.giftDetails?.giftName || data.gift?.name || data.giftName || data.extendedGiftInfo?.name || 'Gift',
     giftId: normalizeId(data.giftId || data.gift?.id || data.gift?.giftId || data.giftDetails?.giftId || data.extendedGiftInfo?.id || data.extendedGiftInfo?.gift_id || ''),
     supporter: getSupporterName(data, 'Unknown'),
+    imageUrl: findGiftImage(data),
     avatarUrl: findAvatarImage(data)
   };
 }
@@ -858,6 +908,20 @@ function findAvatarImage(data) {
     firstUrl(user.avatarMedium?.urlList) ||
     firstUrl(user.avatarLarger?.urlList) ||
     '';
+}
+
+function findGiftImage(data) {
+  const image =
+    data.giftPictureUrl ||
+    data.giftImageUrl ||
+    data.gift?.imageUrl ||
+    data.gift?.pictureUrl ||
+    firstUrl(data.giftDetails?.giftImage?.urlList) ||
+    firstUrl(data.giftDetails?.image?.urlList) ||
+    firstUrl(data.extendedGiftInfo?.image?.urlList) ||
+    firstUrl(data.extendedGiftInfo?.icon?.urlList);
+
+  return image || '';
 }
 
 function firstUrl(urls) {
@@ -1077,7 +1141,10 @@ function expandCompactRowsOverlay(rows) {
 function expandCompactRowsGift(gift) {
   return {
     ...expandCompactGift(gift),
-    row: gift?.r
+    row: gift?.r,
+    useGiftImage: gift?.u === 1,
+    giftImageNames: Array.isArray(gift?.x) ? gift.x : [],
+    giftImageIds: Array.isArray(gift?.y) ? gift.y : []
   };
 }
 

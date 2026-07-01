@@ -1391,19 +1391,19 @@ body.show-status .status {
   opacity: 0;
 }
 
-.rewards-widget.profile-animation-active .reward-card.is-active .reward-image {
+.rewards-widget.profile-animation-active .reward-card.is-active:not(.reward-trigger-likes) .reward-image {
   animation: none;
 }
 
-.rewards-widget.profile-animation-active .reward-card.is-active .reward-image > img:not(.reward-profile-image) {
+.rewards-widget.profile-animation-active .reward-card.is-active:not(.reward-trigger-likes) .reward-image > img:not(.reward-profile-image) {
   animation: rewardGiftToProfileFallback var(--reward-profile-duration, 6500ms) cubic-bezier(0.18, 0.9, 0.24, 1.12);
 }
 
-.rewards-widget.profile-animation-active.profile-has-avatar .reward-card.is-active .reward-image > img:not(.reward-profile-image) {
+.rewards-widget.profile-animation-active.profile-has-avatar .reward-card.is-active:not(.reward-trigger-likes) .reward-image > img:not(.reward-profile-image) {
   animation-name: rewardGiftToProfile;
 }
 
-.rewards-widget.profile-animation-active.profile-has-avatar .reward-card.is-active .reward-profile-image {
+.rewards-widget.profile-animation-active.profile-has-avatar .reward-card.is-active:not(.reward-trigger-likes) .reward-profile-image {
   animation: rewardProfileToGift var(--reward-profile-duration, 6500ms) cubic-bezier(0.18, 0.9, 0.24, 1.12);
 }
 
@@ -1969,19 +1969,19 @@ body.show-status .status {
   opacity: 0;
 }
 
-.reward-gift-tile.profile-animation-active.is-hit > img:not(.reward-row-profile-image) {
+.reward-gift-tile.profile-animation-active.is-hit:not(.reward-trigger-likes) > img:not(.reward-row-profile-image) {
   animation: rewardGiftToProfileFallback var(--reward-profile-duration, 6500ms) cubic-bezier(0.18, 0.9, 0.24, 1.12);
 }
 
-.reward-gift-tile.profile-animation-active.profile-has-avatar.is-hit > img:not(.reward-row-profile-image) {
+.reward-gift-tile.profile-animation-active.profile-has-avatar.is-hit:not(.reward-trigger-likes) > img:not(.reward-row-profile-image) {
   animation-name: rewardGiftToProfile;
 }
 
-.reward-gift-tile.profile-animation-active.profile-has-avatar.is-hit > .reward-row-profile-image {
+.reward-gift-tile.profile-animation-active.profile-has-avatar.is-hit:not(.reward-trigger-likes) > .reward-row-profile-image {
   animation: rewardProfileToGift var(--reward-profile-duration, 6500ms) cubic-bezier(0.18, 0.9, 0.24, 1.12);
 }
 
-.reward-gift-tile.reward-trigger-likes img {
+.reward-gift-tile.reward-trigger-likes > img:not(.reward-row-profile-image) {
   width: min(116px, 96%);
 }
 

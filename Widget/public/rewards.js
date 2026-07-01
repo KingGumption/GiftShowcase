@@ -541,6 +541,8 @@ function advanceToReward(index, giftEvent = null) {
   clearTimeout(profileAnimationTimer);
   restoreRewardProfileName();
   rewardWidget.classList.remove('reward-hit');
+  rewardWidget.classList.remove('profile-has-avatar');
+  rewardTrack.querySelectorAll('.reward-profile-image').forEach(image => image.remove());
   rewardWidget.classList.toggle('profile-animation-active', useProfileAnimation);
   if (rewardConfig.animationsEnabled !== false) {
     void rewardWidget.offsetWidth;

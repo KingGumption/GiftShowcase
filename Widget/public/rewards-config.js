@@ -60,7 +60,12 @@ window.rewardOverlayConfig = {
         "giftIds": [
           "33"
         ],
-        "image": "./rewards/033_Heart_Me.png"
+        "image": "./rewards/033_Heart_Me.png",
+        "useGiftImage": true,
+        "giftImageNames": [
+          "Heart Me"
+        ],
+        "giftImageIds": []
       },
       {
         "enabled": true,

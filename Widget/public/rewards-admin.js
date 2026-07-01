@@ -1825,6 +1825,9 @@ function addRowGift(row = draftConfig.rowsOverlay.rows) {
     giftNames: [],
     giftIds: [],
     image: '',
+    useGiftImage: false,
+    giftImageNames: [],
+    giftImageIds: [],
     row: clamp(Number(row), 1, draftConfig.rowsOverlay.rows),
     sound: '',
     volume: 0.85
@@ -2501,6 +2504,7 @@ function getDefaultRowsGifts() {
 
 function normalizeRowsGift(gift) {
   const triggerType = normalizeTriggerType(gift.triggerType);
+  const hasUseGiftImage = Object.prototype.hasOwnProperty.call(gift, 'useGiftImage');
   return {
     enabled: gift.enabled !== false,
     title: String(gift.title || gift.name || 'Row Gift'),
@@ -2513,10 +2517,24 @@ function normalizeRowsGift(gift) {
     giftNames: Array.isArray(gift.giftNames) ? gift.giftNames.map(String) : [],
     giftIds: Array.isArray(gift.giftIds) ? gift.giftIds.map(normalizeId).filter(Boolean) : [],
     image: getCatalogImageForReward(gift),
+    useGiftImage: triggerType === 'gift' && (gift.useGiftImage === true || (!hasUseGiftImage && isHeartMeGift(gift))),
+    giftImageNames: Array.isArray(gift.giftImageNames) ? gift.giftImageNames.map(String) : [],
+    giftImageIds: Array.isArray(gift.giftImageIds) ? gift.giftImageIds.map(String) : [],
     row: Number.isInteger(Number(gift.row)) ? Number(gift.row) : undefined,
     sound: normalizeSound(gift.sound),
     volume: clamp(Number(gift.volume ?? 0.85), 0, 1)
   };
+}
+
+function isHeartMeGift(gift) {
+  const ids = (gift.giftIds || []).map(normalizeId).filter(Boolean);
+  const names = [
+    ...(gift.giftNames || []),
+    gift.title,
+    gift.name
+  ].map(normalizeName).filter(Boolean);
+
+  return ids.includes('33') || names.includes('heart me');
 }
 
 function normalizeReward(reward) {
