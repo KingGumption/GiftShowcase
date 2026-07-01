@@ -6,7 +6,7 @@ const rewardCallout = document.querySelector('#reward-callout');
 const rewardGifter = document.querySelector('#reward-gifter');
 const rewardAction = document.querySelector('#reward-action');
 const status = document.querySelector('#status');
-const remoteRewardImageBase = 'https://raw.githubusercontent.com/KingGumption/GiftShowcase/main/Widget/public/rewards/';
+const remoteRewardImageBase = 'https://pub-099cf604176d4f20bce0cd8bb2c4d3c6.r2.dev/';
 
 const params = new URLSearchParams(window.location.search);
 const tikfinityUrl = params.get('endpoint') || 'ws://localhost:21213/';

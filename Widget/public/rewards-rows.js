@@ -1,5 +1,5 @@
 const rewardRowsWidget = document.querySelector('#reward-rows-widget');
-const remoteRewardImageBase = 'https://raw.githubusercontent.com/KingGumption/GiftShowcase/main/Widget/public/rewards/';
+const remoteRewardImageBase = 'https://pub-099cf604176d4f20bce0cd8bb2c4d3c6.r2.dev/';
 const savedRowsConfig = loadRowsOverlayConfig();
 savedRowsConfig.profileNameEnabled = savedRowsConfig.profileAnimationEnabled === true && savedRowsConfig.profileNameEnabled === true;
 const params = new URLSearchParams(window.location.search);

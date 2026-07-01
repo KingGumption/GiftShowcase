@@ -1,7 +1,7 @@
 const rewardStorageKey = 'reward-overlay-config:v1';
 const rewardVersionsStorageKey = 'reward-overlay-config-versions:v1';
 const giftFavoritesStorageKey = 'reward-gift-favorites:v1';
-const remoteRewardImageBase = 'https://raw.githubusercontent.com/KingGumption/GiftShowcase/main/Widget/public/rewards/';
+const remoteRewardImageBase = 'https://pub-099cf604176d4f20bce0cd8bb2c4d3c6.r2.dev/';
 const baseConfig = cloneConfig(window.rewardOverlayConfig || {});
 let draftConfig;
 
