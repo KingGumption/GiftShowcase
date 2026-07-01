@@ -753,8 +753,8 @@ function updateRewardLabelScroll(root = rewardTrack) {
       span.style.removeProperty('--reward-label-scroll-duration');
     });
 
-    const overflowingSpan = spans.find(span => span.textContent.trim() && span.scrollWidth - label.clientWidth > 1);
-    if (!overflowingSpan) {
+    const distance = getRewardLabelScrollDistance(label, spans);
+    if (!distance) {
       return;
     }
 
@@ -762,7 +762,6 @@ function updateRewardLabelScroll(root = rewardTrack) {
       return;
     }
 
-    const distance = Math.ceil(overflowingSpan.scrollWidth - label.clientWidth);
     const duration = Math.min(10, Math.max(4.8, distance / 12));
     label.classList.add('is-label-scrolling');
     spans.forEach(span => {
@@ -772,7 +771,37 @@ function updateRewardLabelScroll(root = rewardTrack) {
   });
 }
 
+function getRewardLabelScrollDistance(label, spans) {
+  const labelWidth = label.clientWidth;
+  if (!labelWidth) {
+    return 0;
+  }
+
+  return spans.reduce((distance, span) => {
+    if (!span.textContent.trim()) {
+      return distance;
+    }
+
+    const previousWidth = span.style.width;
+    const previousMinWidth = span.style.minWidth;
+    const previousOverflow = span.style.overflow;
+    const previousTextOverflow = span.style.textOverflow;
+    span.style.width = 'max-content';
+    span.style.minWidth = '0';
+    span.style.overflow = 'visible';
+    span.style.textOverflow = 'clip';
+    const naturalWidth = Math.ceil(span.getBoundingClientRect().width);
+    span.style.width = previousWidth;
+    span.style.minWidth = previousMinWidth;
+    span.style.overflow = previousOverflow;
+    span.style.textOverflow = previousTextOverflow;
+
+    return Math.max(distance, naturalWidth - labelWidth);
+  }, 0);
+}
+
 window.addEventListener('resize', () => scheduleRewardLabelScrollUpdate());
+document.fonts?.ready?.then(() => scheduleRewardLabelScrollUpdate());
 
 function playRewardSound(reward) {
   if (muteMode || rewardConfig.soundsEnabled === false || !reward?.sound) {
