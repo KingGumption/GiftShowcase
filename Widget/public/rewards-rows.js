@@ -1,4 +1,5 @@
 const rewardRowsWidget = document.querySelector('#reward-rows-widget');
+const remoteRewardImageBase = 'https://raw.githubusercontent.com/KingGumption/GiftShowcase/main/Widget/public/rewards/';
 const savedRowsConfig = loadRowsOverlayConfig();
 savedRowsConfig.profileNameEnabled = savedRowsConfig.profileAnimationEnabled === true && savedRowsConfig.profileNameEnabled === true;
 const params = new URLSearchParams(window.location.search);
@@ -260,10 +261,19 @@ function getLoopableRowGifts(rowGifts, visibleCount) {
 function getRowMarkup(rowGifts) {
   return rowGifts.map((gift, index) => `
     <article class="reward-gift-tile reward-trigger-${escapeAttribute(gift.triggerType)}" data-gift-index="${index}" data-gift-keys="${escapeAttribute(gift.keys.join('|'))}" data-gift-image-keys="${escapeAttribute(gift.giftImageKeys.join('|'))}" data-use-gift-image="${gift.useGiftImage ? '1' : '0'}" data-sound="${escapeAttribute(gift.sound)}" data-volume="${escapeAttribute(gift.volume)}">
-      <img src="${escapeAttribute(gift.image)}" alt="">
+      <img src="${escapeAttribute(resolveRewardImageUrl(gift.image))}" alt="">
       ${showNames ? `<strong data-original-label="${escapeAttribute(gift.label)}"><span class="reward-label-original">${escapeHtml(gift.label)}</span><span class="reward-label-profile" aria-hidden="true"></span></strong>` : ''}
     </article>
   `).join('');
+}
+
+function resolveRewardImageUrl(image) {
+  const value = String(image || '');
+  if (window.location.hostname.endsWith('github.io') && value.startsWith('./rewards/')) {
+    return `${remoteRewardImageBase}${encodeURIComponent(value.replace('./rewards/', ''))}`;
+  }
+
+  return value;
 }
 
 function getGiftGroupsForRows(list, totalRows) {

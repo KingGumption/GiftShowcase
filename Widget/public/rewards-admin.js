@@ -1,6 +1,7 @@
 const rewardStorageKey = 'reward-overlay-config:v1';
 const rewardVersionsStorageKey = 'reward-overlay-config-versions:v1';
 const giftFavoritesStorageKey = 'reward-gift-favorites:v1';
+const remoteRewardImageBase = 'https://raw.githubusercontent.com/KingGumption/GiftShowcase/main/Widget/public/rewards/';
 const baseConfig = cloneConfig(window.rewardOverlayConfig || {});
 let draftConfig;
 
@@ -1113,7 +1114,7 @@ function updatePreview(editor, reward) {
   };
 
   if (displayImage) {
-    imagePreview.src = displayImage;
+    imagePreview.src = resolveRewardImageUrl(displayImage);
     imagePreview.onerror = () => {
       imagePreview.alt = 'Image not found';
       imagePreview.style.opacity = '0.4';
@@ -1132,6 +1133,15 @@ function updatePreview(editor, reward) {
 
   const volumePercent = Math.round(volumeValue.value * 100);
   volumeLabel.textContent = `${volumePercent}%`;
+}
+
+function resolveRewardImageUrl(image) {
+  const value = String(image || '');
+  if (window.location.hostname.endsWith('github.io') && value.startsWith('./rewards/')) {
+    return `${remoteRewardImageBase}${encodeURIComponent(value.replace('./rewards/', ''))}`;
+  }
+
+  return value;
 }
 
 function ensureRowsGiftDefaults() {
@@ -1268,7 +1278,7 @@ function populateGiftGrid(editor, reward, filter = '') {
       <div class="gift-catalog-card${selected}${favoriteClass}" title="${escapeAttribute(entry.label)}">
         <button data-action="toggle-gift-favorite" data-image="${escapeAttribute(entry.image)}" type="button" class="gift-favorite-toggle" title="${favoriteLabel}" aria-label="${favoriteLabel}">${favorite ? '★' : '☆'}</button>
         <button data-action="select-gift-catalog" data-image="${escapeAttribute(entry.image)}" type="button" class="gift-catalog-select">
-          <img src="${escapeAttribute(entry.image)}" alt="" loading="lazy" decoding="async">
+          <img src="${escapeAttribute(resolveRewardImageUrl(entry.image))}" alt="" loading="lazy" decoding="async">
           <strong>${escapeHtml(entry.label)}</strong>
         </button>
       </div>

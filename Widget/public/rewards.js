@@ -6,6 +6,7 @@ const rewardCallout = document.querySelector('#reward-callout');
 const rewardGifter = document.querySelector('#reward-gifter');
 const rewardAction = document.querySelector('#reward-action');
 const status = document.querySelector('#status');
+const remoteRewardImageBase = 'https://raw.githubusercontent.com/KingGumption/GiftShowcase/main/Widget/public/rewards/';
 
 const params = new URLSearchParams(window.location.search);
 const tikfinityUrl = params.get('endpoint') || 'ws://localhost:21213/';
@@ -484,7 +485,16 @@ function renderRewards() {
 }
 
 function getRewardImageMarkup(reward) {
-  return reward.image ? `<img alt="" src="${escapeAttribute(reward.image)}">` : getFallbackIcon();
+  return reward.image ? `<img alt="" src="${escapeAttribute(resolveRewardImageUrl(reward.image))}">` : getFallbackIcon();
+}
+
+function resolveRewardImageUrl(image) {
+  const value = String(image || '');
+  if (window.location.hostname.endsWith('github.io') && value.startsWith('./rewards/')) {
+    return `${remoteRewardImageBase}${encodeURIComponent(value.replace('./rewards/', ''))}`;
+  }
+
+  return value;
 }
 
 function setVisibleRewardCount() {

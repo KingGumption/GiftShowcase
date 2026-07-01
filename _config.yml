@@ -1,0 +1,5 @@
+exclude:
+  - node_modules
+  - backups
+  - Widget/public/rewards
+  - Widget/public/superfan-breach
