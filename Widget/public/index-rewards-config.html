@@ -27,6 +27,7 @@
           <button id="delete-config-version" type="button" class="btn-danger">Delete</button>
           <button id="copy-carousel-url" type="button" class="btn-secondary">Copy Carousel URL</button>
           <button id="copy-rows-url" type="button" class="btn-secondary">Copy Rows URL</button>
+          <button id="copy-goal-url" type="button" class="btn-secondary">Copy Goal URL</button>
           <button id="copy-config-url" type="button" class="btn-secondary">Copy Config URL</button>
           <button id="reset-config" type="button" class="btn-danger">Reset</button>
         </div>
@@ -44,6 +45,7 @@
       <nav class="config-tabs" aria-label="Reward config views">
         <button data-config-tab="original" type="button" class="is-active">Gift Carousel</button>
         <button data-config-tab="rows" type="button">Rows Overlay</button>
+        <button data-config-tab="goal" type="button">Goal Bar</button>
       </nav>
 
       <details class="config-section config-collapse" data-config-panel="original" aria-label="Global reward settings">
@@ -411,6 +413,100 @@
           <button id="add-row-gift" type="button" class="btn-primary">+ Add Row Gift</button>
         </div>
         <section id="rows-gift-list" class="reward-config-list" aria-label="Rows gift list"></section>
+      </section>
+
+      <details class="config-section config-collapse" data-config-panel="goal" aria-label="Goal bar settings" hidden open>
+        <summary>
+          <h2 class="section-title">Goal Bar Settings</h2>
+          <span class="collapse-indicator">Expand</span>
+        </summary>
+        <div class="config-globals goal-config-grid">
+          <div class="config-field goal-field-type">
+            <label for="goal-type">Goal Type</label>
+            <select id="goal-type">
+              <option value="likes">Likes</option>
+              <option value="followers">Followers</option>
+              <option value="support">Gift Goal</option>
+            </select>
+            <span class="field-hint">Choose whether the thin bar tracks likes, followers, or stream coins</span>
+          </div>
+          <div class="config-field goal-field-live-followers" data-goal-visible="followers">
+            <label for="goal-live-followers">Follower Count Mode</label>
+            <select id="goal-live-followers">
+              <option value="1">Use live total followers</option>
+              <option value="0">Count new followers only</option>
+            </select>
+            <span class="field-hint">New followers only starts from the Starting Count and adds one per follow</span>
+          </div>
+          <div class="config-field goal-field-label">
+            <label for="goal-label">Label</label>
+            <input id="goal-label" type="text" maxlength="32" placeholder="Like Goal">
+            <span class="field-hint">Text shown at the left of the thin goal bar</span>
+          </div>
+          <div class="config-field goal-field-target">
+            <label for="goal-target">Goal Amount</label>
+            <input id="goal-target" type="number" min="1" step="100">
+            <span class="field-hint">The first target shown on the bar</span>
+          </div>
+          <div class="config-field goal-field-step">
+            <label for="goal-step">Next Increase</label>
+            <input id="goal-step" type="number" min="1" step="100">
+            <span class="field-hint">Amount added to the target each time the goal is met</span>
+          </div>
+          <div class="config-field goal-field-start">
+            <label for="goal-start">Starting Count</label>
+            <input id="goal-start" type="number" min="0" step="1">
+            <span class="field-hint">Starting count when the overlay loads or reconnects</span>
+          </div>
+          <div class="config-field goal-field-reset">
+            <label for="goal-reset">Reset On Connect</label>
+            <select id="goal-reset">
+              <option value="1">Reset each connection</option>
+              <option value="0">Keep saved count</option>
+            </select>
+            <span class="field-hint">Useful when restarting TikFinity between streams</span>
+          </div>
+          <div class="config-field goal-field-width">
+            <label for="goal-width">Width</label>
+            <input id="goal-width" type="number" min="320" max="1920" step="10">
+            <span class="field-hint">Thin bar width in pixels</span>
+          </div>
+          <div class="config-field goal-field-height">
+            <label for="goal-height">Height</label>
+            <input id="goal-height" type="number" min="30" max="120" step="1">
+            <span class="field-hint">Thin bar height in pixels</span>
+          </div>
+          <div class="config-field color-config-field goal-field-accent">
+            <label for="goal-accent">Progress Colour</label>
+            <div class="color-control">
+              <input id="goal-accent" type="color">
+              <input id="goal-accent-hex" type="text" spellcheck="false" placeholder="#03f5d8">
+            </div>
+          </div>
+          <div class="config-field color-config-field goal-field-glow">
+            <label for="goal-glow">Glow Colour</label>
+            <div class="color-control">
+              <input id="goal-glow" type="color">
+              <input id="goal-glow-hex" type="text" spellcheck="false" placeholder="#c447ff">
+            </div>
+          </div>
+          <div class="config-field color-config-field goal-field-text">
+            <label for="goal-text">Text Colour</label>
+            <div class="color-control">
+              <input id="goal-text" type="color">
+              <input id="goal-text-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <section class="config-section" data-config-panel="goal" aria-label="Goal bar preview" hidden>
+        <div class="section-header-row">
+          <h2 class="section-title">Goal Bar Preview</h2>
+        </div>
+        <div class="overlay-preview-frame overlay-preview-frame-goal">
+          <iframe id="goal-preview" title="Goal bar preview"></iframe>
+        </div>
       </section>
 
       <section class="config-section" data-config-panel="original" aria-label="Rewards">

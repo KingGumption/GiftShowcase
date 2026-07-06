@@ -35,9 +35,19 @@ const rowsSounds = document.querySelector('#rows-sounds');
 const rowsAnimations = document.querySelector('#rows-animations');
 const rowsProfileAnimation = document.querySelector('#rows-profile-animation');
 const rowsProfileName = document.querySelector('#rows-profile-name');
+const goalType = document.querySelector('#goal-type');
+const goalLiveFollowers = document.querySelector('#goal-live-followers');
+const goalLabel = document.querySelector('#goal-label');
+const goalTarget = document.querySelector('#goal-target');
+const goalStep = document.querySelector('#goal-step');
+const goalStart = document.querySelector('#goal-start');
+const goalReset = document.querySelector('#goal-reset');
+const goalWidth = document.querySelector('#goal-width');
+const goalHeight = document.querySelector('#goal-height');
 const addRewardButton = document.querySelector('#add-reward');
 const copyCarouselUrlButton = document.querySelector('#copy-carousel-url');
 const copyRowsUrlButton = document.querySelector('#copy-rows-url');
+const copyGoalUrlButton = document.querySelector('#copy-goal-url');
 const copyConfigUrlButton = document.querySelector('#copy-config-url');
 const configVersionName = document.querySelector('#config-version-name');
 const configVersionSelect = document.querySelector('#config-version-select');
@@ -47,6 +57,7 @@ const loadConfigUrlInput = document.querySelector('#load-config-url');
 const loadConfigUrlButton = document.querySelector('#load-config-url-button');
 const carouselPreview = document.querySelector('#carousel-preview');
 const rowsPreview = document.querySelector('#rows-preview');
+const goalPreview = document.querySelector('#goal-preview');
 const carouselPreviewTest = document.querySelector('#carousel-preview-test');
 const rowsPreviewTest = document.querySelector('#rows-preview-test');
 const carouselPreviewMute = document.querySelector('#carousel-preview-mute');
@@ -78,6 +89,11 @@ const rowsThemeColorFields = [
   { key: 'text', color: document.querySelector('#rows-theme-text'), hex: document.querySelector('#rows-theme-text-hex') },
   { key: 'border', color: document.querySelector('#rows-theme-border'), hex: document.querySelector('#rows-theme-border-hex') },
   { key: 'glow', color: document.querySelector('#rows-theme-glow'), hex: document.querySelector('#rows-theme-glow-hex') }
+];
+const goalColorFields = [
+  { key: 'accent', color: document.querySelector('#goal-accent'), hex: document.querySelector('#goal-accent-hex') },
+  { key: 'glow', color: document.querySelector('#goal-glow'), hex: document.querySelector('#goal-glow-hex') },
+  { key: 'text', color: document.querySelector('#goal-text'), hex: document.querySelector('#goal-text-hex') }
 ];
 const imageCatalog = new Map();
 const giftGridLimit = 80;
@@ -144,6 +160,20 @@ const themePresets = {
   }
 };
 const defaultTheme = themePresets['glass-purple'];
+const defaultGoalBar = {
+  type: 'likes',
+  label: 'Like Goal',
+  target: 5000,
+  step: 5000,
+  start: 0,
+  resetOnConnect: true,
+  useLiveFollowerCount: true,
+  width: 1080,
+  height: 44,
+  accent: '#03f5d8',
+  glow: '#c447ff',
+  text: '#ffffff'
+};
 const soundCatalog = [
   { label: 'No sound', sound: '' },
   { label: 'Disgusting', sound: './sounds/disgusting.mp3' },
@@ -244,6 +274,7 @@ configVersionSelect.addEventListener('change', () => {
 });
 copyCarouselUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards.html', 'Carousel URL copied'));
 copyRowsUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards-rows.html', 'Rows URL copied'));
+copyGoalUrlButton.addEventListener('click', () => copyOverlayUrl('index-thin.html', 'Goal URL copied'));
 copyConfigUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards-config.html', 'Config URL copied'));
 loadConfigUrlButton.addEventListener('click', loadConfigFromUrlInput);
 loadConfigUrlInput.addEventListener('keydown', event => {
@@ -274,6 +305,41 @@ tabButtons.forEach(button => {
     if (input === rowsCount && activeConfigTab === 'rows') {
       renderPreservingScroll();
     }
+  });
+});
+
+[goalType, goalLiveFollowers, goalLabel, goalTarget, goalStep, goalStart, goalReset, goalWidth, goalHeight].forEach(input => {
+  input.addEventListener('input', () => {
+    if (input === goalType && (!goalLabel.value.trim() || isDefaultGoalLabel(goalLabel.value))) {
+      goalLabel.value = defaultGoalLabel(goalType.value);
+    }
+
+    if (input === goalType) {
+      goalReset.value = defaultGoalResetOnConnect(goalType.value) ? '1' : '0';
+    }
+
+    updateGoalBarFromForm();
+    updateGoalFieldVisibility();
+    markDirty();
+  });
+});
+
+goalColorFields.forEach(field => {
+  field.color.addEventListener('input', () => {
+    field.hex.value = field.color.value;
+    updateGoalBarFromForm();
+    markDirty();
+  });
+
+  field.hex.addEventListener('input', () => {
+    const hex = normalizeHex(field.hex.value, '');
+
+    if (hex) {
+      field.color.value = hex;
+    }
+
+    updateGoalBarFromForm();
+    markDirty();
   });
 });
 
@@ -400,6 +466,7 @@ function render() {
   rowsAnimations.value = draftConfig.rowsOverlay.animationsEnabled === false ? '0' : '1';
   rowsProfileAnimation.value = draftConfig.rowsOverlay.profileAnimationEnabled === true ? '1' : '0';
   rowsProfileName.value = draftConfig.rowsOverlay.profileNameEnabled === true ? '1' : '0';
+  renderGoalBarForm();
   updateProfileNameToggleVisibility();
   renderThemeForm();
   rewardList.innerHTML = '';
@@ -415,6 +482,33 @@ function render() {
   updateRowsGiftStats();
   scheduleOverlayPreviewRefresh();
   restorePageScroll();
+}
+
+function renderGoalBarForm() {
+  const goal = draftConfig.goalBar;
+  goalType.value = goal.type;
+  goalLiveFollowers.value = goal.useLiveFollowerCount === false ? '0' : '1';
+  goalLabel.value = goal.label;
+  goalTarget.value = goal.target;
+  goalStep.value = goal.step;
+  goalStart.value = goal.start;
+  goalReset.value = goal.resetOnConnect ? '1' : '0';
+  goalWidth.value = goal.width;
+  goalHeight.value = goal.height;
+  updateGoalFieldVisibility();
+
+  goalColorFields.forEach(field => {
+    const value = normalizeHex(goal[field.key], defaultGoalBar[field.key]);
+    field.color.value = value;
+    field.hex.value = value.toUpperCase();
+  });
+}
+
+function updateGoalFieldVisibility() {
+  document.querySelectorAll('[data-goal-visible]').forEach(field => {
+    field.hidden = field.dataset.goalVisible !== goalType.value;
+  });
+  document.querySelector('.goal-config-grid')?.classList.toggle('is-followers-goal', goalType.value === 'followers');
 }
 
 function updateProfileNameToggleVisibility() {
@@ -1538,6 +1632,23 @@ function updateRowsFromForm() {
   ensureRowsGiftRows();
 }
 
+function updateGoalBarFromForm() {
+  draftConfig.goalBar = normalizeGoalBar({
+    type: goalType.value,
+    useLiveFollowerCount: goalLiveFollowers.value !== '0',
+    label: goalLabel.value,
+    target: goalTarget.value,
+    step: goalStep.value,
+    start: goalStart.value,
+    resetOnConnect: goalReset.value !== '0',
+    width: goalWidth.value,
+    height: goalHeight.value,
+    accent: goalColorFields.find(field => field.key === 'accent')?.hex.value,
+    glow: goalColorFields.find(field => field.key === 'glow')?.hex.value,
+    text: goalColorFields.find(field => field.key === 'text')?.hex.value
+  });
+}
+
 function renderThemeForm() {
   const theme = getCarouselTheme();
   themePreset.value = themePresets[theme.preset] ? theme.preset : 'custom';
@@ -1907,6 +2018,7 @@ function saveConfig() {
   updateGlobalsFromForm();
   updateRowsFromForm();
   updateRowsThemeFromForm();
+  updateGoalBarFromForm();
   localStorage.setItem(rewardStorageKey, JSON.stringify(draftConfig));
 
   const version = saveNamedConfigVersion();
@@ -2059,6 +2171,7 @@ function copyOverlayUrl(page, successText) {
   updateGlobalsFromForm();
   updateRowsFromForm();
   updateRowsThemeFromForm();
+  updateGoalBarFromForm();
 
   const url = getUrlForPage(page, draftConfig);
 
@@ -2111,7 +2224,7 @@ function getUrlForPage(page, config = draftConfig, options = {}) {
     search.set('previewRefresh', String(options.previewRefresh || 0));
   }
   url.search = search.toString();
-  url.hash = `config=${encodeURIComponent(encodeConfig(config))}`;
+  url.hash = `config=${encodeURIComponent(page === 'index-thin.html' ? encodeGoalConfig(config) : encodeConfig(config))}`;
   return url;
 }
 
@@ -2179,7 +2292,18 @@ function decodeConfigValue(encoded) {
 }
 
 function encodeConfig(config) {
-  return btoa(unescape(encodeURIComponent(JSON.stringify(compactConfigForUrl(config)))))
+  return encodeCompactConfig(compactConfigForUrl(config));
+}
+
+function encodeGoalConfig(config) {
+  return encodeCompactConfig(removeEmptyUrlFields({
+    _: 'r2',
+    q: compactGoalBarForUrl(config.goalBar)
+  }));
+}
+
+function encodeCompactConfig(config) {
+  return btoa(unescape(encodeURIComponent(JSON.stringify(config))))
     .replace(/\+/g, '-')
     .replace(/\//g, '_')
     .replace(/=+$/g, '');
@@ -2206,6 +2330,7 @@ function compactConfigForUrl(inputConfig) {
     u: compactThemeForUrl(config.carouselTheme),
     v: compactThemeForUrl(config.rowsTheme),
     o: compactRowsOverlayForUrl(config.rowsOverlay),
+    q: compactGoalBarForUrl(config.goalBar),
     g: config.rewards.map(compactRewardForUrl)
   });
 }
@@ -2243,6 +2368,25 @@ function compactRowsOverlayForUrl(rowsOverlay) {
     l: rows.profileAnimationEnabled === true ? 1 : undefined,
     m: rows.profileAnimationEnabled === true && rows.profileNameEnabled === true ? 1 : undefined,
     j: rows.gifts.map(compactRowsGiftForUrl)
+  });
+}
+
+function compactGoalBarForUrl(goalBar) {
+  const goal = normalizeGoalBar(goalBar || {});
+  const defaultReset = defaultGoalResetOnConnect(goal.type);
+  return removeEmptyUrlFields({
+    a: goal.label !== defaultGoalBar.label ? goal.label : undefined,
+    b: goal.step !== defaultGoalBar.step ? goal.step : undefined,
+    c: goal.start !== defaultGoalBar.start ? goal.start : undefined,
+    d: goal.resetOnConnect !== defaultReset ? (goal.resetOnConnect ? 1 : 0) : undefined,
+    e: goal.width !== defaultGoalBar.width ? goal.width : undefined,
+    f: goal.height !== defaultGoalBar.height ? goal.height : undefined,
+    g: normalizeHex(goal.accent, '') !== defaultGoalBar.accent ? goal.accent : undefined,
+    h: normalizeHex(goal.glow, '') !== defaultGoalBar.glow ? goal.glow : undefined,
+    i: normalizeHex(goal.text, '') !== defaultGoalBar.text ? goal.text : undefined,
+    j: goal.type !== defaultGoalBar.type ? goal.type : undefined,
+    l: goal.target !== defaultGoalBar.target ? goal.target : undefined,
+    m: goal.useLiveFollowerCount === false ? 0 : undefined
   });
 }
 
@@ -2303,6 +2447,7 @@ function expandCompactConfig(config) {
     carouselTheme: expandCompactTheme(config.u),
     rowsTheme: expandCompactTheme(config.v),
     rowsOverlay: expandCompactRowsOverlay(config.o),
+    goalBar: expandCompactGoalBar(config.q),
     rewards: Array.isArray(config.g) ? config.g.map(expandCompactReward) : undefined
   });
 }
@@ -2345,6 +2490,27 @@ function expandCompactRowsOverlay(rows) {
     profileAnimationEnabled: rows.l === 1 ? true : undefined,
     profileNameEnabled: rows.m === 1 ? true : undefined,
     gifts: Array.isArray(rows.j) ? rows.j.map(expandCompactRowsGift) : undefined
+  });
+}
+
+function expandCompactGoalBar(goal) {
+  if (!goal) {
+    return undefined;
+  }
+
+  return removeEmptyUrlFields({
+    label: goal.a,
+    step: goal.b,
+    start: goal.c,
+    resetOnConnect: goal.d === 0 ? false : goal.d === 1 ? true : undefined,
+    width: goal.e,
+    height: goal.f,
+    accent: goal.g,
+    glow: goal.h,
+    text: goal.i,
+    type: goal.j,
+    target: goal.l,
+    useLiveFollowerCount: goal.m === 0 ? false : undefined
   });
 }
 
@@ -2407,6 +2573,7 @@ function refreshOverlayPreviews() {
   previewRefreshIndex += 1;
   const refreshCarousel = activeConfigTab === 'original';
   const refreshRows = activeConfigTab === 'rows';
+  const refreshGoal = activeConfigTab === 'goal';
 
   if (carouselPreview && refreshCarousel) {
     setPreviewUrl(carouselPreview, getUrlForPage('index-rewards.html', previewConfig, {
@@ -2422,6 +2589,13 @@ function refreshOverlayPreviews() {
       preview: !rowsPreviewTest?.checked,
       test: Boolean(rowsPreviewTest?.checked),
       mute: Boolean(rowsPreviewMute?.checked),
+      previewRefresh: previewRefreshIndex
+    }));
+  }
+
+  if (goalPreview && refreshGoal) {
+    setPreviewUrl(goalPreview, getUrlForPage('index-thin.html', previewConfig, {
+      preview: true,
       previewRefresh: previewRefreshIndex
     }));
   }
@@ -2469,6 +2643,7 @@ function normalizeConfig(config) {
     carouselTheme: normalizeTheme(carouselThemeSource),
     rowsTheme: normalizeTheme(rowsThemeSource),
     rowsOverlay: normalizeRowsOverlay(config.rowsOverlay || {}),
+    goalBar: normalizeGoalBar(config.goalBar || {}),
     rewards: rewards.map(normalizeReward)
   };
 }
@@ -2622,6 +2797,53 @@ function normalizeRowsOverlay(config) {
     profileNameEnabled: config.profileAnimationEnabled === true && config.profileNameEnabled === true,
     gifts: gifts.map(normalizeRowsGift)
   };
+}
+
+function normalizeGoalBar(config) {
+  const type = normalizeGoalType(config.type);
+  const defaultLabel = defaultGoalLabel(type);
+  const legacyStep = Math.max(1, Math.floor(numberOrDefault(config.step, defaultGoalBar.step)));
+  return {
+    type,
+    label: String(config.label || defaultLabel).replace(/\s+/g, ' ').trim().slice(0, 32) || defaultLabel,
+    target: Math.max(1, Math.floor(numberOrDefault(config.target, legacyStep))),
+    step: legacyStep,
+    start: Math.max(0, Math.floor(numberOrDefault(config.start, defaultGoalBar.start))),
+    resetOnConnect: typeof config.resetOnConnect === 'boolean' ? config.resetOnConnect : defaultGoalResetOnConnect(type),
+    useLiveFollowerCount: config.useLiveFollowerCount !== false,
+    width: clamp(numberOrDefault(config.width, defaultGoalBar.width), 320, 1920),
+    height: clamp(numberOrDefault(config.height, defaultGoalBar.height), 30, 120),
+    accent: normalizeHex(config.accent, defaultGoalBar.accent),
+    glow: normalizeHex(config.glow, defaultGoalBar.glow),
+    text: normalizeHex(config.text, defaultGoalBar.text)
+  };
+}
+
+function normalizeGoalType(type) {
+  const value = String(type || '').toLowerCase();
+  return value === 'followers' || value === 'support' ? value : 'likes';
+}
+
+function defaultGoalResetOnConnect(type) {
+  return normalizeGoalType(type) !== 'followers';
+}
+
+function defaultGoalLabel(type) {
+  const goalType = normalizeGoalType(type);
+
+  if (goalType === 'followers') {
+    return 'Follower Goal';
+  }
+
+  if (goalType === 'support') {
+    return 'Gift Goal';
+  }
+
+  return defaultGoalBar.label;
+}
+
+function isDefaultGoalLabel(label) {
+  return ['Like Goal', 'Follower Goal', 'Support Goal', 'Gift Goal'].includes(String(label || '').trim());
 }
 
 function getDefaultRowsGifts() {

@@ -40,6 +40,20 @@ window.rewardOverlayConfig = {
     "opacity": 0.78,
     "glowStrength": 1
   },
+  "goalBar": {
+    "type": "likes",
+    "label": "Like Goal",
+    "target": 5000,
+    "step": 5000,
+    "start": 0,
+    "resetOnConnect": true,
+    "useLiveFollowerCount": true,
+    "width": 1080,
+    "height": 44,
+    "accent": "#03f5d8",
+    "glow": "#c447ff",
+    "text": "#ffffff"
+  },
   "rowsOverlay": {
     "rows": 2,
     "perRow": "6,6",
