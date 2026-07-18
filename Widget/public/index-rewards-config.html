@@ -27,7 +27,9 @@
           <button id="delete-config-version" type="button" class="btn-danger">Delete</button>
           <button id="copy-carousel-url" type="button" class="btn-secondary">Copy Carousel URL</button>
           <button id="copy-rows-url" type="button" class="btn-secondary">Copy Rows URL</button>
+          <button id="copy-side-gifts-url" type="button" class="btn-secondary">Copy Side Gifts URL</button>
           <button id="copy-goal-url" type="button" class="btn-secondary">Copy Goal URL</button>
+          <button id="copy-top-likers-url" type="button" class="btn-secondary">Copy Top Likers URL</button>
           <button id="copy-config-url" type="button" class="btn-secondary">Copy Config URL</button>
           <button id="reset-config" type="button" class="btn-danger">Reset</button>
         </div>
@@ -45,15 +47,18 @@
       <nav class="config-tabs" aria-label="Reward config views">
         <button data-config-tab="original" type="button" class="is-active">Gift Carousel</button>
         <button data-config-tab="rows" type="button">Rows Overlay</button>
+        <button data-config-tab="side-gifts" type="button">Side Gifts</button>
         <button data-config-tab="goal" type="button">Goal Bar</button>
+        <button data-config-tab="top-likers" type="button">Top Likers</button>
       </nav>
 
       <details class="config-section config-collapse" data-config-panel="original" aria-label="Global reward settings">
         <summary>
-          <h2 class="section-title">⚙️ Global Settings</h2>
+          <h2 class="section-title">Carousel Settings</h2>
           <span class="collapse-indicator">Expand</span>
         </summary>
-        <div class="config-globals">
+        <div class="config-globals grouped-config-grid">
+          <div class="config-group-heading">Timing</div>
           <div class="config-field">
             <label for="rotate-ms">Card Rotation Speed (ms)</label>
             <input id="rotate-ms" type="number" min="1200" step="100">
@@ -69,6 +74,7 @@
             <input id="label-ms" type="number" min="900" step="100">
             <span class="field-hint">How long to show the reward label (min: 900ms)</span>
           </div>
+          <div class="config-group-heading">Display</div>
           <div class="config-field">
             <label for="visible-next">Queue Preview Count</label>
             <select id="visible-next">
@@ -79,6 +85,7 @@
             </select>
             <span class="field-hint">How many upcoming rewards to preview</span>
           </div>
+          <div class="config-group-heading">Playback</div>
           <div class="config-field">
             <label for="carousel-sounds">Reward Sounds</label>
             <select id="carousel-sounds">
@@ -119,7 +126,8 @@
           <h2 class="section-title">Carousel Theme</h2>
           <span class="collapse-indicator">Expand</span>
         </summary>
-        <div class="config-globals theme-config-grid">
+        <div class="config-globals theme-config-grid grouped-config-grid">
+          <div class="config-group-heading">Preset</div>
           <div class="config-field">
             <label for="theme-preset">Preset</label>
             <select id="theme-preset">
@@ -132,6 +140,7 @@
             </select>
             <span class="field-hint">Glass Purple is the original look</span>
           </div>
+          <div class="config-group-heading">Glass</div>
           <div class="config-field color-config-field">
             <label for="theme-accent">Lower Glow</label>
             <div class="color-control">
@@ -164,6 +173,7 @@
             </div>
             <span class="field-hint">Reward tile fill</span>
           </div>
+          <div class="config-group-heading">Text & Edges</div>
           <div class="config-field color-config-field">
             <label for="theme-text">Text</label>
             <div class="color-control">
@@ -179,6 +189,7 @@
             </div>
             <span class="field-hint">Outer and tile edge highlights</span>
           </div>
+          <div class="config-group-heading">Effects</div>
           <div class="config-field color-config-field">
             <label for="theme-glow">Glow</label>
             <div class="color-control">
@@ -223,7 +234,8 @@
           <h2 class="section-title">Rows Global Settings</h2>
           <span class="collapse-indicator">Expand</span>
         </summary>
-        <div class="config-globals">
+        <div class="config-globals grouped-config-grid">
+          <div class="config-group-heading">Rows</div>
           <div class="config-field">
             <label for="rows-count">Rows</label>
             <input id="rows-count" type="number" min="1" max="8" step="1">
@@ -259,6 +271,7 @@
             <input id="rows-gap" type="number" min="0" max="32" step="1">
             <span class="field-hint">Gap between rows in pixels</span>
           </div>
+          <div class="config-group-heading">Labels</div>
           <div class="config-field">
             <label for="rows-names">Gift Names</label>
             <select id="rows-names">
@@ -267,6 +280,7 @@
             </select>
             <span class="field-hint">Toggle labels under gift images</span>
           </div>
+          <div class="config-group-heading">Playback</div>
           <div class="config-field">
             <label for="rows-sounds">Row Sounds</label>
             <select id="rows-sounds">
@@ -307,7 +321,8 @@
           <h2 class="section-title">Rows Theme</h2>
           <span class="collapse-indicator">Expand</span>
         </summary>
-        <div class="config-globals theme-config-grid">
+        <div class="config-globals theme-config-grid grouped-config-grid">
+          <div class="config-group-heading">Preset</div>
           <div class="config-field">
             <label for="rows-theme-preset">Preset</label>
             <select id="rows-theme-preset">
@@ -320,6 +335,7 @@
             </select>
             <span class="field-hint">Rows can use a separate theme from the carousel</span>
           </div>
+          <div class="config-group-heading">Glass</div>
           <div class="config-field color-config-field">
             <label for="rows-theme-accent">Lower Glow</label>
             <div class="color-control">
@@ -352,6 +368,7 @@
             </div>
             <span class="field-hint">Gift tile fill</span>
           </div>
+          <div class="config-group-heading">Text & Edges</div>
           <div class="config-field color-config-field">
             <label for="rows-theme-text">Text</label>
             <div class="color-control">
@@ -367,6 +384,7 @@
             </div>
             <span class="field-hint">Outer and tile edge highlights</span>
           </div>
+          <div class="config-group-heading">Effects</div>
           <div class="config-field color-config-field">
             <label for="rows-theme-glow">Glow</label>
             <div class="color-control">
@@ -415,12 +433,241 @@
         <section id="rows-gift-list" class="reward-config-list" aria-label="Rows gift list"></section>
       </section>
 
-      <details class="config-section config-collapse" data-config-panel="goal" aria-label="Goal bar settings" hidden open>
+      <details class="config-section config-collapse" data-config-panel="side-gifts" aria-label="Side gifts settings" hidden>
+        <summary>
+          <h2 class="section-title">Side Gifts Settings</h2>
+          <span class="collapse-indicator">Expand</span>
+        </summary>
+        <div class="config-globals grouped-config-grid">
+          <div class="config-group-heading">Canvas</div>
+          <div class="config-field">
+            <label for="side-gifts-side">Side Placement</label>
+            <select id="side-gifts-side">
+              <option value="both">Both sides</option>
+              <option value="left">Left only</option>
+              <option value="right">Right only</option>
+            </select>
+            <span class="field-hint">Uses the Side Gifts list below; each gift can also choose a side</span>
+          </div>
+          <div class="config-field">
+            <label for="side-gifts-width">Canvas Width</label>
+            <input id="side-gifts-width" type="number" min="180" max="1920" step="10">
+            <span class="field-hint">OBS source width, e.g. 540 for vertical TikTok</span>
+          </div>
+          <div class="config-field">
+            <label for="side-gifts-height">Canvas Height</label>
+            <input id="side-gifts-height" type="number" min="240" max="1920" step="10">
+            <span class="field-hint">OBS source height, e.g. 960 for vertical TikTok</span>
+          </div>
+          <div class="config-group-heading">Gift Stack</div>
+          <div class="config-field">
+            <label for="side-gifts-icon-size">Gift Size</label>
+            <input id="side-gifts-icon-size" type="number" min="24" max="120" step="1">
+            <span class="field-hint">Size of each gift image</span>
+          </div>
+          <div class="config-field">
+            <label for="side-gifts-gap">Gift Gap</label>
+            <input id="side-gifts-gap" type="number" min="0" max="40" step="1">
+            <span class="field-hint">Vertical space between gifts</span>
+          </div>
+          <div class="config-field">
+            <label for="side-gifts-inset-x">Side Inset</label>
+            <input id="side-gifts-inset-x" type="number" min="0" max="160" step="1">
+            <span class="field-hint">Distance from left/right edge</span>
+          </div>
+          <div class="config-field">
+            <label for="side-gifts-inset-y">Top/Bottom Inset</label>
+            <input id="side-gifts-inset-y" type="number" min="0" max="240" step="1">
+            <span class="field-hint">Keeps gifts away from camera and game UI</span>
+          </div>
+          <div class="config-group-heading">Playback</div>
+          <div class="config-field">
+            <label for="side-gifts-sounds">Side Gift Sounds</label>
+            <select id="side-gifts-sounds">
+              <option value="1">Sounds on</option>
+              <option value="0">Sounds off</option>
+            </select>
+            <span class="field-hint">Master sound toggle for side gifts</span>
+          </div>
+          <div class="config-field">
+            <label for="side-gifts-animations">Received Gift Animations</label>
+            <select id="side-gifts-animations">
+              <option value="1">Animations on</option>
+              <option value="0">Animations off</option>
+            </select>
+            <span class="field-hint">Side gifts only use the profile animation style</span>
+          </div>
+          <div class="config-field">
+            <label for="side-gifts-profile-animation">Gift to Profile Animation</label>
+            <select id="side-gifts-profile-animation">
+              <option value="1">On (gift -> profile -> gift)</option>
+              <option value="0">Off</option>
+            </select>
+            <span class="field-hint">Only visual animation used by the side gifts overlay</span>
+          </div>
+          <div class="config-field" data-profile-name-toggle="side-gifts">
+            <label for="side-gifts-profile-name">Profile Animation Name</label>
+            <select id="side-gifts-profile-name">
+              <option value="0">Keep gift name</option>
+              <option value="1">Show gifter name</option>
+            </select>
+            <span class="field-hint">Temporarily swaps matched side labels during the profile animation</span>
+          </div>
+        </div>
+      </details>
+
+      <details class="config-section config-collapse" data-config-panel="side-gifts" aria-label="Side gifts styling" hidden>
+        <summary>
+          <h2 class="section-title">Side Gifts Styling</h2>
+          <span class="collapse-indicator">Expand</span>
+        </summary>
+        <div class="config-globals grouped-config-grid">
+          <div class="config-group-heading">Labels</div>
+          <div class="config-field">
+            <label for="side-gifts-labels">Gift Labels</label>
+            <select id="side-gifts-labels">
+              <option value="1">Show labels</option>
+              <option value="0">Images only</option>
+            </select>
+            <span class="field-hint">Toggle labels under gift images</span>
+          </div>
+          <div class="config-field">
+            <label for="side-gifts-label-size">Label Size</label>
+            <input id="side-gifts-label-size" type="range" min="8" max="28" step="1">
+            <span class="field-hint"><span id="side-gifts-label-size-label">10px</span></span>
+          </div>
+          <div class="config-field">
+            <label for="side-gifts-label-lines">Label Lines</label>
+            <label class="preview-test-toggle">
+              <input id="side-gifts-label-lines" type="checkbox">
+              <span>Allow two lines</span>
+            </label>
+            <span class="field-hint">Lets longer gift and gifter names wrap instead of truncating immediately</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="side-gifts-label-color">Label Colour</label>
+            <div class="color-control">
+              <input id="side-gifts-label-color" type="color">
+              <input id="side-gifts-label-color-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="side-gifts-gifter-label-color">Gifter Name Colour</label>
+            <div class="color-control">
+              <input id="side-gifts-gifter-label-color" type="color">
+              <input id="side-gifts-gifter-label-color-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
+          </div>
+          <div class="config-group-heading">Outlines</div>
+          <div class="config-field">
+            <label for="side-gifts-outlines">Text & Gift Outlines</label>
+            <select id="side-gifts-outlines">
+              <option value="0">Outlines off</option>
+              <option value="1">Outlines on</option>
+            </select>
+            <span class="field-hint">Adds configurable strokes and image shadows for busy scenes</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="side-gifts-outline-color">Text Outline</label>
+            <div class="color-control">
+              <input id="side-gifts-outline-color" type="color">
+              <input id="side-gifts-outline-color-hex" type="text" spellcheck="false" placeholder="#10131b">
+            </div>
+          </div>
+          <div class="config-field">
+            <label for="side-gifts-outline-size">Text Outline Size</label>
+            <input id="side-gifts-outline-size" type="range" min="0" max="4" step="0.25">
+            <span class="field-hint"><span id="side-gifts-outline-size-label">0.45px</span> - 0 is transparent</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="side-gifts-gift-outline-color">Gift Outline</label>
+            <div class="color-control">
+              <input id="side-gifts-gift-outline-color" type="color">
+              <input id="side-gifts-gift-outline-color-hex" type="text" spellcheck="false" placeholder="#10131b">
+            </div>
+          </div>
+          <div class="config-field">
+            <label for="side-gifts-gift-outline-size">Gift Outline Size</label>
+            <input id="side-gifts-gift-outline-size" type="range" min="0" max="8" step="0.5">
+            <span class="field-hint"><span id="side-gifts-gift-outline-size-label">2px</span> - 0 is transparent</span>
+          </div>
+          <div class="config-group-heading">Tiles & Glow</div>
+          <div class="config-field">
+            <label for="side-gifts-tiles">Gift Tiles</label>
+            <select id="side-gifts-tiles">
+              <option value="0">Floating gifts</option>
+              <option value="1">Tiles</option>
+            </select>
+            <span class="field-hint">Places side gifts on glass tiles like the rows overlay</span>
+          </div>
+          <div class="config-field">
+            <label for="side-gifts-idle-glow">Idle Tile Glow</label>
+            <select id="side-gifts-idle-glow">
+              <option value="0">Glow off</option>
+              <option value="1">Glow on</option>
+            </select>
+            <span class="field-hint">Adds a soft idle glow behind static side gifts</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="side-gifts-glow-color">Glow</label>
+            <div class="color-control">
+              <input id="side-gifts-glow-color" type="color">
+              <input id="side-gifts-glow-color-hex" type="text" spellcheck="false" placeholder="#03f5d8">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="side-gifts-tile-color">Tile Fill</label>
+            <div class="color-control">
+              <input id="side-gifts-tile-color" type="color">
+              <input id="side-gifts-tile-color-hex" type="text" spellcheck="false" placeholder="#0d0f14">
+            </div>
+          </div>
+          <div class="config-field">
+            <label for="side-gifts-tile-opacity">Tile Opacity</label>
+            <input id="side-gifts-tile-opacity" type="range" min="0" max="1" step="0.05">
+            <span class="field-hint"><span id="side-gifts-tile-opacity-label">82%</span> opacity</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="side-gifts-tile-border-color">Tile Edge</label>
+            <div class="color-control">
+              <input id="side-gifts-tile-border-color" type="color">
+              <input id="side-gifts-tile-border-color-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
+          </div>
+        </div>
+      </details>
+
+      <section class="config-section" data-config-panel="side-gifts" aria-label="Side gifts preview" hidden>
+        <div class="section-header-row">
+          <h2 class="section-title">Side Gifts Preview</h2>
+          <div class="preview-toggle-group">
+            <label class="preview-test-toggle">
+              <input id="side-gifts-preview-test" type="checkbox" checked>
+              <span>Test animations</span>
+            </label>
+          </div>
+        </div>
+        <div class="overlay-preview-frame overlay-preview-frame-side-gifts">
+          <iframe id="side-gifts-preview" title="Side gifts preview"></iframe>
+        </div>
+      </section>
+
+      <section class="config-section" data-config-panel="side-gifts" aria-label="Side gifts" hidden>
+        <h2 class="section-title">Side Gifts</h2>
+        <div class="reward-list-controls">
+          <div class="reward-count">Total: <span id="side-gift-total">0</span> | Enabled: <span id="side-gift-enabled">0</span></div>
+          <button id="add-side-gift" type="button" class="btn-primary">+ Add Side Gift</button>
+        </div>
+        <section id="side-gift-list" class="reward-config-list side-gift-config-list" aria-label="Side gift list"></section>
+      </section>
+
+      <details class="config-section config-collapse" data-config-panel="goal" aria-label="Goal bar settings" hidden>
         <summary>
           <h2 class="section-title">Goal Bar Settings</h2>
           <span class="collapse-indicator">Expand</span>
         </summary>
-        <div class="config-globals goal-config-grid">
+        <div class="config-globals goal-config-grid grouped-config-grid">
+          <div class="config-group-heading">Goal</div>
           <div class="config-field goal-field-type">
             <label for="goal-type">Goal Type</label>
             <select id="goal-type">
@@ -438,6 +685,7 @@
             </select>
             <span class="field-hint">New followers only starts from the Starting Count and adds one per follow</span>
           </div>
+          <div class="config-group-heading">Progress</div>
           <div class="config-field goal-field-label">
             <label for="goal-label">Label</label>
             <input id="goal-label" type="text" maxlength="32" placeholder="Like Goal">
@@ -466,6 +714,7 @@
             </select>
             <span class="field-hint">Useful when restarting TikFinity between streams</span>
           </div>
+          <div class="config-group-heading">Size</div>
           <div class="config-field goal-field-width">
             <label for="goal-width">Width</label>
             <input id="goal-width" type="number" min="320" max="1920" step="10">
@@ -476,6 +725,7 @@
             <input id="goal-height" type="number" min="30" max="120" step="1">
             <span class="field-hint">Thin bar height in pixels</span>
           </div>
+          <div class="config-group-heading">Colours</div>
           <div class="config-field color-config-field goal-field-accent">
             <label for="goal-accent">Progress Colour</label>
             <div class="color-control">
@@ -506,6 +756,205 @@
         </div>
         <div class="overlay-preview-frame overlay-preview-frame-goal">
           <iframe id="goal-preview" title="Goal bar preview"></iframe>
+        </div>
+      </section>
+
+      <details class="config-section config-collapse" data-config-panel="top-likers" aria-label="Top likers settings" hidden>
+        <summary>
+          <h2 class="section-title">Top Likers Settings</h2>
+          <span class="collapse-indicator">Expand</span>
+        </summary>
+        <div class="config-globals top-likers-config-grid grouped-config-grid">
+          <div class="config-group-heading">Content</div>
+          <div class="config-field">
+            <label for="top-likers-limit">Places Shown</label>
+            <input id="top-likers-limit" type="number" min="1" max="10" step="1">
+            <span class="field-hint">How many liker rows to show</span>
+          </div>
+          <div class="config-group-heading">Display</div>
+          <div class="config-field">
+            <label for="top-likers-avatars">Profile Pictures</label>
+            <select id="top-likers-avatars">
+              <option value="1">Show pictures</option>
+              <option value="0">Hide pictures</option>
+            </select>
+            <span class="field-hint">Uses TikTok profile pictures when TikFinity provides them</span>
+          </div>
+          <div class="config-field">
+            <label for="top-likers-names">Names</label>
+            <select id="top-likers-names">
+              <option value="1">Show names</option>
+              <option value="0">Hide names</option>
+            </select>
+            <span class="field-hint">Hides display names and @handles while keeping totals visible</span>
+          </div>
+          <div class="config-field">
+            <label for="top-likers-heart">Heart Icon</label>
+            <select id="top-likers-heart">
+              <option value="1">Show heart</option>
+              <option value="0">Hide heart</option>
+            </select>
+            <span class="field-hint">Small heart next to the like total</span>
+          </div>
+          <div class="config-field">
+            <label for="top-likers-layout">Layout</label>
+            <select id="top-likers-layout">
+              <option value="inline">Likes on right</option>
+              <option value="stacked">Name above likes</option>
+            </select>
+            <span class="field-hint">Long names still scroll in both layouts</span>
+          </div>
+          <div class="config-group-heading">Behaviour</div>
+          <div class="config-field">
+            <label for="top-likers-like-milestone">Like Pulse Milestone</label>
+            <input id="top-likers-like-milestone" type="number" min="0" max="1000000000" step="100" placeholder="1000">
+            <span class="field-hint">Tile border pulse for every multiple reached. Use 0 to turn off.</span>
+          </div>
+          <div class="config-field">
+            <label for="top-likers-medal-hearts">Medal Hearts</label>
+            <select id="top-likers-medal-hearts">
+              <option value="1">Gold, silver, bronze</option>
+              <option value="0">Normal red hearts</option>
+            </select>
+            <span class="field-hint">Controls 1st, 2nd, and 3rd place heart colours</span>
+          </div>
+          <div class="config-field">
+            <label for="top-likers-reset">Reset On Connect</label>
+            <select id="top-likers-reset">
+              <option value="1">Reset each connection</option>
+              <option value="0">Keep saved list</option>
+            </select>
+            <span class="field-hint">Useful when restarting TikFinity between streams</span>
+          </div>
+          <div class="config-group-heading">Size</div>
+          <div class="config-field">
+            <label for="top-likers-width">Width</label>
+            <input id="top-likers-width" type="range" min="260" max="1000" step="10">
+            <span class="field-hint"><span id="top-likers-width-label">430px</span></span>
+          </div>
+          <div class="config-field">
+            <label for="top-likers-height">Height</label>
+            <input id="top-likers-height" type="range" min="120" max="900" step="10">
+            <span class="field-hint"><span id="top-likers-height-label">260px</span></span>
+          </div>
+          <div class="config-group-heading">Shell</div>
+          <div class="config-field">
+            <label for="top-likers-shell">Outer Box</label>
+            <select id="top-likers-shell">
+              <option value="1">Show outer box</option>
+              <option value="0">Hide outer box</option>
+            </select>
+            <span class="field-hint">Turns off the main background, border, and glow</span>
+          </div>
+          <div class="config-field">
+            <label for="top-likers-title">Title</label>
+            <select id="top-likers-title">
+              <option value="1">Show title</option>
+              <option value="0">Hide title</option>
+            </select>
+            <span class="field-hint">Toggles the Top Likers heading</span>
+          </div>
+          <div class="config-field">
+            <label for="top-likers-tiles">Column Backgrounds</label>
+            <select id="top-likers-tiles">
+              <option value="1">Show row backgrounds</option>
+              <option value="0">Hide row backgrounds</option>
+            </select>
+            <span class="field-hint">Turns off the individual liker tile fill, border, and shadow</span>
+          </div>
+          <div class="config-group-heading">Background Colours</div>
+          <div class="config-field color-config-field">
+            <label for="top-likers-bg-start">Background Start</label>
+            <div class="color-control">
+              <input id="top-likers-bg-start" type="color">
+              <input id="top-likers-bg-start-hex" type="text" spellcheck="false" placeholder="#102c34">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="top-likers-bg-end">Background End</label>
+            <div class="color-control">
+              <input id="top-likers-bg-end" type="color">
+              <input id="top-likers-bg-end-hex" type="text" spellcheck="false" placeholder="#461f68">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="top-likers-bg-base">Background Base</label>
+            <div class="color-control">
+              <input id="top-likers-bg-base" type="color">
+              <input id="top-likers-bg-base-hex" type="text" spellcheck="false" placeholder="#0c0a14">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="top-likers-border">Border</label>
+            <div class="color-control">
+              <input id="top-likers-border" type="color">
+              <input id="top-likers-border-hex" type="text" spellcheck="false" placeholder="#03f5d8">
+            </div>
+          </div>
+          <div class="config-group-heading">Tile Colours</div>
+          <div class="config-field color-config-field">
+            <label for="top-likers-tile">Tile Fill</label>
+            <div class="color-control">
+              <input id="top-likers-tile" type="color">
+              <input id="top-likers-tile-hex" type="text" spellcheck="false" placeholder="#080b12">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="top-likers-tile-border">Tile Border</label>
+            <div class="color-control">
+              <input id="top-likers-tile-border" type="color">
+              <input id="top-likers-tile-border-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
+          </div>
+          <div class="config-group-heading">Text & Glow</div>
+          <div class="config-field color-config-field">
+            <label for="top-likers-title-color">Title Colour</label>
+            <div class="color-control">
+              <input id="top-likers-title-color" type="color">
+              <input id="top-likers-title-color-hex" type="text" spellcheck="false" placeholder="#03f5d8">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="top-likers-text">Text</label>
+            <div class="color-control">
+              <input id="top-likers-text" type="color">
+              <input id="top-likers-text-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="top-likers-muted">Muted Text</label>
+            <div class="color-control">
+              <input id="top-likers-muted" type="color">
+              <input id="top-likers-muted-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="top-likers-glow">Glow</label>
+            <div class="color-control">
+              <input id="top-likers-glow" type="color">
+              <input id="top-likers-glow-hex" type="text" spellcheck="false" placeholder="#c447ff">
+            </div>
+          </div>
+          <div class="config-group-heading">Opacity</div>
+          <div class="config-field">
+            <label for="top-likers-opacity">Background Transparency</label>
+            <input id="top-likers-opacity" type="range" min="0" max="1" step="0.05">
+            <span class="field-hint"><span id="top-likers-opacity-label">80%</span> opacity</span>
+          </div>
+          <div class="config-field">
+            <label for="top-likers-tile-opacity">Tile Transparency</label>
+            <input id="top-likers-tile-opacity" type="range" min="0" max="1" step="0.05">
+            <span class="field-hint"><span id="top-likers-tile-opacity-label">60%</span> opacity</span>
+          </div>
+        </div>
+      </details>
+
+      <section class="config-section" data-config-panel="top-likers" aria-label="Top likers preview" hidden>
+        <div class="section-header-row">
+          <h2 class="section-title">Top Likers Preview</h2>
+        </div>
+        <div class="overlay-preview-frame overlay-preview-frame-top-likers">
+          <iframe id="top-likers-preview" title="Top likers preview"></iframe>
         </div>
       </section>
 

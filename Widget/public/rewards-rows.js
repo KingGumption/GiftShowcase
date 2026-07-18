@@ -1087,6 +1087,7 @@ function findCatalogEntryForGift(gift) {
     return null;
   }
 
+  const currentImage = String(gift.image || '');
   const ids = [
     ...(gift.giftIds || []),
     getIdFromImagePath(gift.image)
@@ -1097,8 +1098,9 @@ function findCatalogEntryForGift(gift) {
     getDisplayLabel(gift.image)
   ].map(normalizeName).filter(Boolean);
 
-  return catalogGifts.find(entry => ids.includes(normalizeId(entry.id))) ||
-    catalogGifts.find(entry => names.includes(normalizeName(entry.label)));
+  return catalogGifts.find(entry => String(entry.image || '') === currentImage) ||
+    catalogGifts.find(entry => names.includes(normalizeName(entry.label))) ||
+    catalogGifts.find(entry => ids.includes(normalizeId(entry.id)));
 }
 
 function getIdFromImagePath(imagePath) {

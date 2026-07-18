@@ -21,6 +21,9 @@ const rewardEnabled = document.querySelector('#reward-enabled');
 const rowsGiftList = document.querySelector('#rows-gift-list');
 const rowsGiftTotal = document.querySelector('#rows-gift-total');
 const rowsGiftEnabled = document.querySelector('#rows-gift-enabled');
+const sideGiftList = document.querySelector('#side-gift-list');
+const sideGiftTotal = document.querySelector('#side-gift-total');
+const sideGiftEnabled = document.querySelector('#side-gift-enabled');
 const tabButtons = document.querySelectorAll('[data-config-tab]');
 const configPanels = document.querySelectorAll('[data-config-panel]');
 const rowsCount = document.querySelector('#rows-count');
@@ -44,10 +47,55 @@ const goalStart = document.querySelector('#goal-start');
 const goalReset = document.querySelector('#goal-reset');
 const goalWidth = document.querySelector('#goal-width');
 const goalHeight = document.querySelector('#goal-height');
+const topLikersLimit = document.querySelector('#top-likers-limit');
+const topLikersAvatars = document.querySelector('#top-likers-avatars');
+const topLikersNames = document.querySelector('#top-likers-names');
+const topLikersHeart = document.querySelector('#top-likers-heart');
+const topLikersLayout = document.querySelector('#top-likers-layout');
+const topLikersLikeMilestone = document.querySelector('#top-likers-like-milestone');
+const topLikersMedalHearts = document.querySelector('#top-likers-medal-hearts');
+const topLikersReset = document.querySelector('#top-likers-reset');
+const topLikersWidth = document.querySelector('#top-likers-width');
+const topLikersWidthLabel = document.querySelector('#top-likers-width-label');
+const topLikersHeight = document.querySelector('#top-likers-height');
+const topLikersHeightLabel = document.querySelector('#top-likers-height-label');
+const topLikersShell = document.querySelector('#top-likers-shell');
+const topLikersTitle = document.querySelector('#top-likers-title');
+const topLikersTiles = document.querySelector('#top-likers-tiles');
+const topLikersOpacity = document.querySelector('#top-likers-opacity');
+const topLikersOpacityLabel = document.querySelector('#top-likers-opacity-label');
+const topLikersTileOpacity = document.querySelector('#top-likers-tile-opacity');
+const topLikersTileOpacityLabel = document.querySelector('#top-likers-tile-opacity-label');
+const sideGiftsSide = document.querySelector('#side-gifts-side');
+const sideGiftsWidth = document.querySelector('#side-gifts-width');
+const sideGiftsHeight = document.querySelector('#side-gifts-height');
+const sideGiftsIconSize = document.querySelector('#side-gifts-icon-size');
+const sideGiftsGap = document.querySelector('#side-gifts-gap');
+const sideGiftsInsetX = document.querySelector('#side-gifts-inset-x');
+const sideGiftsInsetY = document.querySelector('#side-gifts-inset-y');
+const sideGiftsLabels = document.querySelector('#side-gifts-labels');
+const sideGiftsOutlines = document.querySelector('#side-gifts-outlines');
+const sideGiftsTiles = document.querySelector('#side-gifts-tiles');
+const sideGiftsIdleGlow = document.querySelector('#side-gifts-idle-glow');
+const sideGiftsLabelSize = document.querySelector('#side-gifts-label-size');
+const sideGiftsLabelSizeLabel = document.querySelector('#side-gifts-label-size-label');
+const sideGiftsLabelLines = document.querySelector('#side-gifts-label-lines');
+const sideGiftsOutlineSize = document.querySelector('#side-gifts-outline-size');
+const sideGiftsOutlineSizeLabel = document.querySelector('#side-gifts-outline-size-label');
+const sideGiftsGiftOutlineSize = document.querySelector('#side-gifts-gift-outline-size');
+const sideGiftsGiftOutlineSizeLabel = document.querySelector('#side-gifts-gift-outline-size-label');
+const sideGiftsTileOpacity = document.querySelector('#side-gifts-tile-opacity');
+const sideGiftsTileOpacityLabel = document.querySelector('#side-gifts-tile-opacity-label');
+const sideGiftsSounds = document.querySelector('#side-gifts-sounds');
+const sideGiftsAnimations = document.querySelector('#side-gifts-animations');
+const sideGiftsProfileAnimation = document.querySelector('#side-gifts-profile-animation');
+const sideGiftsProfileName = document.querySelector('#side-gifts-profile-name');
 const addRewardButton = document.querySelector('#add-reward');
 const copyCarouselUrlButton = document.querySelector('#copy-carousel-url');
 const copyRowsUrlButton = document.querySelector('#copy-rows-url');
+const copySideGiftsUrlButton = document.querySelector('#copy-side-gifts-url');
 const copyGoalUrlButton = document.querySelector('#copy-goal-url');
+const copyTopLikersUrlButton = document.querySelector('#copy-top-likers-url');
 const copyConfigUrlButton = document.querySelector('#copy-config-url');
 const configVersionName = document.querySelector('#config-version-name');
 const configVersionSelect = document.querySelector('#config-version-select');
@@ -57,9 +105,12 @@ const loadConfigUrlInput = document.querySelector('#load-config-url');
 const loadConfigUrlButton = document.querySelector('#load-config-url-button');
 const carouselPreview = document.querySelector('#carousel-preview');
 const rowsPreview = document.querySelector('#rows-preview');
+const sideGiftsPreview = document.querySelector('#side-gifts-preview');
 const goalPreview = document.querySelector('#goal-preview');
+const topLikersPreview = document.querySelector('#top-likers-preview');
 const carouselPreviewTest = document.querySelector('#carousel-preview-test');
 const rowsPreviewTest = document.querySelector('#rows-preview-test');
+const sideGiftsPreviewTest = document.querySelector('#side-gifts-preview-test');
 const carouselPreviewMute = document.querySelector('#carousel-preview-mute');
 const rowsPreviewMute = document.querySelector('#rows-preview-mute');
 const themePreset = document.querySelector('#theme-preset');
@@ -94,6 +145,27 @@ const goalColorFields = [
   { key: 'accent', color: document.querySelector('#goal-accent'), hex: document.querySelector('#goal-accent-hex') },
   { key: 'glow', color: document.querySelector('#goal-glow'), hex: document.querySelector('#goal-glow-hex') },
   { key: 'text', color: document.querySelector('#goal-text'), hex: document.querySelector('#goal-text-hex') }
+];
+const topLikersColorFields = [
+  { key: 'backgroundStart', color: document.querySelector('#top-likers-bg-start'), hex: document.querySelector('#top-likers-bg-start-hex') },
+  { key: 'backgroundEnd', color: document.querySelector('#top-likers-bg-end'), hex: document.querySelector('#top-likers-bg-end-hex') },
+  { key: 'backgroundBase', color: document.querySelector('#top-likers-bg-base'), hex: document.querySelector('#top-likers-bg-base-hex') },
+  { key: 'border', color: document.querySelector('#top-likers-border'), hex: document.querySelector('#top-likers-border-hex') },
+  { key: 'tile', color: document.querySelector('#top-likers-tile'), hex: document.querySelector('#top-likers-tile-hex') },
+  { key: 'tileBorder', color: document.querySelector('#top-likers-tile-border'), hex: document.querySelector('#top-likers-tile-border-hex') },
+  { key: 'title', color: document.querySelector('#top-likers-title-color'), hex: document.querySelector('#top-likers-title-color-hex') },
+  { key: 'text', color: document.querySelector('#top-likers-text'), hex: document.querySelector('#top-likers-text-hex') },
+  { key: 'muted', color: document.querySelector('#top-likers-muted'), hex: document.querySelector('#top-likers-muted-hex') },
+  { key: 'glow', color: document.querySelector('#top-likers-glow'), hex: document.querySelector('#top-likers-glow-hex') }
+];
+const sideGiftsColorFields = [
+  { key: 'labelColor', color: document.querySelector('#side-gifts-label-color'), hex: document.querySelector('#side-gifts-label-color-hex') },
+  { key: 'gifterLabelColor', color: document.querySelector('#side-gifts-gifter-label-color'), hex: document.querySelector('#side-gifts-gifter-label-color-hex') },
+  { key: 'outlineColor', color: document.querySelector('#side-gifts-outline-color'), hex: document.querySelector('#side-gifts-outline-color-hex'), enablesOutlines: true },
+  { key: 'giftOutlineColor', color: document.querySelector('#side-gifts-gift-outline-color'), hex: document.querySelector('#side-gifts-gift-outline-color-hex'), enablesOutlines: true },
+  { key: 'glow', color: document.querySelector('#side-gifts-glow-color'), hex: document.querySelector('#side-gifts-glow-color-hex') },
+  { key: 'tileColor', color: document.querySelector('#side-gifts-tile-color'), hex: document.querySelector('#side-gifts-tile-color-hex') },
+  { key: 'tileBorderColor', color: document.querySelector('#side-gifts-tile-border-color'), hex: document.querySelector('#side-gifts-tile-border-color-hex') }
 ];
 const imageCatalog = new Map();
 const giftGridLimit = 80;
@@ -173,6 +245,65 @@ const defaultGoalBar = {
   accent: '#03f5d8',
   glow: '#c447ff',
   text: '#ffffff'
+};
+const defaultTopLikers = {
+  limit: 3,
+  showAvatar: true,
+  showNames: true,
+  showHeart: true,
+  layout: 'stacked',
+  likeMilestone: 500,
+  medalHearts: true,
+  resetOnConnect: true,
+  width: 390,
+  height: 260,
+  showShell: false,
+  showTitle: false,
+  showTiles: false,
+  backgroundStart: '#102c34',
+  backgroundEnd: '#461f68',
+  backgroundBase: '#0c0a14',
+  border: '#03f5d8',
+  tile: '#080b12',
+  tileBorder: '#ffffff',
+  title: '#03f5d8',
+  text: '#ffffff',
+  muted: '#ffffff',
+  glow: '#c447ff',
+  opacity: 0.8,
+  tileOpacity: 0.6
+};
+const defaultSideGifts = {
+  side: 'both',
+  width: 1080,
+  height: 960,
+  iconSize: 65,
+  gap: 26,
+  insetX: 8,
+  insetY: 34,
+  hitMs: 6500,
+  showLabels: true,
+  outlinesEnabled: false,
+  tilesEnabled: false,
+  idleGlowEnabled: false,
+  labelSize: 10,
+  labelTwoLines: false,
+  labelColor: '#ffffff',
+  gifterLabelColor: '#ffffff',
+  outlineColor: '#10131b',
+  outlineSize: 0.45,
+  giftOutlineColor: '#10131b',
+  giftOutlineSize: 2,
+  soundsEnabled: true,
+  animationsEnabled: true,
+  profileAnimationEnabled: true,
+  profileNameEnabled: true,
+  glow: '#03f5d8',
+  hitColor: '#ffd83d',
+  tileColor: '#0d0f14',
+  tileOpacity: 0.82,
+  tileBorderColor: '#ffffff',
+  gifts: []
 };
 const soundCatalog = [
   { label: 'No sound', sound: '' },
@@ -265,6 +396,7 @@ rowsGiftList.addEventListener('scroll', () => {
 
 addRewardButton.addEventListener('click', addReward);
 document.querySelector('#add-row-gift').addEventListener('click', () => addRowGift());
+document.querySelector('#add-side-gift').addEventListener('click', () => addSideGift());
 document.querySelector('#save-config').addEventListener('click', saveConfig);
 loadConfigVersionButton.addEventListener('click', loadSelectedConfigVersion);
 deleteConfigVersionButton.addEventListener('click', deleteSelectedConfigVersion);
@@ -274,7 +406,9 @@ configVersionSelect.addEventListener('change', () => {
 });
 copyCarouselUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards.html', 'Carousel URL copied'));
 copyRowsUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards-rows.html', 'Rows URL copied'));
+copySideGiftsUrlButton.addEventListener('click', () => copyOverlayUrl('index-side-gifts.html', 'Side Gifts URL copied'));
 copyGoalUrlButton.addEventListener('click', () => copyOverlayUrl('index-thin.html', 'Goal URL copied'));
+copyTopLikersUrlButton.addEventListener('click', () => copyOverlayUrl('index-top-likers.html', 'Top Likers URL copied'));
 copyConfigUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards-config.html', 'Config URL copied'));
 loadConfigUrlButton.addEventListener('click', loadConfigFromUrlInput);
 loadConfigUrlInput.addEventListener('keydown', event => {
@@ -320,6 +454,70 @@ tabButtons.forEach(button => {
 
     updateGoalBarFromForm();
     updateGoalFieldVisibility();
+    markDirty();
+  });
+});
+
+[topLikersLimit, topLikersAvatars, topLikersNames, topLikersHeart, topLikersLayout, topLikersLikeMilestone, topLikersMedalHearts, topLikersReset, topLikersWidth, topLikersHeight, topLikersShell, topLikersTitle, topLikersTiles, topLikersOpacity, topLikersTileOpacity].forEach(input => {
+  input.addEventListener('input', () => {
+    updateTopLikersFromForm();
+    markDirty();
+  });
+});
+
+[sideGiftsSide, sideGiftsWidth, sideGiftsHeight, sideGiftsIconSize, sideGiftsGap, sideGiftsInsetX, sideGiftsInsetY, sideGiftsLabels, sideGiftsOutlines, sideGiftsTiles, sideGiftsIdleGlow, sideGiftsLabelSize, sideGiftsLabelLines, sideGiftsOutlineSize, sideGiftsGiftOutlineSize, sideGiftsTileOpacity, sideGiftsSounds, sideGiftsAnimations, sideGiftsProfileAnimation, sideGiftsProfileName].forEach(input => {
+  input?.addEventListener('input', () => {
+    if ((input === sideGiftsOutlineSize || input === sideGiftsGiftOutlineSize) && Number(input.value) > 0) {
+      sideGiftsOutlines.value = '1';
+    }
+
+    updateSideGiftsFromForm();
+    updateProfileNameToggleVisibility();
+    updateSideGiftsStyleLabels();
+    markDirty();
+  });
+});
+
+sideGiftsColorFields.forEach(field => {
+  field.color?.addEventListener('input', () => {
+    field.hex.value = field.color.value;
+    if (field.enablesOutlines) {
+      sideGiftsOutlines.value = '1';
+    }
+    updateSideGiftsFromForm();
+    markDirty();
+  });
+
+  field.hex?.addEventListener('input', () => {
+    const hex = normalizeHex(field.hex.value, '');
+
+    if (hex) {
+      field.color.value = hex;
+      if (field.enablesOutlines) {
+        sideGiftsOutlines.value = '1';
+      }
+    }
+
+    updateSideGiftsFromForm();
+    markDirty();
+  });
+});
+
+topLikersColorFields.forEach(field => {
+  field.color.addEventListener('input', () => {
+    field.hex.value = field.color.value;
+    updateTopLikersFromForm();
+    markDirty();
+  });
+
+  field.hex.addEventListener('input', () => {
+    const hex = normalizeHex(field.hex.value, '');
+
+    if (hex) {
+      field.color.value = hex;
+    }
+
+    updateTopLikersFromForm();
     markDirty();
   });
 });
@@ -446,6 +644,7 @@ function loadDraftConfig() {
 
 function render() {
   rememberPageScroll();
+  ensureSideGiftDefaults();
   rotateMs.value = draftConfig.rotateMs;
   holdMs.value = draftConfig.holdOnGiftMs;
   labelMs.value = draftConfig.labelMs;
@@ -467,19 +666,25 @@ function render() {
   rowsProfileAnimation.value = draftConfig.rowsOverlay.profileAnimationEnabled === true ? '1' : '0';
   rowsProfileName.value = draftConfig.rowsOverlay.profileNameEnabled === true ? '1' : '0';
   renderGoalBarForm();
+  renderTopLikersForm();
+  renderSideGiftsForm();
   updateProfileNameToggleVisibility();
   renderThemeForm();
   rewardList.innerHTML = '';
   rowsGiftList.innerHTML = '';
+  sideGiftList.innerHTML = '';
 
   if (activeConfigTab === 'rows') {
     renderRowsGifts();
+  } else if (activeConfigTab === 'side-gifts') {
+    renderSideGifts();
   } else {
     renderRewardsList();
   }
 
   updateRewardStats();
   updateRowsGiftStats();
+  updateSideGiftStats();
   scheduleOverlayPreviewRefresh();
   restorePageScroll();
 }
@@ -511,9 +716,94 @@ function updateGoalFieldVisibility() {
   document.querySelector('.goal-config-grid')?.classList.toggle('is-followers-goal', goalType.value === 'followers');
 }
 
+function renderTopLikersForm() {
+  const topLikers = draftConfig.topLikers;
+  topLikersLimit.value = topLikers.limit;
+  topLikersAvatars.value = topLikers.showAvatar ? '1' : '0';
+  topLikersNames.value = topLikers.showNames ? '1' : '0';
+  topLikersHeart.value = topLikers.showHeart ? '1' : '0';
+  topLikersLayout.value = topLikers.layout;
+  topLikersLikeMilestone.value = topLikers.likeMilestone;
+  topLikersMedalHearts.value = topLikers.medalHearts ? '1' : '0';
+  topLikersReset.value = topLikers.resetOnConnect ? '1' : '0';
+  topLikersWidth.value = topLikers.width;
+  topLikersHeight.value = topLikers.height;
+  topLikersWidthLabel.textContent = `${topLikers.width}px`;
+  topLikersHeightLabel.textContent = `${topLikers.height}px`;
+  topLikersShell.value = topLikers.showShell ? '1' : '0';
+  topLikersTitle.value = topLikers.showTitle ? '1' : '0';
+  topLikersTiles.value = topLikers.showTiles ? '1' : '0';
+  topLikersOpacity.value = String(topLikers.opacity);
+  topLikersTileOpacity.value = String(topLikers.tileOpacity);
+  topLikersOpacityLabel.textContent = `${Math.round(topLikers.opacity * 100)}%`;
+  topLikersTileOpacityLabel.textContent = `${Math.round(topLikers.tileOpacity * 100)}%`;
+  topLikersColorFields.forEach(field => {
+    const value = normalizeHex(topLikers[field.key], defaultTopLikers[field.key]);
+    field.color.value = value;
+    field.hex.value = value.toUpperCase();
+  });
+  updateTopLikersPreviewFrameSize();
+}
+
+function renderSideGiftsForm() {
+  const sideGifts = draftConfig.sideGifts;
+  sideGiftsSide.value = sideGifts.side;
+  sideGiftsWidth.value = sideGifts.width;
+  sideGiftsHeight.value = sideGifts.height;
+  sideGiftsIconSize.value = sideGifts.iconSize;
+  sideGiftsGap.value = sideGifts.gap;
+  sideGiftsInsetX.value = sideGifts.insetX;
+  sideGiftsInsetY.value = sideGifts.insetY;
+  sideGiftsLabels.value = sideGifts.showLabels ? '1' : '0';
+  sideGiftsOutlines.value = sideGifts.outlinesEnabled ? '1' : '0';
+  sideGiftsTiles.value = sideGifts.tilesEnabled ? '1' : '0';
+  sideGiftsIdleGlow.value = sideGifts.idleGlowEnabled ? '1' : '0';
+  sideGiftsLabelSize.value = sideGifts.labelSize;
+  sideGiftsLabelLines.checked = sideGifts.labelTwoLines === true;
+  sideGiftsOutlineSize.value = sideGifts.outlineSize;
+  sideGiftsGiftOutlineSize.value = sideGifts.giftOutlineSize;
+  sideGiftsTileOpacity.value = String(sideGifts.tileOpacity);
+  sideGiftsSounds.value = sideGifts.soundsEnabled === false ? '0' : '1';
+  sideGiftsAnimations.value = sideGifts.animationsEnabled === false ? '0' : '1';
+  sideGiftsProfileAnimation.value = sideGifts.profileAnimationEnabled === true ? '1' : '0';
+  sideGiftsProfileName.value = sideGifts.profileNameEnabled === true ? '1' : '0';
+  sideGiftsColorFields.forEach(field => {
+    const value = normalizeHex(sideGifts[field.key], defaultSideGifts[field.key]);
+    field.color.value = value;
+    field.hex.value = value.toUpperCase();
+  });
+  updateSideGiftsStyleLabels();
+  updateSideGiftsPreviewFrameSize();
+}
+
+function updateSideGiftsStyleLabels() {
+  if (sideGiftsLabelSizeLabel && sideGiftsLabelSize) {
+    sideGiftsLabelSizeLabel.textContent = `${sideGiftsLabelSize.value}px`;
+  }
+
+  if (sideGiftsOutlineSizeLabel && sideGiftsOutlineSize) {
+    sideGiftsOutlineSizeLabel.textContent = `${formatPixelSliderValue(sideGiftsOutlineSize.value)}px`;
+  }
+
+  if (sideGiftsGiftOutlineSizeLabel && sideGiftsGiftOutlineSize) {
+    sideGiftsGiftOutlineSizeLabel.textContent = `${formatPixelSliderValue(sideGiftsGiftOutlineSize.value)}px`;
+  }
+
+  if (sideGiftsTileOpacityLabel && sideGiftsTileOpacity) {
+    sideGiftsTileOpacityLabel.textContent = `${Math.round(Number(sideGiftsTileOpacity.value || 0) * 100)}%`;
+  }
+}
+
+function formatPixelSliderValue(value) {
+  const number = Number(value);
+  if (!Number.isFinite(number)) return '0';
+  return Number.isInteger(number) ? String(number) : number.toFixed(2).replace(/0+$/, '').replace(/\.$/, '');
+}
+
 function updateProfileNameToggleVisibility() {
   const carouselField = carouselProfileName?.closest('[data-profile-name-toggle]');
   const rowsField = rowsProfileName?.closest('[data-profile-name-toggle]');
+  const sideGiftsField = sideGiftsProfileName?.closest('[data-profile-name-toggle]');
 
   if (carouselField) {
     carouselField.hidden = carouselProfileAnimation.value !== '1';
@@ -521,6 +811,10 @@ function updateProfileNameToggleVisibility() {
 
   if (rowsField) {
     rowsField.hidden = rowsProfileAnimation.value !== '1';
+  }
+
+  if (sideGiftsField) {
+    sideGiftsField.hidden = sideGiftsProfileAnimation.value !== '1';
   }
 }
 
@@ -999,6 +1293,105 @@ function createRowsGiftEditor(gift, index) {
     return editor;
 }
 
+function renderSideGifts() {
+  sideGiftList.innerHTML = '';
+  sideGiftList.classList.add('side-gift-board');
+
+  draftConfig.sideGifts.gifts.forEach((gift, index) => {
+    sideGiftList.append(createSideGiftEditor(gift, index));
+  });
+  sideGiftList.append(createAddCard('Add side gift', addSideGift));
+  updateSideGiftStats();
+}
+
+function createSideGiftEditor(gift, index) {
+  const editor = template.content.firstElementChild.cloneNode(true);
+  editor.dataset.index = String(index);
+  editor.dataset.mode = 'side-gifts';
+
+  editor.querySelector('.reward-number').textContent = String(index + 1);
+  editor.querySelector('[data-field="enabled"]').checked = gift.enabled !== false;
+  editor.querySelector('[data-field="title"]').value = gift.title;
+  editor.querySelector('[data-field="triggerType"]').value = gift.triggerType;
+  editor.querySelector('[data-field="likesRequired"]').value = gift.likesRequired;
+  editor.querySelector('[data-field="likesHeartColor"]').value = gift.likesHeartColor;
+  editor.querySelector('[data-field="likesNumberColor"]').value = gift.likesNumberColor;
+  editor.querySelector('[data-field="likesHeartSize"]').value = gift.likesHeartSize;
+  editor.querySelector('[data-field="likesNumberSize"]').value = gift.likesNumberSize;
+  editor.querySelector('[data-field="giftNames"]').value = gift.giftNames.join(', ');
+  editor.querySelector('[data-field="giftIds"]').value = gift.giftIds.join(', ');
+  editor.querySelector('[data-field="image"]').value = gift.image;
+  populateSoundSelect(editor, gift.sound);
+  editor.querySelector('[data-field="sound"]').value = gift.sound;
+  editor.querySelector('[data-field="volume"]').value = gift.volume;
+
+  const triggerFields = editor.querySelector('.reward-trigger-fields');
+  triggerFields?.insertAdjacentHTML('beforeend', `
+    <div class="config-field">
+      <label>Side</label>
+      <select data-field="side">
+        <option value="auto"${gift.side === 'auto' ? ' selected' : ''}>Auto split</option>
+        <option value="left"${gift.side === 'left' ? ' selected' : ''}>Left</option>
+        <option value="right"${gift.side === 'right' ? ' selected' : ''}>Right</option>
+      </select>
+      <span class="field-hint">Override which column this gift appears in</span>
+    </div>
+  `);
+
+  populateGiftGrid(editor, gift);
+  updateTriggerFields(editor, gift);
+  alignAudioPreview(editor);
+  updatePreview(editor, gift);
+
+  editor.addEventListener('input', event => {
+    if (event.target.matches('[data-gift-search]')) {
+      populateGiftGrid(editor, draftConfig.sideGifts.gifts[index], event.target.value);
+      return;
+    }
+
+    if (event.target.dataset.field) {
+      updateSideGiftFromEditor(index, editor);
+      markDirty();
+      updateEditorState(editor, draftConfig.sideGifts.gifts[index]);
+      if (event.target.matches('[data-field="image"], [data-field="sound"], [data-field="volume"], [data-field="triggerType"], [data-field^="likes"]')) {
+        updatePreview(editor, draftConfig.sideGifts.gifts[index]);
+      }
+    }
+  });
+
+  editor.addEventListener('click', event => {
+    const actionButton = event.target.closest('[data-action]');
+    const action = actionButton?.dataset.action;
+    if (!action) return;
+
+    if (action === 'select-gift-catalog') {
+      applySideGiftSelection(index, editor, actionButton.dataset.image);
+      return;
+    }
+
+    if (action === 'toggle-gift-favorite') {
+      toggleGiftFavorite(actionButton.dataset.image);
+      populateGiftGrid(editor, draftConfig.sideGifts.gifts[index], editor.querySelector('[data-gift-search]')?.value || '');
+      return;
+    }
+
+    if (action === 'toggle-details') {
+      toggleDetailsSection(editor);
+      return;
+    }
+
+    if (action === 'play-sound') {
+      playSoundPreview(editor, draftConfig.sideGifts.gifts[index]);
+      return;
+    }
+
+    handleSideGiftAction(action, index);
+  });
+
+  updateEditorState(editor, gift);
+  return editor;
+}
+
 function setupRowsGiftDropzone(dropzone, row) {
   dropzone.addEventListener('dragover', event => {
     event.preventDefault();
@@ -1244,6 +1637,12 @@ function ensureRowsGiftDefaults() {
   }
 }
 
+function ensureSideGiftDefaults() {
+  if (!draftConfig.sideGifts.gifts.length) {
+    draftConfig.sideGifts.gifts = getDefaultSideGifts().map(normalizeSideGift);
+  }
+}
+
 function alignAudioPreview(editor) {
   const audioPreview = editor.querySelector('.audio-preview');
   const soundInput = editor.querySelector('[data-field="sound"]');
@@ -1333,6 +1732,30 @@ function applyRowsGiftSelection(index, editor, imagePath) {
   updatePreview(editor, draftConfig.rowsOverlay.gifts[index]);
   populateGiftGrid(editor, draftConfig.rowsOverlay.gifts[index], editor.querySelector('[data-gift-search]')?.value || '');
   setState(`Selected row gift: ${giftName}`);
+}
+
+function applySideGiftSelection(index, editor, imagePath) {
+  const gift = getImageCatalogEntry(imagePath);
+  if (!gift) return;
+
+  const giftName = gift.name || gift.label || getImageLabel(gift.image);
+  const giftId = gift.id || gift.giftId || '';
+
+  editor.querySelector('[data-field="giftNames"]').value = giftName;
+  editor.querySelector('[data-field="giftIds"]').value = giftId;
+  editor.querySelector('[data-field="image"]').value = gift.image || '';
+
+  const titleInput = editor.querySelector('[data-field="title"]');
+  if (!titleInput.value.trim() || titleInput.value.trim() === 'New Side Gift') {
+    titleInput.value = giftName;
+  }
+
+  updateSideGiftFromEditor(index, editor);
+  markDirty();
+  updateEditorState(editor, draftConfig.sideGifts.gifts[index]);
+  updatePreview(editor, draftConfig.sideGifts.gifts[index]);
+  populateGiftGrid(editor, draftConfig.sideGifts.gifts[index], editor.querySelector('[data-gift-search]')?.value || '');
+  setState(`Selected side gift: ${giftName}`);
 }
 
 function populateGiftGrid(editor, reward, filter = '') {
@@ -1454,13 +1877,23 @@ function getGiftGridSummary(total, visible) {
 function getSelectedGiftEntry(reward) {
   const giftNames = reward?.giftNames || [];
   const giftIds = reward?.giftIds || [];
+  const image = normalizePath(reward?.image || '').toLowerCase();
   const normalizedNames = giftNames.map(normalizeName);
   const normalizedIds = giftIds.map(id => String(id));
+  const entries = getGiftCatalogEntries();
 
-  return getGiftCatalogEntries().find(entry => {
-    const id = String(entry.id || entry.giftId || '');
-    return normalizedNames.includes(normalizeName(entry.name || entry.label)) || (id && normalizedIds.includes(id));
-  });
+  if (image) {
+    const imageMatch = entries.find(entry => normalizePath(entry.image || '').toLowerCase() === image);
+    if (imageMatch) {
+      return imageMatch;
+    }
+  }
+
+  return entries.find(entry => normalizedNames.includes(normalizeName(entry.name || entry.label))) ||
+    entries.find(entry => {
+      const id = String(entry.id || entry.giftId || '');
+      return id && normalizedIds.includes(id);
+    });
 }
 
 function addImageCatalogEntry(entry) {
@@ -1586,6 +2019,13 @@ function updateRowsGiftStats() {
   rowsGiftEnabled.textContent = String(enabled);
 }
 
+function updateSideGiftStats() {
+  const total = draftConfig.sideGifts.gifts.length;
+  const enabled = draftConfig.sideGifts.gifts.filter(gift => gift.enabled !== false).length;
+  sideGiftTotal.textContent = String(total);
+  sideGiftEnabled.textContent = String(enabled);
+}
+
 function setActiveTab(tabName) {
   activeConfigTab = tabName;
 
@@ -1647,6 +2087,126 @@ function updateGoalBarFromForm() {
     glow: goalColorFields.find(field => field.key === 'glow')?.hex.value,
     text: goalColorFields.find(field => field.key === 'text')?.hex.value
   });
+}
+
+function updateTopLikersFromForm() {
+  draftConfig.topLikers = normalizeTopLikers({
+    limit: topLikersLimit.value,
+    showAvatar: topLikersAvatars.value !== '0',
+    showNames: topLikersNames.value !== '0',
+    showHeart: topLikersHeart.value !== '0',
+    layout: topLikersLayout.value,
+    likeMilestone: topLikersLikeMilestone.value,
+    medalHearts: topLikersMedalHearts.value !== '0',
+    resetOnConnect: topLikersReset.value !== '0',
+    width: topLikersWidth.value,
+    height: topLikersHeight.value,
+    showShell: topLikersShell.value !== '0',
+    showTitle: topLikersTitle.value !== '0',
+    showTiles: topLikersTiles.value !== '0',
+    opacity: topLikersOpacity.value,
+    tileOpacity: topLikersTileOpacity.value,
+    ...Object.fromEntries(topLikersColorFields.map(field => [field.key, field.hex.value]))
+  });
+  topLikersOpacityLabel.textContent = `${Math.round(draftConfig.topLikers.opacity * 100)}%`;
+  topLikersTileOpacityLabel.textContent = `${Math.round(draftConfig.topLikers.tileOpacity * 100)}%`;
+  topLikersWidthLabel.textContent = `${draftConfig.topLikers.width}px`;
+  topLikersHeightLabel.textContent = `${draftConfig.topLikers.height}px`;
+  updateTopLikersPreviewFrameSize();
+}
+
+function updateTopLikersPreviewFrameSize() {
+  if (!topLikersPreview || !draftConfig?.topLikers) {
+    return;
+  }
+
+  topLikersPreview.style.width = `${draftConfig.topLikers.width}px`;
+  topLikersPreview.style.height = `${getEffectiveTopLikersHeight(draftConfig.topLikers)}px`;
+}
+
+function updateSideGiftsFromForm() {
+  draftConfig.sideGifts = normalizeSideGifts({
+    ...draftConfig.sideGifts,
+    side: sideGiftsSide.value,
+    width: sideGiftsWidth.value,
+    height: sideGiftsHeight.value,
+    iconSize: sideGiftsIconSize.value,
+    gap: sideGiftsGap.value,
+    insetX: sideGiftsInsetX.value,
+    insetY: sideGiftsInsetY.value,
+    showLabels: sideGiftsLabels.value === '1',
+    outlinesEnabled: sideGiftsOutlines.value === '1',
+    tilesEnabled: sideGiftsTiles.value === '1',
+    idleGlowEnabled: sideGiftsIdleGlow.value === '1',
+    labelSize: sideGiftsLabelSize.value,
+    labelTwoLines: sideGiftsLabelLines.checked,
+    outlineSize: sideGiftsOutlineSize.value,
+    giftOutlineSize: sideGiftsGiftOutlineSize.value,
+    tileOpacity: sideGiftsTileOpacity.value,
+    soundsEnabled: sideGiftsSounds.value !== '0',
+    animationsEnabled: sideGiftsAnimations.value !== '0',
+    profileAnimationEnabled: sideGiftsProfileAnimation.value === '1',
+    profileNameEnabled: sideGiftsProfileAnimation.value === '1' && sideGiftsProfileName.value === '1'
+  });
+  sideGiftsColorFields.forEach(field => {
+    draftConfig.sideGifts[field.key] = normalizeHex(field.hex.value, defaultSideGifts[field.key]);
+  });
+  updateSideGiftsPreviewFrameSize();
+}
+
+function updateSideGiftsPreviewFrameSize() {
+  if (!sideGiftsPreview || !draftConfig?.sideGifts) {
+    return;
+  }
+
+  const frame = sideGiftsPreview.closest('.overlay-preview-frame-side-gifts');
+  if (frame) {
+    frame.style.setProperty('--side-gifts-preview-width', `${draftConfig.sideGifts.width}px`);
+    frame.style.setProperty('--side-gifts-preview-height', `${getEffectiveSideGiftsPreviewHeight(draftConfig.sideGifts)}px`);
+  }
+}
+
+function getEffectiveSideGiftsPreviewHeight(sideGiftsConfig) {
+  const sideGifts = normalizeSideGifts(sideGiftsConfig || {});
+  const visibleGifts = sideGifts.gifts.filter(gift => gift.enabled !== false);
+  const leftCount = visibleGifts.filter((gift, index) => getSideGiftPreviewSide(gift, index, sideGifts.side) === 'left').length;
+  const rightCount = visibleGifts.filter((gift, index) => getSideGiftPreviewSide(gift, index, sideGifts.side) === 'right').length;
+  const slotCount = Math.max(leftCount, rightCount, 1);
+  const labelLines = sideGifts.labelTwoLines ? 2 : 1;
+  const labelHeight = sideGifts.showLabels ? Math.ceil(sideGifts.labelSize * 1.18 * labelLines) : 0;
+  const tileExtra = sideGifts.tilesEnabled ? 18 : 4;
+  const edgePadding = 88;
+  return (slotCount * (sideGifts.iconSize + labelHeight + tileExtra)) + (Math.max(0, slotCount - 1) * sideGifts.gap) + edgePadding;
+}
+
+function getSideGiftPreviewSide(gift, index, globalSide) {
+  if ((globalSide === 'left' || globalSide === 'right') && gift.side !== globalSide) {
+    return '';
+  }
+
+  if (gift.side === 'left' || gift.side === 'right') {
+    return gift.side;
+  }
+
+  if (globalSide === 'left' || globalSide === 'right') {
+    return '';
+  }
+
+  return index % 2 === 0 ? 'left' : 'right';
+}
+
+function getEffectiveTopLikersHeight(topLikersConfig) {
+  const topLikers = normalizeTopLikers(topLikersConfig || {});
+  const rowHeight = 58;
+  const rowGap = 8;
+  const headerHeight = topLikers.showTitle ? 52 : 0;
+  const shellPadding = 56;
+  const rowsHeight = (topLikers.limit * rowHeight) + (Math.max(0, topLikers.limit - 1) * rowGap);
+  const naturalHeight = rowsHeight + headerHeight + shellPadding;
+  const titleAdjustment = topLikers.showTitle ? 0 : 52;
+  const configuredHeight = Math.max(1, topLikers.height - titleAdjustment);
+
+  return Math.max(naturalHeight, configuredHeight);
 }
 
 function renderThemeForm() {
@@ -1826,6 +2386,30 @@ function updateRowsGiftFromEditor(index, editor) {
   updateTriggerFields(editor, gift);
 }
 
+function updateSideGiftFromEditor(index, editor) {
+  const gift = draftConfig.sideGifts.gifts[index];
+  gift.enabled = editor.querySelector('[data-field="enabled"]').checked;
+  gift.title = editor.querySelector('[data-field="title"]').value.trim() || 'Side Gift';
+  gift.triggerType = normalizeTriggerType(editor.querySelector('[data-field="triggerType"]').value);
+  gift.likesRequired = clamp(Math.floor(Number(editor.querySelector('[data-field="likesRequired"]').value) || 50), 1, 1000000000);
+  gift.likesHeartColor = normalizeHex(editor.querySelector('[data-field="likesHeartColor"]').value, '#ef233c');
+  gift.likesNumberColor = normalizeHex(editor.querySelector('[data-field="likesNumberColor"]').value, '#ffffff');
+  gift.likesHeartSize = clamp(Math.floor(Number(editor.querySelector('[data-field="likesHeartSize"]').value) || 160), 40, 160);
+  gift.likesNumberSize = clamp(Math.floor(Number(editor.querySelector('[data-field="likesNumberSize"]').value) || 96), 16, 96);
+  gift.giftNames = splitList(editor.querySelector('[data-field="giftNames"]').value);
+  gift.giftIds = splitList(editor.querySelector('[data-field="giftIds"]').value);
+  gift.image = editor.querySelector('[data-field="image"]').value.trim();
+  gift.sound = editor.querySelector('[data-field="sound"]').value.trim();
+  gift.volume = clamp(Number(editor.querySelector('[data-field="volume"]').value), 0, 1);
+  gift.side = normalizeSideGiftSide(editor.querySelector('[data-field="side"]')?.value);
+  updateTriggerFields(editor, gift);
+}
+
+function normalizeSideGiftSide(value) {
+  const side = String(value || '').toLowerCase();
+  return side === 'left' || side === 'right' ? side : 'auto';
+}
+
 function updateTriggerFields(editor, item) {
   const triggerType = normalizeTriggerType(item?.triggerType);
   editor.dataset.triggerType = triggerType;
@@ -1862,6 +2446,35 @@ function handleRewardAction(action, index) {
     }
   }
 
+  markDirty();
+  renderPreservingScroll();
+}
+
+function handleSideGiftAction(action, index) {
+  if (action === 'up' && index > 0) {
+    swapSideGifts(index, index - 1);
+  }
+
+  if (action === 'down' && index < draftConfig.sideGifts.gifts.length - 1) {
+    swapSideGifts(index, index + 1);
+  }
+
+  if (action === 'duplicate') {
+    draftConfig.sideGifts.gifts.splice(index + 1, 0, cloneConfig(draftConfig.sideGifts.gifts[index]));
+    markDirty();
+    renderPreservingScroll();
+  }
+
+  if (action === 'delete') {
+    draftConfig.sideGifts.gifts.splice(index, 1);
+    markDirty();
+    renderPreservingScroll();
+  }
+}
+
+function swapSideGifts(a, b) {
+  const gifts = draftConfig.sideGifts.gifts;
+  [gifts[a], gifts[b]] = [gifts[b], gifts[a]];
   markDirty();
   renderPreservingScroll();
 }
@@ -1969,6 +2582,31 @@ function addRowGift(row = draftConfig.rowsOverlay.rows) {
   renderPreservingScroll();
 }
 
+function addSideGift() {
+  draftConfig.sideGifts.gifts.push({
+    enabled: true,
+    title: 'New Side Gift',
+    triggerType: 'gift',
+    likesRequired: 50,
+    likesHeartColor: '#ef233c',
+    likesNumberColor: '#ffffff',
+    likesHeartSize: 160,
+    likesNumberSize: 96,
+    giftNames: [],
+    giftIds: [],
+    image: '',
+    useGiftImage: false,
+    giftImageNames: [],
+    giftImageIds: [],
+    side: 'auto',
+    sound: '',
+    volume: 0.85
+  });
+
+  markDirty();
+  renderPreservingScroll();
+}
+
 function addRowsBoardRow() {
   draftConfig.rowsOverlay.rows += 1;
   rowsCount.value = String(draftConfig.rowsOverlay.rows);
@@ -2019,6 +2657,7 @@ function saveConfig() {
   updateRowsFromForm();
   updateRowsThemeFromForm();
   updateGoalBarFromForm();
+  updateTopLikersFromForm();
   localStorage.setItem(rewardStorageKey, JSON.stringify(draftConfig));
 
   const version = saveNamedConfigVersion();
@@ -2172,6 +2811,7 @@ function copyOverlayUrl(page, successText) {
   updateRowsFromForm();
   updateRowsThemeFromForm();
   updateGoalBarFromForm();
+  updateTopLikersFromForm();
 
   const url = getUrlForPage(page, draftConfig);
 
@@ -2218,6 +2858,10 @@ function getUrlForPage(page, config = draftConfig, options = {}) {
 
   if (options.mute) {
     search.set('mute', '1');
+  }
+
+  if (options.previewFit) {
+    search.set('previewFit', '1');
   }
 
   if (options.preview || options.test) {
@@ -2330,7 +2974,9 @@ function compactConfigForUrl(inputConfig) {
     u: compactThemeForUrl(config.carouselTheme),
     v: compactThemeForUrl(config.rowsTheme),
     o: compactRowsOverlayForUrl(config.rowsOverlay),
+    z: compactSideGiftsForUrl(config.sideGifts),
     q: compactGoalBarForUrl(config.goalBar),
+    w: compactTopLikersForUrl(config.topLikers),
     g: config.rewards.map(compactRewardForUrl)
   });
 }
@@ -2371,6 +3017,51 @@ function compactRowsOverlayForUrl(rowsOverlay) {
   });
 }
 
+function compactSideGiftsForUrl(sideGifts) {
+  const side = normalizeSideGifts(sideGifts || {});
+  return removeEmptyUrlFields({
+    a: side.side !== defaultSideGifts.side ? side.side : undefined,
+    b: side.width !== defaultSideGifts.width ? side.width : undefined,
+    c: side.height !== defaultSideGifts.height ? side.height : undefined,
+    d: side.iconSize !== defaultSideGifts.iconSize ? side.iconSize : undefined,
+    e: side.gap !== defaultSideGifts.gap ? side.gap : undefined,
+    f: side.insetX !== defaultSideGifts.insetX ? side.insetX : undefined,
+    g: side.insetY !== defaultSideGifts.insetY ? side.insetY : undefined,
+    h: side.showLabels === false ? 0 : undefined,
+    aa: side.outlinesEnabled === true ? 1 : undefined,
+    ab: side.tilesEnabled === true ? 1 : undefined,
+    am: side.idleGlowEnabled === true ? 1 : undefined,
+    ac: side.labelSize !== defaultSideGifts.labelSize ? side.labelSize : undefined,
+    ak: side.labelTwoLines === true ? 1 : undefined,
+    ad: normalizeHex(side.labelColor, '') !== defaultSideGifts.labelColor ? side.labelColor : undefined,
+    an: normalizeHex(side.gifterLabelColor, '') !== defaultSideGifts.gifterLabelColor ? side.gifterLabelColor : undefined,
+    ae: normalizeHex(side.outlineColor, '') !== defaultSideGifts.outlineColor ? side.outlineColor : undefined,
+    af: normalizeHex(side.giftOutlineColor, '') !== defaultSideGifts.giftOutlineColor ? side.giftOutlineColor : undefined,
+    ai: decimalsMatch(side.outlineSize, defaultSideGifts.outlineSize) ? undefined : side.outlineSize,
+    aj: decimalsMatch(side.giftOutlineSize, defaultSideGifts.giftOutlineSize) ? undefined : side.giftOutlineSize,
+    i: normalizeHex(side.glow, '') !== defaultSideGifts.glow ? side.glow : undefined,
+    j: normalizeHex(side.hitColor, '') !== defaultSideGifts.hitColor ? side.hitColor : undefined,
+    ag: normalizeHex(side.tileColor, '') !== defaultSideGifts.tileColor ? side.tileColor : undefined,
+    ah: normalizeHex(side.tileBorderColor, '') !== defaultSideGifts.tileBorderColor ? side.tileBorderColor : undefined,
+    ao: decimalsMatch(side.tileOpacity, defaultSideGifts.tileOpacity) ? undefined : side.tileOpacity,
+    k: side.hitMs !== defaultSideGifts.hitMs ? side.hitMs : undefined,
+    l: side.soundsEnabled === false ? 0 : undefined,
+    n: side.animationsEnabled === false ? 0 : undefined,
+    o: side.profileAnimationEnabled === false ? 0 : undefined,
+    p: side.profileAnimationEnabled !== false && side.profileNameEnabled === false ? 0 : undefined,
+    m: side.gifts.map(compactSideGiftForUrl)
+  });
+}
+
+function compactSideGiftForUrl(gift) {
+  return compactGiftForUrl(gift, {
+    r: gift.side && gift.side !== 'auto' ? gift.side : undefined,
+    u: gift.useGiftImage ? 1 : undefined,
+    x: gift.giftImageNames?.length ? gift.giftImageNames : undefined,
+    y: gift.giftImageIds?.length ? gift.giftImageIds : undefined
+  });
+}
+
 function compactGoalBarForUrl(goalBar) {
   const goal = normalizeGoalBar(goalBar || {});
   const defaultReset = defaultGoalResetOnConnect(goal.type);
@@ -2389,6 +3080,38 @@ function compactGoalBarForUrl(goalBar) {
     m: goal.useLiveFollowerCount === false ? 0 : undefined
   });
 }
+
+function compactTopLikersForUrl(topLikers) {
+  const likers = normalizeTopLikers(topLikers || {});
+  return removeEmptyUrlFields({
+    a: likers.limit !== defaultTopLikers.limit ? likers.limit : undefined,
+    b: likers.showAvatar === false ? 0 : undefined,
+    z: likers.showNames === false ? 0 : undefined,
+    c: likers.showHeart === false ? 0 : undefined,
+    r: likers.layout !== defaultTopLikers.layout ? likers.layout : undefined,
+    q: likers.likeMilestone !== defaultTopLikers.likeMilestone ? likers.likeMilestone : undefined,
+    d: likers.medalHearts === false ? 0 : undefined,
+    e: likers.resetOnConnect === false ? 0 : undefined,
+    f: likers.width !== defaultTopLikers.width ? likers.width : undefined,
+    g: likers.height !== defaultTopLikers.height ? likers.height : undefined,
+    h: likers.showShell !== defaultTopLikers.showShell ? (likers.showShell ? 1 : 0) : undefined,
+    i: likers.showTitle !== defaultTopLikers.showTitle ? (likers.showTitle ? 1 : 0) : undefined,
+    y: likers.showTiles !== defaultTopLikers.showTiles ? (likers.showTiles ? 1 : 0) : undefined,
+    j: normalizeHex(likers.backgroundStart, '') !== defaultTopLikers.backgroundStart ? likers.backgroundStart : undefined,
+    k: normalizeHex(likers.backgroundEnd, '') !== defaultTopLikers.backgroundEnd ? likers.backgroundEnd : undefined,
+    l: normalizeHex(likers.backgroundBase, '') !== defaultTopLikers.backgroundBase ? likers.backgroundBase : undefined,
+    m: normalizeHex(likers.border, '') !== defaultTopLikers.border ? likers.border : undefined,
+    n: normalizeHex(likers.tile, '') !== defaultTopLikers.tile ? likers.tile : undefined,
+    o: normalizeHex(likers.tileBorder, '') !== defaultTopLikers.tileBorder ? likers.tileBorder : undefined,
+    p: normalizeHex(likers.title, '') !== defaultTopLikers.title ? likers.title : undefined,
+    s: normalizeHex(likers.text, '') !== defaultTopLikers.text ? likers.text : undefined,
+    t: normalizeHex(likers.muted, '') !== defaultTopLikers.muted ? likers.muted : undefined,
+    u: normalizeHex(likers.glow, '') !== defaultTopLikers.glow ? likers.glow : undefined,
+    v: decimalsMatch(likers.opacity, defaultTopLikers.opacity) ? undefined : likers.opacity,
+    x: decimalsMatch(likers.tileOpacity, defaultTopLikers.tileOpacity) ? undefined : likers.tileOpacity
+  });
+}
+
 
 function compactRowsGiftForUrl(gift) {
   return compactGiftForUrl(gift, {
@@ -2447,7 +3170,9 @@ function expandCompactConfig(config) {
     carouselTheme: expandCompactTheme(config.u),
     rowsTheme: expandCompactTheme(config.v),
     rowsOverlay: expandCompactRowsOverlay(config.o),
+    sideGifts: expandCompactSideGifts(config.z),
     goalBar: expandCompactGoalBar(config.q),
+    topLikers: expandCompactTopLikers(config.w),
     rewards: Array.isArray(config.g) ? config.g.map(expandCompactReward) : undefined
   });
 }
@@ -2493,6 +3218,55 @@ function expandCompactRowsOverlay(rows) {
   });
 }
 
+function expandCompactSideGifts(side) {
+  if (!side) {
+    return undefined;
+  }
+
+  return removeEmptyUrlFields({
+    side: side.a,
+    width: side.b,
+    height: side.c,
+    iconSize: side.d,
+    gap: side.e,
+    insetX: side.f,
+    insetY: side.g,
+    showLabels: side.h === 0 ? false : undefined,
+    outlinesEnabled: side.aa === 1 ? true : undefined,
+    tilesEnabled: side.ab === 1 ? true : undefined,
+    idleGlowEnabled: side.am === 1 ? true : undefined,
+    labelSize: side.ac,
+    labelTwoLines: side.ak === 1 ? true : undefined,
+    labelColor: side.ad,
+    gifterLabelColor: side.an,
+    outlineColor: side.ae,
+    giftOutlineColor: side.af,
+    outlineSize: side.ai,
+    giftOutlineSize: side.aj,
+    glow: side.i,
+    hitColor: side.j,
+    tileColor: side.ag,
+    tileBorderColor: side.ah,
+    tileOpacity: side.ao,
+    hitMs: side.k,
+    soundsEnabled: side.l === 0 ? false : undefined,
+    animationsEnabled: side.n === 0 ? false : undefined,
+    profileAnimationEnabled: side.o === 0 ? false : undefined,
+    profileNameEnabled: side.p === 0 ? false : side.p === 1 ? true : undefined,
+    gifts: Array.isArray(side.m) ? side.m.map(expandCompactSideGift) : undefined
+  });
+}
+
+function expandCompactSideGift(gift) {
+  return {
+    ...expandCompactReward(gift),
+    side: gift?.r,
+    useGiftImage: gift?.u === 1,
+    giftImageNames: Array.isArray(gift?.x) ? gift.x : [],
+    giftImageIds: Array.isArray(gift?.y) ? gift.y : []
+  };
+}
+
 function expandCompactGoalBar(goal) {
   if (!goal) {
     return undefined;
@@ -2513,6 +3287,41 @@ function expandCompactGoalBar(goal) {
     useLiveFollowerCount: goal.m === 0 ? false : undefined
   });
 }
+
+function expandCompactTopLikers(likers) {
+  if (!likers) {
+    return undefined;
+  }
+
+  return removeEmptyUrlFields({
+    limit: likers.a,
+    showAvatar: likers.b === 0 ? false : undefined,
+    showNames: likers.z === 0 ? false : undefined,
+    showHeart: likers.c === 0 ? false : undefined,
+    layout: likers.r,
+    likeMilestone: likers.q,
+    medalHearts: likers.d === 0 ? false : undefined,
+    resetOnConnect: likers.e === 0 ? false : undefined,
+    width: likers.f,
+    height: likers.g,
+    showShell: typeof likers.h === 'number' ? likers.h !== 0 : undefined,
+    showTitle: typeof likers.i === 'number' ? likers.i !== 0 : undefined,
+    showTiles: typeof likers.y === 'number' ? likers.y !== 0 : undefined,
+    backgroundStart: likers.j,
+    backgroundEnd: likers.k,
+    backgroundBase: likers.l,
+    border: likers.m,
+    tile: likers.n,
+    tileBorder: likers.o,
+    title: likers.p,
+    text: likers.s,
+    muted: likers.t,
+    glow: likers.u,
+    opacity: likers.v,
+    tileOpacity: likers.x
+  });
+}
+
 
 function expandCompactRowsGift(gift) {
   return {
@@ -2573,7 +3382,9 @@ function refreshOverlayPreviews() {
   previewRefreshIndex += 1;
   const refreshCarousel = activeConfigTab === 'original';
   const refreshRows = activeConfigTab === 'rows';
+  const refreshSideGifts = activeConfigTab === 'side-gifts';
   const refreshGoal = activeConfigTab === 'goal';
+  const refreshTopLikers = activeConfigTab === 'top-likers';
 
   if (carouselPreview && refreshCarousel) {
     setPreviewUrl(carouselPreview, getUrlForPage('index-rewards.html', previewConfig, {
@@ -2593,9 +3404,27 @@ function refreshOverlayPreviews() {
     }));
   }
 
+  if (sideGiftsPreview && refreshSideGifts) {
+    updateSideGiftsPreviewFrameSize();
+    setPreviewUrl(sideGiftsPreview, getUrlForPage('index-side-gifts-test.html', previewConfig, {
+      test: Boolean(sideGiftsPreviewTest?.checked),
+      preview: !sideGiftsPreviewTest?.checked,
+      previewFit: true,
+      previewRefresh: previewRefreshIndex
+    }));
+  }
+
   if (goalPreview && refreshGoal) {
     setPreviewUrl(goalPreview, getUrlForPage('index-thin.html', previewConfig, {
       preview: true,
+      previewRefresh: previewRefreshIndex
+    }));
+  }
+
+  if (topLikersPreview && refreshTopLikers) {
+    updateTopLikersPreviewFrameSize();
+    setPreviewUrl(topLikersPreview, getUrlForPage('index-top-likers-test.html', previewConfig, {
+      test: true,
       previewRefresh: previewRefreshIndex
     }));
   }
@@ -2643,7 +3472,9 @@ function normalizeConfig(config) {
     carouselTheme: normalizeTheme(carouselThemeSource),
     rowsTheme: normalizeTheme(rowsThemeSource),
     rowsOverlay: normalizeRowsOverlay(config.rowsOverlay || {}),
+    sideGifts: normalizeSideGifts(config.sideGifts || {}),
     goalBar: normalizeGoalBar(config.goalBar || {}),
+    topLikers: normalizeTopLikers(config.topLikers || {}),
     rewards: rewards.map(normalizeReward)
   };
 }
@@ -2799,6 +3630,51 @@ function normalizeRowsOverlay(config) {
   };
 }
 
+function normalizeSideGifts(config) {
+  const side = String(config.side || defaultSideGifts.side).toLowerCase();
+  return {
+    side: side === 'left' || side === 'right' ? side : 'both',
+    width: clamp(Math.floor(numberOrDefault(config.width, defaultSideGifts.width)), 180, 1920),
+    height: clamp(Math.floor(numberOrDefault(config.height, defaultSideGifts.height)), 240, 1920),
+    iconSize: clamp(Math.floor(numberOrDefault(config.iconSize, defaultSideGifts.iconSize)), 24, 120),
+    gap: clamp(Math.floor(numberOrDefault(config.gap, defaultSideGifts.gap)), 0, 40),
+    insetX: clamp(Math.floor(numberOrDefault(config.insetX, defaultSideGifts.insetX)), 0, 160),
+    insetY: clamp(Math.floor(numberOrDefault(config.insetY, defaultSideGifts.insetY)), 0, 240),
+    hitMs: clamp(Math.floor(numberOrDefault(config.hitMs, defaultSideGifts.hitMs)), 300, 10000),
+    showLabels: config.showLabels !== false,
+    outlinesEnabled: config.outlinesEnabled === true,
+    tilesEnabled: config.tilesEnabled === true,
+    idleGlowEnabled: config.idleGlowEnabled === true,
+    labelSize: clamp(Math.floor(numberOrDefault(config.labelSize, defaultSideGifts.labelSize)), 8, 28),
+    labelTwoLines: config.labelTwoLines === true,
+    labelColor: normalizeHex(config.labelColor, defaultSideGifts.labelColor),
+    gifterLabelColor: normalizeHex(config.gifterLabelColor, defaultSideGifts.gifterLabelColor),
+    outlineColor: normalizeHex(config.outlineColor, defaultSideGifts.outlineColor),
+    outlineSize: clamp(numberOrDefault(config.outlineSize, defaultSideGifts.outlineSize), 0, 4),
+    giftOutlineColor: normalizeHex(config.giftOutlineColor, defaultSideGifts.giftOutlineColor),
+    giftOutlineSize: clamp(numberOrDefault(config.giftOutlineSize, defaultSideGifts.giftOutlineSize), 0, 8),
+    soundsEnabled: config.soundsEnabled !== false,
+    animationsEnabled: config.animationsEnabled !== false,
+    profileAnimationEnabled: config.profileAnimationEnabled !== false,
+    profileNameEnabled: config.profileAnimationEnabled !== false && config.profileNameEnabled !== false,
+    glow: normalizeHex(config.glow, defaultSideGifts.glow),
+    hitColor: normalizeHex(config.hitColor, defaultSideGifts.hitColor),
+    tileColor: normalizeHex(config.tileColor, defaultSideGifts.tileColor),
+    tileOpacity: clamp(numberOrDefault(config.tileOpacity, defaultSideGifts.tileOpacity), 0, 1),
+    tileBorderColor: normalizeHex(config.tileBorderColor, defaultSideGifts.tileBorderColor),
+    gifts: Array.isArray(config.gifts) ? config.gifts.map(normalizeSideGift) : defaultSideGifts.gifts
+  };
+}
+
+function normalizeSideGift(gift) {
+  return {
+    ...normalizeRowsGift(gift),
+    title: String(gift.title || gift.name || 'Side Gift'),
+    side: normalizeSideGiftSide(gift.side),
+    row: undefined
+  };
+}
+
 function normalizeGoalBar(config) {
   const type = normalizeGoalType(config.type);
   const defaultLabel = defaultGoalLabel(type);
@@ -2818,6 +3694,41 @@ function normalizeGoalBar(config) {
     text: normalizeHex(config.text, defaultGoalBar.text)
   };
 }
+
+function normalizeTopLikers(config) {
+  return {
+    limit: clamp(Math.floor(numberOrDefault(config.limit, defaultTopLikers.limit)), 1, 10),
+    showAvatar: config.showAvatar !== false,
+    showNames: config.showNames !== false,
+    showHeart: config.showHeart !== false,
+    layout: normalizeTopLikersLayout(config.layout),
+    likeMilestone: clamp(Math.floor(numberOrDefault(config.likeMilestone, defaultTopLikers.likeMilestone)), 0, 1000000000),
+    medalHearts: config.medalHearts !== false,
+    resetOnConnect: config.resetOnConnect !== false,
+    width: clamp(Math.floor(numberOrDefault(config.width, defaultTopLikers.width)), 260, 1000),
+    height: clamp(Math.floor(numberOrDefault(config.height, defaultTopLikers.height)), 120, 900),
+    showShell: typeof config.showShell === 'boolean' ? config.showShell : defaultTopLikers.showShell,
+    showTitle: typeof config.showTitle === 'boolean' ? config.showTitle : defaultTopLikers.showTitle,
+    showTiles: typeof config.showTiles === 'boolean' ? config.showTiles : defaultTopLikers.showTiles,
+    backgroundStart: normalizeHex(config.backgroundStart, defaultTopLikers.backgroundStart),
+    backgroundEnd: normalizeHex(config.backgroundEnd, defaultTopLikers.backgroundEnd),
+    backgroundBase: normalizeHex(config.backgroundBase, defaultTopLikers.backgroundBase),
+    border: normalizeHex(config.border, defaultTopLikers.border),
+    tile: normalizeHex(config.tile, defaultTopLikers.tile),
+    tileBorder: normalizeHex(config.tileBorder, defaultTopLikers.tileBorder),
+    title: normalizeHex(config.title, defaultTopLikers.title),
+    text: normalizeHex(config.text, defaultTopLikers.text),
+    muted: normalizeHex(config.muted, defaultTopLikers.muted),
+    glow: normalizeHex(config.glow, defaultTopLikers.glow),
+    opacity: clamp(numberOrDefault(config.opacity, defaultTopLikers.opacity), 0, 1),
+    tileOpacity: clamp(numberOrDefault(config.tileOpacity, defaultTopLikers.tileOpacity), 0, 1)
+  };
+}
+
+function normalizeTopLikersLayout(value) {
+  return String(value || defaultTopLikers.layout).toLowerCase() === 'stacked' ? 'stacked' : 'inline';
+}
+
 
 function normalizeGoalType(type) {
   const value = String(type || '').toLowerCase();
@@ -2862,6 +3773,30 @@ function getDefaultRowsGifts() {
       volume: 0.85
     };
   }).filter(gift => gift.image);
+}
+
+function getDefaultSideGifts() {
+  return [
+    { id: '33', name: 'Heart Me', image: './rewards/033_Heart_Me.png', side: 'left' },
+    { id: '5', name: 'Heart Puff', image: './rewards/005_Heart_Puff.png', side: 'left' },
+    { id: '1', name: 'Rose', image: './rewards/001_Rose.png', side: 'left' },
+    { id: '2', name: 'Flame heart', image: './rewards/002_Flame_heart.png', side: 'left' },
+    { id: '3', name: 'You re awesome', image: './rewards/003_You_re_awesome.png', side: 'left' },
+    { id: '4', name: 'Love you so much', image: './rewards/004_Love_you_so_much.png', side: 'right' },
+    { id: '1597', name: 'Misty Purr', image: './rewards/1597_Misty_Purr.png', side: 'right' },
+    { id: '51', name: 'Good Job', image: './rewards/0051_Good_Job.png', side: 'right' },
+    { id: '52', name: 'Clap Clap', image: './rewards/0052_Clap_Clap.png', side: 'right' },
+    { id: '1270', name: 'Galaxy', image: './rewards/1270_Galaxy.png', side: 'right' }
+  ].map(gift => ({
+    enabled: true,
+    title: gift.name,
+    giftNames: [gift.name],
+    giftIds: [gift.id],
+    image: gift.image,
+    side: gift.side,
+    sound: '',
+    volume: 0.85
+  }));
 }
 
 function normalizeRowsGift(gift) {
@@ -3014,6 +3949,7 @@ function findCatalogEntryForReward(reward) {
     return null;
   }
 
+  const currentImage = normalizePath(reward.image || '').toLowerCase();
   const ids = [
     ...(reward.giftIds || []),
     ...(reward.giftImageIds || []),
@@ -3026,8 +3962,9 @@ function findCatalogEntryForReward(reward) {
     getImageLabel(reward.image)
   ].map(normalizeName).filter(Boolean);
 
-  return catalog.find(entry => ids.includes(normalizeId(entry.id || entry.giftId))) ||
-    catalog.find(entry => names.includes(normalizeName(entry.name || entry.label || getImageLabel(entry.image))));
+  return catalog.find(entry => normalizePath(entry.image || entry.path || entry.url || '').toLowerCase() === currentImage) ||
+    catalog.find(entry => names.includes(normalizeName(entry.name || entry.label || getImageLabel(entry.image)))) ||
+    catalog.find(entry => ids.includes(normalizeId(entry.id || entry.giftId || getIdFromImagePath(entry.image || entry.path || entry.url))));
 }
 
 function numberOrDefault(value, fallback) {

@@ -54,6 +54,206 @@ window.rewardOverlayConfig = {
     "glow": "#c447ff",
     "text": "#ffffff"
   },
+  "topLikers": {
+    "limit": 3,
+    "showAvatar": true,
+    "showNames": true,
+    "showHeart": true,
+    "layout": "stacked",
+    "likeMilestone": 500,
+    "medalHearts": true,
+    "resetOnConnect": true,
+    "width": 390,
+    "height": 260,
+    "showShell": false,
+    "showTitle": false,
+    "showTiles": false,
+    "backgroundStart": "#102c34",
+    "backgroundEnd": "#461f68",
+    "backgroundBase": "#0c0a14",
+    "border": "#03f5d8",
+    "tile": "#080b12",
+    "tileBorder": "#ffffff",
+    "title": "#03f5d8",
+    "text": "#ffffff",
+    "muted": "#ffffff",
+    "glow": "#c447ff",
+    "opacity": 0.8,
+    "tileOpacity": 0.6
+  },
+  "sideGifts": {
+    "side": "both",
+    "width": 1080,
+    "height": 960,
+    "iconSize": 65,
+    "gap": 26,
+    "insetX": 8,
+    "insetY": 34,
+    "hitMs": 6500,
+    "showLabels": true,
+    "outlinesEnabled": false,
+    "tilesEnabled": false,
+    "idleGlowEnabled": false,
+    "labelSize": 10,
+    "labelTwoLines": false,
+    "labelColor": "#ffffff",
+    "gifterLabelColor": "#ffffff",
+    "outlineColor": "#10131b",
+    "outlineSize": 0.45,
+    "giftOutlineColor": "#10131b",
+    "giftOutlineSize": 2,
+    "soundsEnabled": true,
+    "animationsEnabled": true,
+    "profileAnimationEnabled": true,
+    "profileNameEnabled": true,
+    "glow": "#03f5d8",
+    "hitColor": "#ffd83d",
+    "tileColor": "#0d0f14",
+    "tileOpacity": 0.82,
+    "tileBorderColor": "#ffffff",
+    "gifts": [
+      {
+        "enabled": true,
+        "title": "Heart Me",
+        "giftNames": [
+          "Heart Me"
+        ],
+        "giftIds": [
+          "33"
+        ],
+        "image": "./rewards/033_Heart_Me.png",
+        "side": "left",
+        "sound": "",
+        "volume": 0.85
+      },
+      {
+        "enabled": true,
+        "title": "Heart Puff",
+        "giftNames": [
+          "Heart Puff"
+        ],
+        "giftIds": [
+          "5"
+        ],
+        "image": "./rewards/005_Heart_Puff.png",
+        "side": "left",
+        "sound": "",
+        "volume": 0.85
+      },
+      {
+        "enabled": true,
+        "title": "Rose",
+        "giftNames": [
+          "Rose"
+        ],
+        "giftIds": [
+          "1"
+        ],
+        "image": "./rewards/001_Rose.png",
+        "side": "left",
+        "sound": "",
+        "volume": 0.85
+      },
+      {
+        "enabled": true,
+        "title": "Flame heart",
+        "giftNames": [
+          "Flame heart"
+        ],
+        "giftIds": [
+          "2"
+        ],
+        "image": "./rewards/002_Flame_heart.png",
+        "side": "left",
+        "sound": "",
+        "volume": 0.85
+      },
+      {
+        "enabled": true,
+        "title": "You re awesome",
+        "giftNames": [
+          "You re awesome"
+        ],
+        "giftIds": [
+          "3"
+        ],
+        "image": "./rewards/003_You_re_awesome.png",
+        "side": "left",
+        "sound": "",
+        "volume": 0.85
+      },
+      {
+        "enabled": true,
+        "title": "Love you so much",
+        "giftNames": [
+          "Love you so much"
+        ],
+        "giftIds": [
+          "4"
+        ],
+        "image": "./rewards/004_Love_you_so_much.png",
+        "side": "right",
+        "sound": "",
+        "volume": 0.85
+      },
+      {
+        "enabled": true,
+        "title": "Misty Purr",
+        "giftNames": [
+          "Misty Purr"
+        ],
+        "giftIds": [
+          "1597"
+        ],
+        "image": "./rewards/1597_Misty_Purr.png",
+        "side": "right",
+        "sound": "",
+        "volume": 0.85
+      },
+      {
+        "enabled": true,
+        "title": "Good Job",
+        "giftNames": [
+          "Good Job"
+        ],
+        "giftIds": [
+          "51"
+        ],
+        "image": "./rewards/0051_Good_Job.png",
+        "side": "right",
+        "sound": "",
+        "volume": 0.85
+      },
+      {
+        "enabled": true,
+        "title": "Clap Clap",
+        "giftNames": [
+          "Clap Clap"
+        ],
+        "giftIds": [
+          "52"
+        ],
+        "image": "./rewards/0052_Clap_Clap.png",
+        "side": "right",
+        "sound": "",
+        "volume": 0.85
+      },
+      {
+        "enabled": true,
+        "title": "Galaxy",
+        "giftNames": [
+          "Galaxy"
+        ],
+        "giftIds": [
+          "1270"
+        ],
+        "image": "./rewards/1270_Galaxy.png",
+        "side": "right",
+        "sound": "",
+        "volume": 0.85
+      }
+    ]
+  },
   "rowsOverlay": {
     "rows": 2,
     "perRow": "6,6",

@@ -30,6 +30,36 @@ C:\Users\Zatanna\Documents\StreamStuff\StreamAssets\overlays\Widget\public\index
 
 Recommended OBS source size: `420 x 74`.
 
+There is also a Top Likers source for session likes from TikFinity `like` events:
+
+```text
+C:\Users\Zatanna\Documents\StreamStuff\StreamAssets\overlays\Widget\public\index-top-likers.html
+```
+
+Recommended OBS source size: `390 x 260` for three places.
+
+Use this test source to preview profile pictures, totals, medal hearts, and overtaking animations without TikFinity:
+
+```text
+C:\Users\Zatanna\Documents\StreamStuff\StreamAssets\overlays\Widget\public\index-top-likers-test.html
+```
+
+Top Likers can also be configured from `index-rewards-config.html`, including layout, colours, transparency, title visibility, outer box visibility, row background visibility, and the copied OBS URL.
+
+There is also a Side Gifts source for vertical streams, with its own configurable gift list displayed as left/right edge columns:
+
+```text
+C:\Users\Zatanna\Documents\StreamStuff\StreamAssets\overlays\Widget\public\index-side-gifts.html
+```
+
+Recommended OBS source size: `1080 x 960`.
+
+Use this test source to preview side-column gift hits without TikFinity:
+
+```text
+C:\Users\Zatanna\Documents\StreamStuff\StreamAssets\overlays\Widget\public\index-side-gifts-test.html
+```
+
 There is also a rotating glass rewards source:
 
 ```text
@@ -57,6 +87,8 @@ For a hosted/static setup, use the copy URL buttons on the config page:
 ```text
 Copy Carousel URL
 Copy Rows URL
+Copy Side Gifts URL
+Copy Top Likers URL
 Copy Config URL
 ```
 
@@ -125,6 +157,13 @@ file:///C:/Users/Zatanna/Documents/StreamStuff/StreamAssets/overlays/Widget/publ
 - `start`: starting like count for this browser source.
 - `endpoint`: alternate TikFinity WebSocket endpoint.
 - `resetOnConnect`: defaults to `1`, which clears likes and Biggest Support when TikFinity connects. Use `resetOnConnect=0` to keep saved state across reconnects.
+- `limit`: top likers source only; number of liker rows to show, from `1` to `10`. Default is `3`.
+- `avatar=0`: top likers source only; hides profile pictures.
+- `names=0`: top likers source only; hides names and @handles.
+- `heart=0`: top likers source only; hides the like heart icon.
+- `medalHearts=0`: top likers source only; uses the normal red heart for 1st, 2nd, and 3rd instead of gold, silver, and bronze.
+- `likeMilestone`: top likers source only; border pulse every time a liker reaches a multiple of this amount. Default is `500`; use `0` to turn it off.
+- `width` and `height`: top likers source only; override the configured overlay size.
 - `rotateMs`: rewards source only; controls how quickly the reward stack rotates.
 - `holdMs`: rewards source only; controls how long it stays on a matched gift after a hit.
 - `labelMs`: rewards source only; controls how long the gifter label stays visible.
