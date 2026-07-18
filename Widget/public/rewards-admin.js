@@ -3128,7 +3128,9 @@ function compactRewardForUrl(reward) {
 }
 
 function compactGiftForUrl(gift, extra = {}) {
-  const catalogMatch = findCatalogEntryForReward(gift);
+  // Test how the renderer will reconstruct this gift after the image field is
+  // omitted. Keep the explicit path whenever name/ID lookup is ambiguous.
+  const catalogMatch = findCatalogEntryForReward({ ...gift, image: '' });
   const catalogImage = catalogMatch?.image || '';
   const image = String(gift.image || '');
   const names = Array.isArray(gift.giftNames) ? gift.giftNames : [];
@@ -3962,9 +3964,24 @@ function findCatalogEntryForReward(reward) {
     getImageLabel(reward.image)
   ].map(normalizeName).filter(Boolean);
 
-  return catalog.find(entry => normalizePath(entry.image || entry.path || entry.url || '').toLowerCase() === currentImage) ||
-    catalog.find(entry => names.includes(normalizeName(entry.name || entry.label || getImageLabel(entry.image)))) ||
-    catalog.find(entry => ids.includes(normalizeId(entry.id || entry.giftId || getIdFromImagePath(entry.image || entry.path || entry.url))));
+  const imageMatch = currentImage
+    ? catalog.find(entry => normalizePath(entry.image || entry.path || entry.url || '').toLowerCase() === currentImage)
+    : null;
+  if (imageMatch) {
+    return imageMatch;
+  }
+
+  const nameMatches = catalog.filter(entry => names.includes(
+    normalizeName(entry.name || entry.label || getImageLabel(entry.image))
+  ));
+  if (nameMatches.length === 1) {
+    return nameMatches[0];
+  }
+
+  const idMatches = catalog.filter(entry => ids.includes(
+    normalizeId(entry.id || entry.giftId || getIdFromImagePath(entry.image || entry.path || entry.url))
+  ));
+  return idMatches.length === 1 ? idMatches[0] : null;
 }
 
 function numberOrDefault(value, fallback) {

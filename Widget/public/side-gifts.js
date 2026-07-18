@@ -673,9 +673,20 @@ function findSideGiftCatalogEntry(gift) {
     getSideGiftDisplayLabel(gift.image)
   ].map(normalizeSideGiftName).filter(Boolean);
 
-  return sideGiftCatalog.find(entry => String(entry.image || '') === currentImage) ||
-    sideGiftCatalog.find(entry => names.includes(normalizeSideGiftName(entry.label))) ||
-    sideGiftCatalog.find(entry => ids.includes(normalizeSideGiftId(entry.id)));
+  const imageMatch = currentImage
+    ? sideGiftCatalog.find(entry => String(entry.image || '') === currentImage)
+    : null;
+  if (imageMatch) {
+    return imageMatch;
+  }
+
+  const nameMatches = sideGiftCatalog.filter(entry => names.includes(normalizeSideGiftName(entry.label)));
+  if (nameMatches.length === 1) {
+    return nameMatches[0];
+  }
+
+  const idMatches = sideGiftCatalog.filter(entry => ids.includes(normalizeSideGiftId(entry.id)));
+  return idMatches.length === 1 ? idMatches[0] : null;
 }
 
 function getSideGiftTriggerIcon(item) {

@@ -1246,6 +1246,7 @@ function findCatalogEntryForReward(reward) {
     return null;
   }
 
+  const currentImage = String(reward.image || '');
   const ids = [
     ...(reward.giftIds || []),
     ...(reward.giftImageIds || []),
@@ -1258,8 +1259,22 @@ function findCatalogEntryForReward(reward) {
     getDisplayNameFromImagePath(reward.image)
   ].map(normalizeName).filter(Boolean);
 
-  return catalog.find(entry => ids.includes(normalizeId(entry.id || entry.giftId))) ||
-    catalog.find(entry => names.includes(normalizeName(entry.name || entry.label || getDisplayNameFromImagePath(entry.image))));
+  const imageMatch = currentImage
+    ? catalog.find(entry => String(entry.image || entry.path || entry.url || '') === currentImage)
+    : null;
+  if (imageMatch) {
+    return imageMatch;
+  }
+
+  const nameMatches = catalog.filter(entry => names.includes(
+    normalizeName(entry.name || entry.label || getDisplayNameFromImagePath(entry.image))
+  ));
+  if (nameMatches.length === 1) {
+    return nameMatches[0];
+  }
+
+  const idMatches = catalog.filter(entry => ids.includes(normalizeId(entry.id || entry.giftId)));
+  return idMatches.length === 1 ? idMatches[0] : null;
 }
 
 function getIdFromImagePath(imagePath) {

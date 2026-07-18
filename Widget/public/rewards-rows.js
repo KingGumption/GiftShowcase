@@ -1098,9 +1098,20 @@ function findCatalogEntryForGift(gift) {
     getDisplayLabel(gift.image)
   ].map(normalizeName).filter(Boolean);
 
-  return catalogGifts.find(entry => String(entry.image || '') === currentImage) ||
-    catalogGifts.find(entry => names.includes(normalizeName(entry.label))) ||
-    catalogGifts.find(entry => ids.includes(normalizeId(entry.id)));
+  const imageMatch = currentImage
+    ? catalogGifts.find(entry => String(entry.image || '') === currentImage)
+    : null;
+  if (imageMatch) {
+    return imageMatch;
+  }
+
+  const nameMatches = catalogGifts.filter(entry => names.includes(normalizeName(entry.label)));
+  if (nameMatches.length === 1) {
+    return nameMatches[0];
+  }
+
+  const idMatches = catalogGifts.filter(entry => ids.includes(normalizeId(entry.id)));
+  return idMatches.length === 1 ? idMatches[0] : null;
 }
 
 function getIdFromImagePath(imagePath) {
