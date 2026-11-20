@@ -4,6 +4,16 @@ const topLikersStatus = document.querySelector('#status');
 const topLikersParams = readTopLikersParams();
 const savedTopLikersConfig = loadTopLikersConfig();
 const topLikersMilestoneSetting = topLikersParams.get('likeMilestone') ?? topLikersParams.get('milestone') ?? topLikersParams.get('milestoneLikes') ?? savedTopLikersConfig.likeMilestone ?? 500;
+const topLikersMilestoneAnnouncementMs = 4600;
+const topLikersMilestoneLeadInMs = 760;
+const topLikersMilestoneReturnMs = 480;
+const topLikersMilestoneTotalMs = topLikersMilestoneLeadInMs
+  + topLikersMilestoneAnnouncementMs
+  + topLikersMilestoneReturnMs;
+const topLikersOvertakeAnimationMs = 1100;
+const topLikersLeadAnimationMs = 3200;
+const topLikersRelayMode = topLikersParams.get('relay') === '1';
+const topLikersPreviewMode = topLikersParams.get('preview') === '1';
 
 const topLikersConfig = {
   endpoint: topLikersParams.get('endpoint') || 'ws://localhost:21213/',
@@ -30,24 +40,40 @@ const topLikersConfig = {
   text: readColor(topLikersParams, ['text', 'textColor'], savedTopLikersConfig.text),
   muted: readColor(topLikersParams, ['muted', 'mutedColor'], savedTopLikersConfig.muted),
   glow: readColor(topLikersParams, ['glow', 'glowColor'], savedTopLikersConfig.glow),
+  firstPlaceAccent:savedTopLikersConfig.firstPlaceAccent,firstPlaceText:savedTopLikersConfig.firstPlaceText,
+  milestoneCard: readColor(topLikersParams, ['milestoneCard', 'milestoneCardColor'], savedTopLikersConfig.milestoneCard),
+  milestoneText: readColor(topLikersParams, ['milestoneText', 'milestoneTextColor'], savedTopLikersConfig.milestoneText),
   opacity: clampDecimal(Number(topLikersParams.get('opacity') || savedTopLikersConfig.opacity), 0, 1),
   tileOpacity: clampDecimal(Number(topLikersParams.get('tileOpacity') || savedTopLikersConfig.tileOpacity), 0, 1),
   test: topLikersParams.get('test') === '1'
 };
 
-const topLikersStorageKey = `tiktok-top-likers:${topLikersConfig.limit}`;
+const topLikersDockStateKey = topLikersParams.get('stateKey') || '';
+const topLikersStorageKey = topLikersDockStateKey
+  ? `tiktok-top-likers:dock:${topLikersDockStateKey}`
+  : `tiktok-top-likers:${topLikersConfig.limit}`;
+const topLikersRetentionMs = 7 * 24 * 60 * 60 * 1000;
 const topLikers = new Map();
 const previousRanks = new Map();
 let topLikersReconnectTimer;
-let topLikersMilestoneRenderTimer;
+let topLikersAnimationTimer;
+let topLikersAnimationBusyUntil = 0;
+let topLikersGoldMilestoneTimer;
+let topLikersGoldLeaderId = '';
+let topLikersGoldUntil = 0;
 let currentLeaderId = '';
 
 applyTopLikersConfig();
 loadTopLikersState();
 renderTopLikers();
+document.body.classList.add('top-likers-ready');
 
-if (topLikersConfig.test) {
+if (topLikersPreviewMode) {
+  startTopLikersTestMode({ statusText: 'Preview', animate: topLikersParams.get('editor') !== '1' });
+} else if (topLikersConfig.test) {
   startTopLikersTestMode();
+} else if (topLikersRelayMode) {
+  setupTopLikersDockRelay();
 } else {
   connectTopLikers();
 }
@@ -62,10 +88,11 @@ function connectTopLikers() {
       renderTopLikers();
     }
 
-    updateTopLikersStatus('Connected to TikFinity', true);
+    updateTopLikersStatus('Connected to live activity', true);
   });
 
   ws.addEventListener('message', event => {
+    window.creatorGiftDiscovery?.observe(event.data);
     const message = parseMessage(event.data);
 
     if (!message) {
@@ -76,10 +103,20 @@ function connectTopLikers() {
   });
 
   ws.addEventListener('close', () => {
-    updateTopLikersStatus('Waiting for TikFinity', false);
+    updateTopLikersStatus('', true);
     clearTimeout(topLikersReconnectTimer);
     topLikersReconnectTimer = setTimeout(connectTopLikers, 1500);
   });
+}
+
+function setupTopLikersDockRelay() {
+  updateTopLikersStatus('Connected through Stream Output', true);
+  window.addEventListener('message', event => {
+    if (event.source !== window.parent || event.data?.type !== 'dock:tiktok-raw') return;
+    const message = parseMessage(event.data.data);
+    if (message) handleTopLikersEvent(message.event, message.data || {});
+  });
+  window.parent.postMessage({ type: 'dock:renderer-ready' }, '*');
 }
 
 function handleTopLikersEvent(eventName, data) {
@@ -96,7 +133,7 @@ function handleTopLikersEvent(eventName, data) {
   recordTopLiker(liker);
 }
 
-function recordTopLiker(liker) {
+function recordTopLiker(liker, { deferRender = false } = {}) {
   const existing = topLikers.get(liker.id) || {
     id: liker.id,
     name: liker.name,
@@ -104,6 +141,9 @@ function recordTopLiker(liker) {
     avatarUrl: '',
     likes: 0,
     milestonePulseUntil: 0,
+    milestoneStartedAt: 0,
+    milestoneValue: 0,
+    pendingMilestoneValue: 0,
     updatedAt: 0
   };
   const previousLikes = existing.likes;
@@ -113,46 +153,71 @@ function recordTopLiker(liker) {
   existing.username = liker.username || existing.username;
   existing.avatarUrl = liker.avatarUrl || existing.avatarUrl;
   existing.likes += addedLikes;
-  if (didCrossTopLikerMilestone(previousLikes, existing.likes)) {
-    existing.milestonePulseUntil = Date.now() + 2800;
-    scheduleTopLikerMilestoneRender();
+  const reachedMilestone = getReachedTopLikerMilestone(previousLikes, existing.likes);
+  if (reachedMilestone) {
+    existing.pendingMilestoneValue = Math.max(
+      Number(existing.pendingMilestoneValue || 0),
+      reachedMilestone
+    );
   }
   existing.updatedAt = Date.now();
   topLikers.set(existing.id, existing);
 
-  saveTopLikersState();
-  renderTopLikers();
+  if (!deferRender) {
+    saveTopLikersState();
+    renderTopLikers();
+  }
 }
 
-function didCrossTopLikerMilestone(previousLikes, nextLikes) {
+function getReachedTopLikerMilestone(previousLikes, nextLikes) {
   const milestone = topLikersConfig.likeMilestone;
 
   if (!milestone) {
-    return false;
+    return 0;
   }
 
-  return Math.floor(previousLikes / milestone) < Math.floor(nextLikes / milestone);
+  const previousMilestone = Math.floor(previousLikes / milestone);
+  const nextMilestone = Math.floor(nextLikes / milestone);
+  return nextMilestone > previousMilestone ? nextMilestone * milestone : 0;
 }
 
-function scheduleTopLikerMilestoneRender() {
-  clearTimeout(topLikersMilestoneRenderTimer);
-  topLikersMilestoneRenderTimer = setTimeout(renderTopLikers, 2900);
+function isTopLikersAnimationBusy() {
+  return topLikersAnimationBusyUntil > Date.now();
+}
+
+function holdTopLikersOrderFor(duration) {
+  clearTimeout(topLikersAnimationTimer);
+  topLikersAnimationBusyUntil = Date.now() + duration;
+  topLikersAnimationTimer = setTimeout(() => {
+    topLikersAnimationBusyUntil = 0;
+    renderTopLikers();
+  }, duration + 40);
 }
 
 function renderTopLikers() {
+  if (isTopLikersAnimationBusy()) {
+    startPendingVisibleMilestones();
+    updateVisibleTopLikerCounts();
+    return;
+  }
+
   const beforeRects = readTopLikerRects();
   const leaders = getSortedTopLikers();
   const nextRanks = new Map();
   let improvedId = '';
   let leadChangeId = '';
+  let hasOrderMovement = false;
 
   leaders.forEach((liker, index) => {
     const rank = index + 1;
     const oldRank = previousRanks.get(liker.id);
     nextRanks.set(liker.id, rank);
 
-    if (oldRank && rank < oldRank && !improvedId) {
-      improvedId = liker.id;
+    if (oldRank && rank !== oldRank) {
+      hasOrderMovement = true;
+      if (rank < oldRank && !improvedId) {
+        improvedId = liker.id;
+      }
     }
   });
 
@@ -164,6 +229,28 @@ function renderTopLikers() {
     currentLeaderId = leaders[0].id;
   }
 
+  const orderAnimationDuration = leadChangeId
+    ? topLikersLeadAnimationMs
+    : (hasOrderMovement ? topLikersOvertakeAnimationMs : 0);
+  const milestoneLikers = leaders.filter(liker => (
+    Number(liker.pendingMilestoneValue || 0) > 0
+    && liker.id !== leadChangeId
+  ));
+  let milestoneAnimationDuration = 0;
+
+  if (milestoneLikers.length) {
+    const milestoneStartedAt = Date.now();
+    milestoneLikers.forEach(liker => {
+      liker.milestoneValue = Number(liker.pendingMilestoneValue);
+      liker.pendingMilestoneValue = 0;
+      liker.milestoneStartedAt = milestoneStartedAt;
+      liker.milestonePulseUntil = milestoneStartedAt + topLikersMilestoneTotalMs;
+    });
+    milestoneAnimationDuration = topLikersMilestoneTotalMs;
+  }
+
+  const animationDuration = Math.max(orderAnimationDuration, milestoneAnimationDuration);
+
   previousRanks.clear();
   nextRanks.forEach((rank, id) => previousRanks.set(id, rank));
   document.body.classList.toggle('top-likers-empty', leaders.length === 0);
@@ -173,10 +260,71 @@ function renderTopLikers() {
     : '';
 
   requestAnimationFrame(() => {
-    syncTopLikerBorderPulses();
     animateTopLikerRows(beforeRects);
   });
   fitTopLikerNames();
+
+  if (leadChangeId) {
+    scheduleTopLikerGoldMilestone(leadChangeId);
+  }
+
+  if (animationDuration) {
+    holdTopLikersOrderFor(animationDuration);
+  }
+}
+
+function scheduleTopLikerGoldMilestone(likerId) {
+  clearTimeout(topLikersGoldMilestoneTimer);
+  topLikersGoldLeaderId = likerId;
+  topLikersGoldUntil = Date.now() + topLikersLeadAnimationMs;
+  topLikersGoldMilestoneTimer = setTimeout(() => {
+    topLikersGoldUntil = 0;
+    startPendingVisibleMilestones();
+    topLikersGoldLeaderId = '';
+  }, topLikersLeadAnimationMs + 40);
+}
+
+function startPendingVisibleMilestones() {
+  const now = Date.now();
+  const rows = [...topLikersList.querySelectorAll('.top-liker-row[data-key]')];
+  let started = false;
+
+  rows.forEach((row, index) => {
+    const liker = topLikers.get(row.dataset.key);
+
+    if (
+      !liker
+      || Number(liker.pendingMilestoneValue || 0) <= 0
+      || (liker.id === topLikersGoldLeaderId && topLikersGoldUntil > now)
+    ) {
+      return;
+    }
+
+    liker.milestoneValue = Number(liker.pendingMilestoneValue);
+    liker.pendingMilestoneValue = 0;
+    liker.milestoneStartedAt = now;
+    liker.milestonePulseUntil = now + topLikersMilestoneTotalMs;
+    row.outerHTML = renderTopLikerRow(liker, index, false, false);
+    started = true;
+  });
+
+  if (started) {
+    fitTopLikerNames();
+    holdTopLikersOrderFor(topLikersMilestoneTotalMs);
+  }
+
+  return started;
+}
+
+function updateVisibleTopLikerCounts() {
+  topLikersList.querySelectorAll('.top-liker-row[data-key]').forEach(row => {
+    const liker = topLikers.get(row.dataset.key);
+    const count = row.querySelector('.top-liker-like > span');
+
+    if (liker && count) {
+      count.textContent = formatNumber(liker.likes);
+    }
+  });
 }
 
 function renderTopLikerRow(liker, index, isOvertaking, isLeadChange) {
@@ -184,57 +332,54 @@ function renderTopLikerRow(liker, index, isOvertaking, isLeadChange) {
   const medalClass = rank <= 3 ? ['is-gold', 'is-silver', 'is-bronze'][rank - 1] : '';
   const heartClass = topLikersConfig.medalHearts ? medalClass : '';
   const isLikeMilestone = Number(liker.milestonePulseUntil || 0) > Date.now();
+  const milestoneStartedAt = Number(liker.milestoneStartedAt || 0)
+    || (Number(liker.milestonePulseUntil || 0) - topLikersMilestoneTotalMs);
+  const milestoneElapsed = isLikeMilestone
+    ? Math.max(0, Date.now() - milestoneStartedAt)
+    : 0;
+  const announcementElapsed = milestoneElapsed - topLikersMilestoneLeadInMs;
+  const announcementDelay = announcementElapsed < 0
+    ? `${Math.abs(announcementElapsed)}ms`
+    : `-${Math.min(topLikersMilestoneAnnouncementMs, announcementElapsed)}ms`;
+  const milestoneStyle = isLikeMilestone
+    ? ` style="--top-liker-milestone-delay: ${announcementDelay}; --top-liker-milestone-state-delay: -${Math.min(topLikersMilestoneTotalMs, milestoneElapsed)}ms"`
+    : '';
 
   return `
-    <li class="top-liker-row ${medalClass} ${isOvertaking ? 'is-overtaking' : ''} ${isLeadChange ? 'is-lead-change' : ''} ${isLikeMilestone ? 'is-like-milestone' : ''}" data-key="${escapeAttribute(liker.id)}">
-      ${isLikeMilestone ? renderTopLikerBorderPulse() : ''}
-      <span class="top-liker-rank">${rank}</span>
-      <span class="top-liker-avatar" aria-hidden="true">${renderTopLikerAvatar(liker)}</span>
-      <span class="top-liker-copy">
+    <li class="top-liker-row ${medalClass} ${isOvertaking && !isLikeMilestone ? 'is-overtaking' : ''} ${isLeadChange && !isLikeMilestone ? 'is-lead-change' : ''} ${isLikeMilestone ? 'is-like-milestone' : ''}" data-key="${escapeAttribute(liker.id)}"${milestoneStyle}>
+      <span class="top-liker-rank top-liker-standard-content">${rank}</span>
+      <span class="top-liker-avatar top-liker-standard-content" aria-hidden="true">${renderTopLikerAvatar(liker)}</span>
+      <span class="top-liker-copy top-liker-standard-content">
         <strong class="top-liker-name"><span>${escapeHtml(liker.name || 'Unknown')}</span></strong>
       </span>
-      <span class="top-liker-like">
+      <span class="top-liker-like top-liker-standard-content">
         <svg class="top-liker-heart ${heartClass}" viewBox="0 0 24 24" aria-hidden="true">
           <path d="M12 21s-7-4.4-9.3-8.6C.8 8.9 2.7 5 6.5 5c2.1 0 3.7 1.2 4.5 2.8C11.8 6.2 13.4 5 15.5 5c3.8 0 5.7 3.9 3.8 7.4C17 16.6 12 21 12 21Z"/>
         </svg>
         <span>${formatNumber(liker.likes)}</span>
       </span>
+      ${isLikeMilestone ? renderTopLikerMilestoneAnnouncement(liker) : ''}
     </li>
   `;
 }
 
-function renderTopLikerBorderPulse() {
+function renderTopLikerMilestoneAnnouncement(liker) {
+  const milestone = Math.max(
+    topLikersConfig.likeMilestone,
+    Number(liker.milestoneValue || 0)
+  );
+
   return `
-    <svg class="top-liker-border-pulse" aria-hidden="true">
-      <rect class="top-liker-border-pulse-beam" pathLength="100"></rect>
-    </svg>
+    <span class="top-liker-milestone-announcement">
+      <svg class="top-liker-milestone-heart" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M12 21s-7-4.4-9.3-8.6C.8 8.9 2.7 5 6.5 5c2.1 0 3.7 1.2 4.5 2.8C11.8 6.2 13.4 5 15.5 5c3.8 0 5.7 3.9 3.8 7.4C17 16.6 12 21 12 21Z"/>
+      </svg>
+      <span class="top-liker-milestone-copy">
+        <strong class="top-liker-milestone-result">${formatCompactNumber(milestone)} LIKES!</strong>
+        <span class="top-liker-milestone-name" title="${escapeAttribute(liker.name || 'Top liker')}">&nbsp;—&nbsp;${escapeHtml(liker.name || 'Top liker')}</span>
+      </span>
+    </span>
   `;
-}
-
-function syncTopLikerBorderPulses() {
-  topLikersList.querySelectorAll('.top-liker-row .top-liker-border-pulse').forEach(svg => {
-    const row = svg.closest('.top-liker-row');
-    const beam = svg.querySelector('.top-liker-border-pulse-beam');
-
-    if (!row || !beam) {
-      return;
-    }
-
-    const width = row.clientWidth;
-    const height = row.clientHeight;
-    const styles = getComputedStyle(row);
-    const borderWidth = Math.max(1, parseFloat(styles.borderTopWidth) || 1);
-    const radius = Math.max(0, parseFloat(styles.borderTopLeftRadius) || 0);
-    const center = borderWidth / 2;
-
-    svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
-    beam.setAttribute('x', String(center));
-    beam.setAttribute('y', String(center));
-    beam.setAttribute('width', String(Math.max(0, width - borderWidth)));
-    beam.setAttribute('height', String(Math.max(0, height - borderWidth)));
-    beam.setAttribute('rx', String(Math.max(0, radius - center)));
-    beam.setAttribute('ry', String(Math.max(0, radius - center)));
-  });
 }
 
 function renderTopLikerAvatar(liker) {
@@ -343,8 +488,11 @@ function findTopLikerAvatar(data) {
   return image || '';
 }
 
-function startTopLikersTestMode() {
-  updateTopLikersStatus('Test mode', true);
+function startTopLikersTestMode({ animate = true, statusText = 'Test mode' } = {}) {
+  updateTopLikersStatus(statusText, true);
+  topLikers.clear();
+  previousRanks.clear();
+  currentLeaderId = '';
 
   const testUsers = [
     createTestLiker('nova', 'Nova Ray Hyperdrive Champion', '#03f5d8', '#c447ff'),
@@ -355,9 +503,12 @@ function startTopLikersTestMode() {
   ];
   let tick = 0;
   const milestoneSeed = topLikersConfig.likeMilestone > 0 ? Math.max(1, topLikersConfig.likeMilestone - 42) : 12;
+  const milestoneGap = topLikersConfig.likeMilestone > 0
+    ? Math.max(12, Math.floor(topLikersConfig.likeMilestone * 0.18))
+    : 6;
 
   testUsers.slice(0, topLikersConfig.limit).forEach((user, index) => {
-    recordTopLiker({ ...user, likeCount: Math.max(1, milestoneSeed - index * 18) });
+    recordTopLiker({ ...user, likeCount: Math.max(1, milestoneSeed - index * milestoneGap) });
   });
 
   window.simulateTopLiker = (index = null, likes = null) => {
@@ -368,17 +519,48 @@ function startTopLikersTestMode() {
     });
   };
 
-  setInterval(() => {
-    tick += 1;
-    const chaseIndex = tick % 5 === 0 ? 2 + (tick % 3) : Math.floor(Math.random() * testUsers.length);
-    const user = testUsers[chaseIndex % testUsers.length];
-    const boost = tick % 5 === 0 ? 34 : 4 + Math.random() * 18;
+  if (!animate) return;
 
-    recordTopLiker({
-      ...user,
-      likeCount: boost
+  setInterval(() => {
+    if(window.editorPreviewActive===false)return;
+    tick += 1;
+    const podium = getSortedTopLikers().slice(0, Math.min(3, topLikersConfig.limit));
+    const animationBusy = isTopLikersAnimationBusy();
+    const shouldSwitchLeader = podium.length > 1 && tick % 3 === 0;
+    const boosts = new Map(podium.map((liker, index) => {
+      const normalLikes = 7 + Math.floor(Math.random() * 30);
+      const burstLikes = (tick + index * 3) % 9 === 0
+        ? 40 + Math.floor(Math.random() * 61)
+        : 0;
+      return [liker.id, normalLikes + burstLikes];
+    }));
+
+    if (!animationBusy && shouldSwitchLeader) {
+      const switchNumber = Math.floor(tick / 3) - 1;
+      const challengerRank = 1 + (switchNumber % (podium.length - 1));
+      const leader = podium[0];
+      const challenger = podium[challengerRank];
+      const leaderAfterBatch = leader.likes + Number(boosts.get(leader.id) || 0);
+      boosts.set(
+        challenger.id,
+        Math.max(
+          Number(boosts.get(challenger.id) || 0),
+          leaderAfterBatch - challenger.likes + 30 + Math.floor(Math.random() * 51)
+        )
+      );
+    }
+
+    podium.forEach(liker => {
+      const user = testUsers.find(candidate => candidate.id === liker.id) || liker;
+      recordTopLiker({
+        ...user,
+        likeCount: boosts.get(liker.id) || 1
+      }, { deferRender: true });
     });
-  }, 1500);
+
+    saveTopLikersState();
+    renderTopLikers();
+  }, 650);
 }
 
 function createTestLiker(id, name, accent, glow) {
@@ -401,7 +583,7 @@ function createTestLiker(id, name, accent, glow) {
     id,
     name,
     username: '',
-    avatarUrl: `data:image/svg+xml,${encodeURIComponent(svg)}`
+    avatarUrl: window.studioDemoViewers?.byName(id).avatarUrl || `data:image/svg+xml,${encodeURIComponent(svg)}`
   };
 }
 
@@ -457,6 +639,12 @@ function applyTopLikersConfig() {
   document.documentElement.style.setProperty('--top-likers-text-color', topLikersConfig.text);
   document.documentElement.style.setProperty('--top-likers-muted-color', topLikersConfig.muted);
   document.documentElement.style.setProperty('--top-likers-glow-rgb', hexToRgb(topLikersConfig.glow));
+  const first=topLikersConfig.firstPlaceAccent;
+  document.body.classList.toggle('top-likers-custom-first',Boolean(first));
+  if(first){document.documentElement.style.setProperty('--top-likers-first-rgb',hexToRgb(first));document.documentElement.style.setProperty('--top-likers-first',first);const star='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path fill="'+first+'" d="M12 0c1 8 3 11 12 12-9 1-11 4-12 12-1-8-3-11-12-12 9-1 11-4 12-12Z"/></svg>';document.documentElement.style.setProperty('--top-likers-first-star','url("data:image/svg+xml,'+encodeURIComponent(star)+'")');}
+  document.documentElement.style.setProperty('--top-likers-first-text',topLikersConfig.firstPlaceText||topLikersConfig.text);
+  document.documentElement.style.setProperty('--top-likers-milestone-card-rgb', hexToRgb(topLikersConfig.milestoneCard));
+  document.documentElement.style.setProperty('--top-likers-milestone-text', topLikersConfig.milestoneText);
   document.documentElement.style.setProperty('--top-likers-opacity', String(topLikersConfig.opacity));
   document.documentElement.style.setProperty('--top-likers-tile-opacity', String(topLikersConfig.tileOpacity));
 }
@@ -473,8 +661,9 @@ function loadTopLikersState() {
       return;
     }
 
+    const cutoff = Date.now() - topLikersRetentionMs;
     saved.forEach(liker => {
-      if (liker?.id) {
+      if (liker?.id && Number(liker.updatedAt || 0) >= cutoff) {
         topLikers.set(liker.id, {
           id: String(liker.id),
           name: String(liker.name || 'Unknown'),
@@ -485,6 +674,7 @@ function loadTopLikersState() {
         });
       }
     });
+    if (topLikers.size !== saved.length) saveTopLikersState();
   } catch {
     topLikers.clear();
   }
@@ -545,6 +735,7 @@ function loadTopLikersConfig() {
 }
 
 function readOverlayConfigFromHash() {
+  if (window.directWidgetConfig) return window.directWidgetConfig;
   const encoded = new URLSearchParams(window.location.hash.slice(1)).get('config');
 
   if (!encoded) {
@@ -608,7 +799,10 @@ function expandCompactTopLikers(likers) {
     muted: likers.t,
     glow: likers.u,
     opacity: likers.v,
-    tileOpacity: likers.x
+    tileOpacity: likers.x,
+    firstPlaceAccent:likers.ac,firstPlaceText:likers.ad,
+    milestoneCard: likers.aa,
+    milestoneText: likers.ab
   };
 }
 
@@ -637,6 +831,10 @@ function normalizeTopLikersConfig(config) {
     text: normalizeHex(config.text, '#ffffff'),
     muted: normalizeHex(config.muted, '#ffffff'),
     glow: normalizeHex(config.glow, '#c447ff'),
+    ...(config.firstPlaceAccent?{firstPlaceAccent:normalizeHex(config.firstPlaceAccent,'#ffd83d')}:{}),
+    ...(config.firstPlaceText?{firstPlaceText:normalizeHex(config.firstPlaceText,'#ffffff')}:{}),
+    milestoneCard: normalizeHex(config.milestoneCard, '#7b2cff'),
+    milestoneText: normalizeHex(config.milestoneText, '#ffffff'),
     opacity: clampDecimal(Number(config.opacity ?? 0.8), 0, 1),
     tileOpacity: clampDecimal(Number(config.tileOpacity ?? 0.6), 0, 1)
   };
@@ -670,6 +868,22 @@ function firstUrl(urls) {
 
 function formatNumber(value) {
   return new Intl.NumberFormat('en-US').format(Math.floor(Number(value || 0)));
+}
+
+function formatCompactNumber(value) {
+  const number = Math.max(0, Math.floor(Number(value || 0)));
+  const units = [
+    { value: 1000000000, suffix: 'B' },
+    { value: 1000000, suffix: 'M' },
+    { value: 1000, suffix: 'K' }
+  ];
+  const unit = units.find(candidate => number >= candidate.value);
+
+  if (!unit) return formatNumber(number);
+
+  const scaled = number / unit.value;
+  const decimals = scaled < 10 && !Number.isInteger(scaled) ? 1 : 0;
+  return `${scaled.toFixed(decimals).replace(/\.0$/, '')}${unit.suffix}`;
 }
 
 function readColor(params, keys, fallback) {
@@ -731,3 +945,5 @@ function escapeHtml(value) {
     "'": '&#39;'
   })[char]);
 }
+
+if(new URLSearchParams(window.location?.search||'').get('editorPreview')==='1'){window.studioSampleEvent=()=>window.simulateTopLiker?.(0,100);}

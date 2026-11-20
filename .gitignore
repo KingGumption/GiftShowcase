@@ -6,3 +6,12 @@ Widget/public/rewards/
 *.log
 Thumbs.db
 .DS_Store
+
+.dev.vars
+.dev.vars.*
+.wrangler/
+Widget/cloudflare/dist/
+outputs/
+*.sqlite
+*.sqlite3
+*.db

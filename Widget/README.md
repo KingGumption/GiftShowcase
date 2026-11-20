@@ -54,6 +54,8 @@ C:\Users\Zatanna\Documents\StreamStuff\StreamAssets\overlays\Widget\public\index
 
 Recommended OBS source size: `1080 x 960`.
 
+In composite Browser Source outputs, the Side Gifts layer height automatically fits the larger left/right gift column using the configured icon size, labels, tiles, and gaps. Removing gifts therefore removes unused transparent space from the layout layer.
+
 Use this test source to preview side-column gift hits without TikFinity:
 
 ```text
@@ -92,7 +94,35 @@ Copy Top Likers URL
 Copy Config URL
 ```
 
-Those URLs include the current config in `#config=...`, so they can be pasted directly into an OBS Browser Source without needing a backend. This is the recommended path for GitHub Pages, Netlify, Cloudflare Pages, or another static host.
+Those legacy URLs include the current config in `#config=...` and remain available temporarily during migration. New account-based setups should use the permanent Browser Source outputs below.
+
+## Accounts, cloud variants, and permanent OBS outputs
+
+The cloud service in `Widget/cloudflare` adds user accounts, named server-backed variants for each overlay type, automatic revision history, and permanent read-only OBS Browser Source URLs. The configuration editor is account-gated: its controls and previews remain hidden until the cloud API is configured and the user is signed in. Existing direct overlay and `#config=...` snapshot URLs remain temporarily compatible during migration, but they are no longer presented as the primary editor workflow.
+
+Deploy the Worker by following `cloudflare/README.md`, then set these values in `public/overlay-cloud-config.js`:
+
+```js
+window.overlayCloudConfig = Object.freeze({
+  apiBaseUrl: 'https://your-worker.workers.dev',
+  appBaseUrl: 'https://your-site.example/Widget/public'
+});
+```
+
+The cloud workflow is:
+
+1. Create an account or sign in on `index-rewards-config.html`. The editor appears after the session is verified.
+2. Choose an overlay tab and save its settings as a typed cloud variant. Each tab lists only variants for that overlay type. **Migrate Local Versions** splits every named browser-local configuration into one variant per overlay type.
+3. Every account starts with a 1080 × 1920 vertical output and a 1920 × 1080 horizontal output. Add the selected variant to either output from the Overlay Editor.
+4. Open `index-obs-dock.html`, expand an output, then drag and resize its overlay layers on the scaled layout canvas. Layers can be dragged past any canvas edge when only part of an overlay should appear in the cropped Browser Source. Turn on **Show sample activity** to fill event-driven layers such as Top Likers with test content in both the canvas and the output's permanent Browser Source. Turn it off when positioning is finished to reconnect that same Browser Source to TikFinity. Additional custom-sized outputs can be created when separate Browser Sources are useful.
+5. Copy the output's generated `index-dock.html?dock=...` URL into an OBS Browser Source once and set the source dimensions to match the output.
+6. Edit variants or change the output layout. The OBS URL remains unchanged and affected visual layers update automatically.
+
+The Output Designer is an optional control panel. To keep it inside OBS, add the hosted `index-obs-dock.html` URL under **Docks → Custom Browser Docks**. Each generated output URL belongs in the scene as an OBS Browser Source.
+
+Each output shell owns one TikFinity connection and forwards events to all of its active visual layers. When a variant revision changes, only affected renderers are swapped after the replacements have loaded, without closing or reopening TikFinity. Goal and Top Likers state remain in browser storage across renderer swaps.
+
+Output width and height define the layout's real pixel coordinate system and should match the OBS Browser Source dimensions. OBS does not allow the webpage to change an existing Browser Source's viewport, so changing those values later also requires changing the source dimensions in OBS.
 
 Put manually sourced reward images in `public\rewards`, then point each reward's `image` value at it. Match incoming gifts with either `giftNames` or `giftIds`.
 

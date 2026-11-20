@@ -1,0 +1,1 @@
+ALTER TABLE output_docks ADD COLUMN sample_activity INTEGER NOT NULL DEFAULT 0;

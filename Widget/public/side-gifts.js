@@ -7,15 +7,19 @@ const sideGiftRowsConfig = sideGiftConfigBundle.rowsOverlay || {};
 const sideGiftCatalog = normalizeSideGiftCatalog(window.rewardImageCatalog || []);
 const configuredSideGifts = normalizeSideGifts(sideGiftConfigBundle.sideGifts?.gifts || []);
 const configuredRowsFallbackGifts = normalizeSideGifts(sideGiftRowsConfig.gifts || []);
-const sideGifts = configuredSideGifts.length ? configuredSideGifts : configuredRowsFallbackGifts.length ? configuredRowsFallbackGifts : sideGiftCatalog;
+const sideGifts = Array.isArray(sideGiftConfigBundle.sideGifts?.gifts) ? configuredSideGifts : Array.isArray(sideGiftRowsConfig.gifts) ? configuredRowsFallbackGifts : sideGiftCatalog;
 const sideGiftEndpoint = sideGiftParams.get('endpoint') || 'ws://localhost:21213/';
 const sideGiftTestMode = sideGiftParams.get('test') === '1';
 const sideGiftPreviewMode = sideGiftParams.get('preview') === '1';
 const sideGiftPreviewFit = sideGiftParams.get('previewFit') === '1';
+const sideGiftRelayMode = sideGiftParams.get('relay') === '1';
+const sideGiftDockStateKey = sideGiftParams.get('stateKey') || '';
+const sideGiftLikeStorageKey = sideGiftDockStateKey ? `reward-overlay-dock-likes:side-gifts:${sideGiftDockStateKey}` : '';
 const sideGiftHighlightMs = Math.max(900, Number(sideGiftParams.get('highlightMs') || sideGiftConfigBundle.holdOnGiftMs || sideGiftConfig.hitMs || 6500) || 6500);
+let sidePreviewMuted=sideGiftParams.get('mute')==='1';
 let sideGiftReconnectTimer;
-let sideGiftHighlightTimer;
-let sideGiftLikeTotal = 0;
+let sideGiftLikeTotal = loadSideGiftLikeTotal();
+const sideGiftAnimationQueues = new Map();
 
 applySideGiftConfig();
 renderSideGifts();
@@ -24,6 +28,8 @@ if (sideGiftPreviewMode) {
   // Static preview only.
 } else if (sideGiftTestMode) {
   startSideGiftTestMode();
+} else if (sideGiftRelayMode) {
+  setupSideGiftDockRelay();
 } else {
   connectSideGifts();
 }
@@ -89,7 +95,7 @@ function renderSideGiftColumn(gifts, slotCount) {
 
 function renderSideGiftTile(gift) {
   return `
-    <article class="side-gift-tile side-gift-trigger-${escapeAttribute(gift.triggerType)}" data-gift-keys="${escapeAttribute(gift.keys.join('|'))}" data-gift-image-keys="${escapeAttribute(gift.giftImageKeys.join('|'))}" data-use-gift-image="${gift.useGiftImage ? '1' : '0'}" data-sound="${escapeAttribute(gift.sound || '')}" data-volume="${escapeAttribute(gift.volume)}" data-original-label="${escapeAttribute(gift.label)}">
+    <article class="side-gift-tile side-gift-trigger-${escapeAttribute(gift.triggerType)}" ${sideGiftParams.get('editorPreview')==='1'?'data-editor-card-index="'+gift.editorSourceIndex+'"':''} data-gift-keys="${escapeAttribute(gift.keys.join('|'))}" data-gift-image-keys="${escapeAttribute(gift.giftImageKeys.join('|'))}" data-use-gift-image="${gift.useGiftImage ? '1' : '0'}" data-sound="${escapeAttribute(gift.sound || '')}" data-volume="${escapeAttribute(gift.volume)}" data-original-label="${escapeAttribute(gift.label)}">
       <img class="side-gift-image" src="${escapeAttribute(resolveSideGiftImageUrl(gift.image))}" alt="">
       <strong><span class="side-gift-label-original">${escapeHtml(gift.label)}</span><span class="side-gift-label-profile" aria-hidden="true"></span></strong>
     </article>
@@ -120,6 +126,7 @@ function connectSideGifts() {
   const ws = new WebSocket(sideGiftEndpoint);
 
   ws.addEventListener('message', event => {
+    window.creatorGiftDiscovery?.observe(event.data);
     const message = parseMessage(event.data);
     if (!message) return;
     handleSideGiftEvent(String(message.event || '').toLowerCase(), message.data || {});
@@ -131,14 +138,23 @@ function connectSideGifts() {
   });
 }
 
+function setupSideGiftDockRelay() {
+  window.addEventListener('message', event => {
+    if (event.source !== window.parent || event.data?.type !== 'dock:tiktok-raw') return;
+    const message = parseMessage(event.data.data);
+    if (message) handleSideGiftEvent(String(message.event || '').toLowerCase(), message.data || {});
+  });
+  window.parent.postMessage({ type: 'dock:renderer-ready' }, '*');
+}
+
 function handleSideGiftEvent(eventName, data) {
   if (eventName === 'gift') {
     highlightSideGift(normalizeSideGiftEvent(data));
     return;
   }
 
-  if (eventName === 'follow') {
-    highlightSideGift({ triggerType: 'follow' });
+  if (eventName === 'follow' || eventName === 'share') {
+    highlightSideGift({ triggerType: eventName });
     return;
   }
 
@@ -149,11 +165,21 @@ function handleSideGiftEvent(eventName, data) {
 
   const previousTotal = sideGiftLikeTotal;
   sideGiftLikeTotal += increment;
+  saveSideGiftLikeTotal();
   sideGifts.filter(gift => gift.triggerType === 'likes').forEach(gift => {
     if (Math.floor(previousTotal / gift.likesRequired) < Math.floor(sideGiftLikeTotal / gift.likesRequired)) {
       highlightSideGift({ triggerKey: getSideGiftTriggerKey(gift) });
     }
   });
+}
+
+function loadSideGiftLikeTotal() {
+  if (!sideGiftLikeStorageKey) return 0;
+  return Math.max(0, Number(localStorage.getItem(sideGiftLikeStorageKey) || 0) || 0);
+}
+
+function saveSideGiftLikeTotal() {
+  if (sideGiftLikeStorageKey) localStorage.setItem(sideGiftLikeStorageKey, String(sideGiftLikeTotal));
 }
 
 function highlightSideGift(gift) {
@@ -172,31 +198,70 @@ function highlightSideGift(gift) {
 
   if (!matchingTiles.length) return;
 
-  clearSideGiftProfileAnimations();
-  updateSideGiftImages(matchingTiles, gift);
-  playSideGiftSound(matchingTiles[0]);
-  runSideGiftProfileAnimation(matchingTiles, gift);
-  runSideGiftHitAnimation(matchingTiles);
-}
-
-function runSideGiftHitAnimation(tiles) {
-  clearTimeout(sideGiftHighlightTimer);
-  sideGiftsWidget.querySelectorAll('.side-gift-tile.is-hit').forEach(tile => {
-    tile.classList.remove('is-hit');
-  });
-
   if (sideGiftConfig.animationsEnabled === false) {
+    updateSideGiftImages(matchingTiles, gift);
+    playSideGiftSound(matchingTiles[0]);
     return;
   }
 
-  tiles.forEach(tile => {
-    void tile.offsetWidth;
+  groupSideGiftAnimationTiles(matchingTiles).forEach((tiles, queueKey) => {
+    enqueueSideGiftAnimation(queueKey, tiles, gift);
+  });
+}
+
+function groupSideGiftAnimationTiles(tiles) {
+  return tiles.reduce((groups, tile) => {
+    const keys = String(tile.dataset.giftKeys || '').split('|').filter(Boolean);
+    const queueKey = keys.find(key => key.startsWith('id:')) ||
+      keys.find(key => key.startsWith('trigger:')) ||
+      keys.find(key => key.startsWith('name:')) ||
+      `tile:${groups.size}`;
+    const group = groups.get(queueKey) || [];
+    group.push(tile);
+    groups.set(queueKey, group);
+    return groups;
+  }, new Map());
+}
+
+function enqueueSideGiftAnimation(queueKey, tiles, gift) {
+  const state = sideGiftAnimationQueues.get(queueKey) || { active: false, pending: [], timer: null };
+  state.pending.push({ tiles, gift });
+  sideGiftAnimationQueues.set(queueKey, state);
+  runNextSideGiftAnimation(queueKey, state);
+}
+
+function runNextSideGiftAnimation(queueKey, state) {
+  if (state.active) {
+    return;
+  }
+
+  const job = state.pending.shift();
+  if (!job) {
+    sideGiftAnimationQueues.delete(queueKey);
+    return;
+  }
+
+  state.active = true;
+  clearSideGiftAnimation(job.tiles);
+  job.tiles.forEach(tile => void tile.offsetWidth);
+  updateSideGiftImages(job.tiles, job.gift);
+  playSideGiftSound(job.tiles[0]);
+  runSideGiftProfileAnimation(job.tiles, job.gift);
+  job.tiles.forEach(tile => {
     tile.classList.add('is-hit');
   });
 
-  sideGiftHighlightTimer = window.setTimeout(() => {
-    tiles.forEach(tile => tile.classList.remove('is-hit'));
+  state.timer = window.setTimeout(() => {
+    clearSideGiftAnimation(job.tiles);
+    state.active = false;
+    state.timer = null;
+    runNextSideGiftAnimation(queueKey, state);
   }, sideGiftHighlightMs);
+}
+
+function clearSideGiftAnimation(tiles) {
+  tiles.forEach(tile => tile.classList.remove('is-hit'));
+  clearSideGiftProfileAnimations(tiles);
 }
 
 function updateSideGiftImages(tiles, gift) {
@@ -209,48 +274,33 @@ function updateSideGiftImages(tiles, gift) {
 }
 
 function runSideGiftProfileAnimation(tiles, gift) {
-  if (sideGiftConfig.animationsEnabled === false ||
-      sideGiftConfig.profileAnimationEnabled === false ||
-      gift?.triggerType !== 'gift') {
-    return;
-  }
-
-  tiles.forEach(tile => {
-    clearTimeout(tile.profileAnimationTimer);
+  if(sideGiftConfig.animationsEnabled===false||sideGiftConfig.profileAnimationEnabled===false||gift?.triggerType!=='gift'||!gift.avatarUrl)return;
+  const started=performance.now();
+  tiles.forEach(tile=>{
     restoreSideGiftProfileName(tile);
-    tile.classList.add('profile-animation-active');
-    tile.classList.toggle('profile-has-avatar', Boolean(gift.avatarUrl));
-    tile.querySelectorAll('.side-gift-profile-image').forEach(image => image.remove());
-    runSideGiftProfileNameAnimation(tile, gift);
-
-    if (gift.avatarUrl) {
-      const profileImage = document.createElement('img');
-      profileImage.className = 'side-gift-profile-image';
-      profileImage.alt = '';
-      profileImage.src = gift.avatarUrl;
-      profileImage.addEventListener('error', () => profileImage.remove(), { once: true });
-      tile.append(profileImage);
-    }
-
-    tile.profileAnimationTimer = window.setTimeout(() => {
-      tile.classList.remove('profile-animation-active');
-      tile.classList.remove('profile-has-avatar');
-      tile.querySelectorAll('.side-gift-profile-image').forEach(image => image.remove());
-      restoreSideGiftProfileName(tile);
-      tile.profileAnimationTimer = null;
-    }, sideGiftHighlightMs);
+    const token={};tile.studioProfileToken=token;
+    const image=new Image();image.className='side-gift-profile-image';image.alt='';image.decoding='async';
+    image.src=gift.avatarUrl;
+    const ready=typeof image.decode==='function'?image.decode():new Promise((resolve,reject)=>{if(image.complete&&image.naturalWidth)resolve();else{image.onload=resolve;image.onerror=reject;}});
+    ready.then(()=>{
+      const remaining=sideGiftHighlightMs-(performance.now()-started);
+      if(tile.studioProfileToken!==token||!tile.isConnected||!image.naturalWidth||remaining<900)return;
+      tile.style.setProperty('--side-gifts-profile-duration',Math.floor(remaining)+'ms');
+      tile.append(image);tile.classList.add('profile-animation-active','profile-has-avatar');
+      runSideGiftProfileNameAnimation(tile,gift);
+    }).catch(()=>{/* A failed viewer picture must leave the gift and its action label visible. */});
   });
 }
 
-function clearSideGiftProfileAnimations() {
-  sideGiftsWidget.querySelectorAll('.side-gift-tile.profile-animation-active, .side-gift-tile.profile-has-avatar').forEach(tile => {
-    clearTimeout(tile.profileAnimationTimer);
-    tile.profileAnimationTimer = null;
+function clearSideGiftProfileAnimations(tiles = null) {
+  const targets = tiles || [...sideGiftsWidget.querySelectorAll('.side-gift-tile.profile-animation-active, .side-gift-tile.profile-has-avatar')];
+  targets.forEach(tile => {
+    delete tile.studioProfileToken;tile.style.removeProperty('--side-gifts-profile-duration');
     tile.classList.remove('profile-animation-active');
     tile.classList.remove('profile-has-avatar');
+    tile.querySelectorAll('.side-gift-profile-image').forEach(image => image.remove());
     restoreSideGiftProfileName(tile);
   });
-  sideGiftsWidget.querySelectorAll('.side-gift-profile-image').forEach(image => image.remove());
 }
 
 function runSideGiftProfileNameAnimation(tile, gift) {
@@ -278,7 +328,7 @@ function restoreSideGiftProfileName(tile) {
 }
 
 function playSideGiftSound(tile) {
-  if (sideGiftConfig.soundsEnabled === false || !tile?.dataset.sound) {
+  if (sidePreviewMuted || sideGiftConfig.soundsEnabled === false || !tile?.dataset.sound) {
     return;
   }
 
@@ -306,7 +356,9 @@ function shouldUseSideGiftImage(tile, gift) {
 }
 
 function startSideGiftTestMode() {
-  const testGifts = sideGifts.length ? sideGifts : sideGiftCatalog.slice(0, 10);
+  const availableGifts = sideGifts.length ? sideGifts : sideGiftCatalog.slice(0, 10);
+  const giftEntries = availableGifts.filter(gift => gift.triggerType === 'gift');
+  const testGifts = giftEntries.length ? giftEntries : availableGifts;
   let index = 0;
 
   window.simulateSideGift = (giftName = '') => {
@@ -322,16 +374,42 @@ function startSideGiftTestMode() {
     index += 1;
   };
 
-  window.setTimeout(sendTestSideGift, getRandomSideGiftTestDelay(500, 1700));
+  window.setTimeout(sendQueueDemo, 600);
 
-  function sendTestSideGift() {
-    window.simulateSideGift();
-    window.setTimeout(sendTestSideGift, getRandomSideGiftTestDelay(sideGiftHighlightMs + 450, sideGiftHighlightMs + 2600));
+  function sendQueueDemo() {
+    if (!testGifts.length) {
+      return;
+    }
+
+    const repeatedGift = testGifts[index % testGifts.length];
+    const concurrentGift = testGifts.length > 1
+      ? testGifts[(index + 1) % testGifts.length]
+      : null;
+
+    queueTestSideGift(repeatedGift, index, 'Mia', 0);
+    queueTestSideGift(repeatedGift, index + 1, 'Jordan', 180);
+    if (concurrentGift) {
+      queueTestSideGift(concurrentGift, index + 2, 'Alex', 260);
+    }
+    queueTestSideGift(repeatedGift, index + 3, 'Sam', 360);
+
+    index += 1;
+    window.setTimeout(sendQueueDemo, (sideGiftHighlightMs * 3) + 1400);
   }
-}
 
-function getRandomSideGiftTestDelay(min, max) {
-  return Math.round(min + (Math.random() * (max - min)));
+  function queueTestSideGift(gift, testIndex, supporter, delay) {
+    window.setTimeout(() => {
+      if(window.editorPreviewActive===false)return;
+      highlightSideGift({
+        giftName: gift?.label || 'Gift',
+        giftId: gift?.id || '',
+        triggerType: gift?.triggerType || 'gift',
+        triggerKey: getSideGiftTriggerKey(gift),
+        supporter,
+        avatarUrl: getTestAvatarImage(testIndex)
+      });
+    }, delay);
+  }
 }
 
 function normalizeSideGiftEvent(data) {
@@ -372,6 +450,7 @@ function normalizeSideGifts(list) {
     const likesRequired = clampSideGiftInteger(Number(gift.likesRequired || 50), 1, 1000000000);
 
     return {
+      editorSourceIndex:list.indexOf(gift),
       id: normalizeSideGiftId(gift.giftIds?.[0] || ''),
       label: getSideGiftDisplayLabel(gift.title || gift.giftNames?.[0] || gift.image || 'Gift'),
       triggerType,
@@ -394,8 +473,8 @@ function normalizeSideGifts(list) {
         names: gift.giftImageNames || []
       }),
       keys: getSideGiftKeys({
-        ids: gift.giftIds || [],
-        names: [...(gift.giftNames || []), gift.title],
+        ids: triggerType === 'gift' ? gift.giftIds || [] : [],
+        names: triggerType === 'gift' ? [...(gift.giftNames || []), gift.title] : [],
         triggers: [getSideGiftTriggerKey({ triggerType, likesRequired })]
       })
     };
@@ -416,6 +495,13 @@ function loadSideGiftConfig() {
   const hashConfig = readSideGiftConfigFromHash();
   const fallback = window.rewardOverlayConfig || {};
   const saved = readSavedSideGiftConfig();
+  if(sideGiftParams.get('demo')==='homepage' && (sideGiftParams.get('test')==='1'||sideGiftParams.get('preview')==='1')) {
+    // The marketing sample is independent of local drafts and published designs.
+    const items=(fallback.sideGifts?.gifts||[]);
+    const left=items.filter(g=>g.side==='left').slice(0,3),right=items.filter(g=>g.side==='right').slice(0,3);
+    document.documentElement.classList.add('side-gifts-home-demo');
+    return {sideGifts:{...fallback.sideGifts,width:640,height:340,iconSize:52,gap:12,insetX:0,insetY:0,labelSize:14,labelTwoLines:true,showLabels:true,soundsEnabled:false,gifts:[...left,...right]},rowsOverlay:{}};
+  }
   return {
     sideGifts: {
       ...(fallback.sideGifts || {}),
@@ -494,6 +580,7 @@ function normalizeSideGiftConfig(config) {
 }
 
 function readSideGiftConfigFromHash() {
+  if (window.directWidgetConfig) return window.directWidgetConfig;
   const encoded = new URLSearchParams(window.location.hash.slice(1)).get('config');
   if (!encoded) return null;
 
@@ -607,7 +694,7 @@ function readSideGiftParams() {
 
 function resolveSideGiftImageUrl(image) {
   const value = String(image || '');
-  if (window.location.hostname.endsWith('github.io') && value.startsWith('./rewards/')) {
+  if (value.startsWith('./rewards/')) {
     return `${remoteSideGiftImageBase}${encodeURIComponent(value.replace('./rewards/', ''))}`;
   }
   return value;
@@ -646,6 +733,7 @@ function findSideGiftAvatarImage(data) {
 }
 
 function getTestAvatarImage(index = 0) {
+  if(window.studioDemoViewers)return window.studioDemoViewers.byIndex(index).avatarUrl;
   const colors = ['03f5d8', 'c447ff', 'ffd83d', 'fe2c55'];
   const color = colors[index % colors.length];
   const label = String(index + 1);
@@ -655,6 +743,7 @@ function getTestAvatarImage(index = 0) {
 
 function getSideGiftCatalogImage(gift) {
   const currentImage = String(gift.image || '');
+  if (/\/api\/v1\/gifts\/(?:images|creator-images)\//.test(currentImage)) return currentImage;
   const match = findSideGiftCatalogEntry(gift);
   return match?.image || currentImage;
 }
@@ -693,6 +782,9 @@ function getSideGiftTriggerIcon(item) {
   const type = normalizeSideGiftTriggerType(item?.triggerType || item);
   if (type === 'gift') return '';
 
+  if (type === 'share') {
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 104"><path d="M61 72 88 46 61 20M15 85V70c0-13 10-24 24-24h49" fill="none" stroke="#fe2c55" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" transform="translate(3 3)"/><path d="M61 72 88 46 61 20M15 85V70c0-13 10-24 24-24h49" fill="none" stroke="#25f4ee" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  }
   const isFollow = type === 'follow';
   const likes = Math.max(1, Math.floor(Number(item?.likesRequired || 50)));
   const heartColor = normalizeSideGiftHex(item?.likesHeartColor, '#ef233c');
@@ -722,7 +814,7 @@ function getSideGiftTriggerKey(gift) {
 
 function normalizeSideGiftTriggerType(value) {
   const type = String(value || '').trim().toLowerCase();
-  return type === 'follow' || type === 'likes' ? type : 'gift';
+  return ['follow', 'likes', 'share'].includes(type) ? type : 'gift';
 }
 
 function getSideGiftDisplayLabel(label) {
@@ -816,3 +908,5 @@ function escapeHtml(value) {
     "'": '&#39;'
   })[char]);
 }
+
+if(new URLSearchParams(window.location?.search||'').get('editorPreview')==='1'){window.studioSetPreviewMute=value=>{sidePreviewMuted=Boolean(value);if(sidePreviewMuted)window.studioStopPreviewAudio?.();};window.studioSampleEvent=()=>{const gift=sideGifts[0];if(gift)highlightSideGift({triggerType:gift.triggerType,triggerKey:getSideGiftTriggerKey(gift),giftId:gift.id,giftName:gift.label,supporter:'Mia',avatarUrl:getTestAvatarImage(0)});};}

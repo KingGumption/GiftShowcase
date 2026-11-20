@@ -1,0 +1,199 @@
+[
+  {
+    "name": "Customised historic starter IDs",
+    "kind": "rows",
+    "config": {
+      "rowsOverlay": {
+        "rows": 2,
+        "perRow": "5,7",
+        "labelSize": 16,
+        "animationsEnabled": false,
+        "profileAnimationEnabled": false,
+        "profileNameEnabled": false,
+        "gifts": [
+          {
+            "title": "Historic action 0",
+            "row": 1,
+            "giftIds": [
+              "18"
+            ],
+            "giftNames": [
+              "Fixture gift 0"
+            ],
+            "image": "./rewards/033_Heart_Me.png",
+            "sound": "./sounds/disgusting.mp3",
+            "volume": 0.65
+          },
+          {
+            "title": "Historic action 1",
+            "row": 1,
+            "giftIds": [
+              "30"
+            ],
+            "giftNames": [
+              "Fixture gift 1"
+            ],
+            "image": "./rewards/033_Heart_Me.png",
+            "sound": "./sounds/disgusting.mp3",
+            "volume": 0.65
+          },
+          {
+            "title": "Historic action 2",
+            "row": 1,
+            "giftIds": [
+              "33"
+            ],
+            "giftNames": [
+              "Fixture gift 2"
+            ],
+            "image": "./rewards/033_Heart_Me.png",
+            "sound": "./sounds/disgusting.mp3",
+            "volume": 0.65
+          },
+          {
+            "title": "Historic action 3",
+            "row": 1,
+            "giftIds": [
+              "792"
+            ],
+            "giftNames": [
+              "Fixture gift 3"
+            ],
+            "image": "./rewards/033_Heart_Me.png",
+            "sound": "./sounds/disgusting.mp3",
+            "volume": 0.65
+          },
+          {
+            "title": "Historic action 4",
+            "row": 1,
+            "giftIds": [
+              "817"
+            ],
+            "giftNames": [
+              "Fixture gift 4"
+            ],
+            "image": "./rewards/033_Heart_Me.png",
+            "sound": "./sounds/disgusting.mp3",
+            "volume": 0.65
+          },
+          {
+            "title": "Historic action 5",
+            "row": 2,
+            "giftIds": [
+              "856"
+            ],
+            "giftNames": [
+              "Fixture gift 5"
+            ],
+            "image": "./rewards/033_Heart_Me.png",
+            "sound": "./sounds/disgusting.mp3",
+            "volume": 0.65
+          },
+          {
+            "title": "Historic action 6",
+            "row": 2,
+            "giftIds": [
+              "913"
+            ],
+            "giftNames": [
+              "Fixture gift 6"
+            ],
+            "image": "./rewards/033_Heart_Me.png",
+            "sound": "./sounds/disgusting.mp3",
+            "volume": 0.65
+          },
+          {
+            "title": "Historic action 7",
+            "row": 2,
+            "giftIds": [
+              "1176"
+            ],
+            "giftNames": [
+              "Fixture gift 7"
+            ],
+            "image": "./rewards/033_Heart_Me.png",
+            "sound": "./sounds/disgusting.mp3",
+            "volume": 0.65
+          },
+          {
+            "title": "Historic action 8",
+            "row": 2,
+            "giftIds": [
+              "1258"
+            ],
+            "giftNames": [
+              "Fixture gift 8"
+            ],
+            "image": "./rewards/033_Heart_Me.png",
+            "sound": "./sounds/disgusting.mp3",
+            "volume": 0.65
+          },
+          {
+            "title": "Historic action 9",
+            "row": 2,
+            "giftIds": [
+              "1270"
+            ],
+            "giftNames": [
+              "Fixture gift 9"
+            ],
+            "image": "./rewards/033_Heart_Me.png",
+            "sound": "./sounds/disgusting.mp3",
+            "volume": 0.65
+          },
+          {
+            "title": "Historic action 10",
+            "row": 2,
+            "giftIds": [
+              "1312"
+            ],
+            "giftNames": [
+              "Fixture gift 10"
+            ],
+            "image": "./rewards/033_Heart_Me.png",
+            "sound": "./sounds/disgusting.mp3",
+            "volume": 0.65
+          },
+          {
+            "title": "Historic action 11",
+            "row": 2,
+            "giftIds": [
+              "1313"
+            ],
+            "giftNames": [
+              "Fixture gift 11"
+            ],
+            "image": "./rewards/033_Heart_Me.png",
+            "sound": "./sounds/disgusting.mp3",
+            "volume": 0.65
+          }
+        ]
+      }
+    }
+  },
+  {
+    "name": "Intentional empty rows",
+    "kind": "rows",
+    "config": {
+      "rowsOverlay": {
+        "gifts": []
+      }
+    }
+  },
+  {
+    "name": "Intentional empty side-gifts",
+    "kind": "side-gifts",
+    "config": {
+      "sideGifts": {
+        "gifts": []
+      }
+    }
+  },
+  {
+    "name": "Intentional empty carousel",
+    "kind": "carousel",
+    "config": {
+      "rewards": []
+    }
+  }
+]

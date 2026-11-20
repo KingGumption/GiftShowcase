@@ -1,6 +1,7 @@
 const rewardStorageKey = 'reward-overlay-config:v1';
-const rewardVersionsStorageKey = 'reward-overlay-config-versions:v1';
 const giftFavoritesStorageKey = 'reward-gift-favorites:v1';
+const rowsDefaultsRevisionKey = 'reward-rows-defaults-revision:v1';
+const rowsDefaultsRevision = '20260811-animation-2';
 const remoteRewardImageBase = 'https://pub-099cf604176d4f20bce0cd8bb2c4d3c6.r2.dev/';
 const baseConfig = cloneConfig(window.rewardOverlayConfig || {});
 let draftConfig;
@@ -26,12 +27,17 @@ const sideGiftTotal = document.querySelector('#side-gift-total');
 const sideGiftEnabled = document.querySelector('#side-gift-enabled');
 const tabButtons = document.querySelectorAll('[data-config-tab]');
 const configPanels = document.querySelectorAll('[data-config-panel]');
+const studioCurrentTitle = document.querySelector('#studio-current-title');
+const studioOutputTab = document.querySelector('#studio-output-tab');
+const studioOutputWorkspace = document.querySelector('#studio-output-workspace');
+const studioOutputFrame = document.querySelector('#studio-output-frame');
 const rowsCount = document.querySelector('#rows-count');
 const rowsPerRow = document.querySelector('#rows-per-row');
 const rowsScrolling = document.querySelector('#rows-scrolling');
 const rowsDirections = document.querySelector('#rows-directions');
 const rowsSpeeds = document.querySelector('#rows-speeds');
 const rowsHeight = document.querySelector('#rows-height');
+const rowsLabelSize = document.querySelector('#rows-label-size');
 const rowsGap = document.querySelector('#rows-gap');
 const rowsNames = document.querySelector('#rows-names');
 const rowsSounds = document.querySelector('#rows-sounds');
@@ -47,6 +53,7 @@ const goalStart = document.querySelector('#goal-start');
 const goalReset = document.querySelector('#goal-reset');
 const goalWidth = document.querySelector('#goal-width');
 const goalHeight = document.querySelector('#goal-height');
+const goalFontFields = ['labelSize', 'counterSize', 'targetSize'].map(key => ({ key, input: document.querySelector('#goal-' + key) }));
 const topLikersLimit = document.querySelector('#top-likers-limit');
 const topLikersAvatars = document.querySelector('#top-likers-avatars');
 const topLikersNames = document.querySelector('#top-likers-names');
@@ -90,17 +97,6 @@ const sideGiftsSounds = document.querySelector('#side-gifts-sounds');
 const sideGiftsAnimations = document.querySelector('#side-gifts-animations');
 const sideGiftsProfileAnimation = document.querySelector('#side-gifts-profile-animation');
 const sideGiftsProfileName = document.querySelector('#side-gifts-profile-name');
-const addRewardButton = document.querySelector('#add-reward');
-const copyCarouselUrlButton = document.querySelector('#copy-carousel-url');
-const copyRowsUrlButton = document.querySelector('#copy-rows-url');
-const copySideGiftsUrlButton = document.querySelector('#copy-side-gifts-url');
-const copyGoalUrlButton = document.querySelector('#copy-goal-url');
-const copyTopLikersUrlButton = document.querySelector('#copy-top-likers-url');
-const copyConfigUrlButton = document.querySelector('#copy-config-url');
-const configVersionName = document.querySelector('#config-version-name');
-const configVersionSelect = document.querySelector('#config-version-select');
-const loadConfigVersionButton = document.querySelector('#load-config-version');
-const deleteConfigVersionButton = document.querySelector('#delete-config-version');
 const loadConfigUrlInput = document.querySelector('#load-config-url');
 const loadConfigUrlButton = document.querySelector('#load-config-url-button');
 const carouselPreview = document.querySelector('#carousel-preview');
@@ -141,12 +137,19 @@ const rowsThemeColorFields = [
   { key: 'border', color: document.querySelector('#rows-theme-border'), hex: document.querySelector('#rows-theme-border-hex') },
   { key: 'glow', color: document.querySelector('#rows-theme-glow'), hex: document.querySelector('#rows-theme-glow-hex') }
 ];
+const goalAppearanceEnabled = document.querySelector('#goal-appearance-enabled');
+const goalAppearanceOpacity = document.querySelector('#goal-background-opacity');
+const goalAppearanceGlow = document.querySelector('#goal-glow-strength');
+const goalAppearanceGloss = document.querySelector('#goal-gloss');
+const goalAppearanceFields = ['background','border','label','trackBackground','trackBorder','progressStart','progressEnd','progressGlow','counterBackground','counterText','counterBorder','glow'].map(key => ({ key, color: document.querySelector('#goal-custom-' + key), hex: document.querySelector('#goal-custom-' + key + '-hex') }));
 const goalColorFields = [
   { key: 'accent', color: document.querySelector('#goal-accent'), hex: document.querySelector('#goal-accent-hex') },
   { key: 'glow', color: document.querySelector('#goal-glow'), hex: document.querySelector('#goal-glow-hex') },
   { key: 'text', color: document.querySelector('#goal-text'), hex: document.querySelector('#goal-text-hex') }
 ];
 const topLikersColorFields = [
+  {key:'firstPlaceAccent',color:document.querySelector('#top-likers-first-accent'),hex:document.querySelector('#top-likers-first-accent-hex')},
+  {key:'firstPlaceText',color:document.querySelector('#top-likers-first-text'),hex:document.querySelector('#top-likers-first-text-hex')},
   { key: 'backgroundStart', color: document.querySelector('#top-likers-bg-start'), hex: document.querySelector('#top-likers-bg-start-hex') },
   { key: 'backgroundEnd', color: document.querySelector('#top-likers-bg-end'), hex: document.querySelector('#top-likers-bg-end-hex') },
   { key: 'backgroundBase', color: document.querySelector('#top-likers-bg-base'), hex: document.querySelector('#top-likers-bg-base-hex') },
@@ -156,7 +159,9 @@ const topLikersColorFields = [
   { key: 'title', color: document.querySelector('#top-likers-title-color'), hex: document.querySelector('#top-likers-title-color-hex') },
   { key: 'text', color: document.querySelector('#top-likers-text'), hex: document.querySelector('#top-likers-text-hex') },
   { key: 'muted', color: document.querySelector('#top-likers-muted'), hex: document.querySelector('#top-likers-muted-hex') },
-  { key: 'glow', color: document.querySelector('#top-likers-glow'), hex: document.querySelector('#top-likers-glow-hex') }
+  { key: 'glow', color: document.querySelector('#top-likers-glow'), hex: document.querySelector('#top-likers-glow-hex') },
+  { key: 'milestoneCard', color: document.querySelector('#top-likers-milestone-card'), hex: document.querySelector('#top-likers-milestone-card-hex') },
+  { key: 'milestoneText', color: document.querySelector('#top-likers-milestone-text'), hex: document.querySelector('#top-likers-milestone-text-hex') }
 ];
 const sideGiftsColorFields = [
   { key: 'labelColor', color: document.querySelector('#side-gifts-label-color'), hex: document.querySelector('#side-gifts-label-color-hex') },
@@ -168,6 +173,10 @@ const sideGiftsColorFields = [
   { key: 'tileBorderColor', color: document.querySelector('#side-gifts-tile-border-color'), hex: document.querySelector('#side-gifts-tile-border-color-hex') }
 ];
 const imageCatalog = new Map();
+let currentGiftCatalogue = null;
+let creatorGiftEntries = [];
+let catalogueRefreshInFlight = null;
+let includeGiftArchive = false;
 const giftGridLimit = 80;
 const themePresets = {
   'glass-purple': {
@@ -270,6 +279,9 @@ const defaultTopLikers = {
   text: '#ffffff',
   muted: '#ffffff',
   glow: '#c447ff',
+  firstPlaceAccent:'#ffd83d',firstPlaceText:'#ffffff',
+  milestoneCard: '#7b2cff',
+  milestoneText: '#ffffff',
   opacity: 0.8,
   tileOpacity: 0.6
 };
@@ -327,6 +339,7 @@ let rowsGiftDropPlacement = '';
 let giftFavorites = loadGiftFavorites();
 
 draftConfig = loadDraftConfig();
+applyRowsDefaultsRevision();
 
 function getPageScrollState() {
   const activeElement = document.activeElement;
@@ -343,27 +356,13 @@ function rememberPageScroll() {
   pageFocusTarget = pageScrollState.focusTarget;
 }
 
-function restorePageScroll(state = pageScrollState) {
-  const restore = () => {
-    window.scrollTo(state.x, state.y);
-    const focusTarget = state.focusTarget || pageFocusTarget;
-
-    if (focusTarget && document.contains(focusTarget)) {
-      try {
-        focusTarget.focus({ preventScroll: true });
-      } catch (error) {
-        // ignore focus errors
-      }
-    }
-  };
-
-  requestAnimationFrame(() => {
-    restore();
-    requestAnimationFrame(restore);
-    setTimeout(restore, 80);
-    setTimeout(restore, 220);
-    setTimeout(restore, 480);
-    setTimeout(restore, 900);
+let editorScrollRestore = 0;
+function restorePageScroll(state = pageScrollState, restoreFocus = true) {
+  cancelAnimationFrame(editorScrollRestore);
+  editorScrollRestore=requestAnimationFrame(()=>{
+    window.scrollTo(state.x,state.y);
+    const focusTarget=restoreFocus?state.focusTarget||pageFocusTarget:null;
+    if(focusTarget&&document.contains(focusTarget))focusTarget.focus({preventScroll:true});
   });
 }
 
@@ -374,9 +373,9 @@ function renderPreservingScroll() {
 }
 
 function preserveScrollDuring(action) {
-  const state = interactionScrollState || getPageScrollState();
+  const state = getPageScrollState();
   action();
-  restorePageScroll(state);
+  restorePageScroll(state, false);
 }
 
 function captureInteractionScroll() {
@@ -394,22 +393,8 @@ rowsGiftList.addEventListener('scroll', () => {
   rowsBoardScrollState.set('board', rowsGiftList.scrollLeft);
 });
 
-addRewardButton.addEventListener('click', addReward);
-document.querySelector('#add-row-gift').addEventListener('click', () => addRowGift());
-document.querySelector('#add-side-gift').addEventListener('click', () => addSideGift());
-document.querySelector('#save-config').addEventListener('click', saveConfig);
-loadConfigVersionButton.addEventListener('click', loadSelectedConfigVersion);
-deleteConfigVersionButton.addEventListener('click', deleteSelectedConfigVersion);
-configVersionSelect.addEventListener('change', () => {
-  const version = getSelectedConfigVersion();
-  configVersionName.value = version?.name || '';
-});
-copyCarouselUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards.html', 'Carousel URL copied'));
-copyRowsUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards-rows.html', 'Rows URL copied'));
-copySideGiftsUrlButton.addEventListener('click', () => copyOverlayUrl('index-side-gifts.html', 'Side Gifts URL copied'));
-copyGoalUrlButton.addEventListener('click', () => copyOverlayUrl('index-thin.html', 'Goal URL copied'));
-copyTopLikersUrlButton.addEventListener('click', () => copyOverlayUrl('index-top-likers.html', 'Top Likers URL copied'));
-copyConfigUrlButton.addEventListener('click', () => copyOverlayUrl('index-rewards-config.html', 'Config URL copied'));
+document.querySelector('#add-row-gift').addEventListener('click', () => openAddCard({row: rowsSelectedGift?.row || draftConfig.rowsOverlay.rows}));
+document.querySelector('#add-side-gift').addEventListener('click', () => openAddCard({row:1}));
 loadConfigUrlButton.addEventListener('click', loadConfigFromUrlInput);
 loadConfigUrlInput.addEventListener('keydown', event => {
   if (event.key === 'Enter') {
@@ -422,6 +407,8 @@ document.querySelector('#reset-config').addEventListener('click', resetConfig);
 tabButtons.forEach(button => {
   button.addEventListener('click', () => setActiveTab(button.dataset.configTab));
 });
+studioOutputTab?.addEventListener('click', () => setStudioWorkspace('outputs'));
+studioOutputFrame?.addEventListener('load', () => { studioOutputFrame.dataset.ready = '1'; });
 
 [rotateMs, holdMs, labelMs, visibleNext, carouselSounds, carouselAnimations, carouselProfileAnimation, carouselProfileName].forEach(input => {
   input.addEventListener('input', () => {
@@ -431,7 +418,7 @@ tabButtons.forEach(button => {
   });
 });
 
-[rowsCount, rowsPerRow, rowsScrolling, rowsDirections, rowsSpeeds, rowsHeight, rowsGap, rowsNames, rowsSounds, rowsAnimations, rowsProfileAnimation, rowsProfileName].forEach(input => {
+[rowsCount, rowsPerRow, rowsScrolling, rowsDirections, rowsSpeeds, rowsHeight, rowsLabelSize, rowsGap, rowsNames, rowsSounds, rowsAnimations, rowsProfileAnimation, rowsProfileName].forEach(input => {
   input.addEventListener('input', () => {
     updateRowsFromForm();
     updateProfileNameToggleVisibility();
@@ -442,7 +429,7 @@ tabButtons.forEach(button => {
   });
 });
 
-[goalType, goalLiveFollowers, goalLabel, goalTarget, goalStep, goalStart, goalReset, goalWidth, goalHeight].forEach(input => {
+[goalType, goalLiveFollowers, goalLabel, goalTarget, goalStep, goalStart, goalReset, goalWidth, goalHeight, ...goalFontFields.map(field => field.input)].forEach(input => {
   input.addEventListener('input', () => {
     if (input === goalType && (!goalLabel.value.trim() || isDefaultGoalLabel(goalLabel.value))) {
       goalLabel.value = defaultGoalLabel(goalType.value);
@@ -519,6 +506,22 @@ topLikersColorFields.forEach(field => {
 
     updateTopLikersFromForm();
     markDirty();
+  });
+});
+
+[goalAppearanceEnabled, goalAppearanceOpacity, goalAppearanceGlow, goalAppearanceGloss].forEach(input => {
+  input.addEventListener('change', () => { updateGoalBarFromForm(); renderGoalAppearanceForm(); markDirty(); });
+});
+goalAppearanceFields.forEach(field => {
+  field.color.addEventListener('input', () => {
+    field.hex.value = field.color.value;
+    updateGoalBarFromForm(); markDirty();
+  });
+  field.hex.addEventListener('input', () => {
+    const value = normalizeHex(field.hex.value, '');
+    if (!value) return;
+    field.color.value = value;
+    updateGoalBarFromForm(); markDirty();
   });
 });
 
@@ -618,15 +621,103 @@ rowsThemeColorFields.forEach(field => {
   });
 });
 
-[carouselPreviewTest, rowsPreviewTest, carouselPreviewMute, rowsPreviewMute].forEach(input => {
+[carouselPreviewTest, rowsPreviewTest, sideGiftsPreviewTest, carouselPreviewMute, rowsPreviewMute].forEach(input => {
   input?.addEventListener('input', refreshOverlayPreviews);
 });
 
 seedImageCatalog();
 ensureRowsGiftDefaults();
 applyThemeToDocument(getCarouselTheme());
-renderConfigVersions();
 render();
+refreshOverlayPreviews();
+clearTimeout(previewRefreshTimer);
+setStudioWorkspace(new URLSearchParams(window.location.search).get('workspace') === 'outputs' ? 'outputs' : 'editor', { updateUrl: false });
+
+window.rewardConfigEditor = Object.freeze({
+  getConfig() {
+    syncDraftFromForm();
+    return cloneConfig(draftConfig);
+  },
+  getActiveOverlayKind() {
+    return overlayKindFromTab(activeConfigTab);
+  },
+  getConfigForKind(kind = overlayKindFromTab(activeConfigTab), config = null) {
+    if (config === null) syncDraftFromForm();
+    return extractOverlayConfig(config === null ? draftConfig : config, kind);
+  },
+  loadConfig(config, stateText = 'Design loaded') {
+    draftConfig = normalizeConfig(config || {});
+    ensureRowsGiftDefaults();
+    ensureSideGiftDefaults();
+    localStorage.setItem(rewardStorageKey, JSON.stringify(draftConfig));
+    applyThemeToDocument(getCarouselTheme());
+    render();
+    setState(stateText);
+  },
+  loadConfigForKind(kind, config, stateText = 'Design loaded') {
+    draftConfig = normalizeConfig({
+      ...draftConfig,
+      ...extractOverlayConfig(config || {}, kind)
+    });
+    ensureRowsGiftDefaults();
+    ensureSideGiftDefaults();
+    localStorage.setItem(rewardStorageKey, JSON.stringify(draftConfig));
+    applyThemeToDocument(getCarouselTheme());
+    render();
+    setState(stateText);
+  },
+  getDefaults(kind) {return extractOverlayConfig(normalizeConfig(baseConfig),kind);},
+  resetLocal() { draftConfig=normalizeConfig(baseConfig);localStorage.removeItem(rewardStorageKey);render();setState('New design'); },
+  setActiveKind(kind) { setActiveTab(kind === 'carousel' ? 'original' : kind); },
+  getSelection(kind=overlayKindFromTab(activeConfigTab)) { const items=kind==='carousel'?draftConfig.rewards:kind==='rows'?draftConfig.rowsOverlay.gifts:kind==='side-gifts'?draftConfig.sideGifts.gifts:[];return items.indexOf(rowsSelectedGift); },
+  selectCard(index) { if (['original','rows','side-gifts'].includes(activeConfigTab)) { rowsSelectedGift=cardEditorItems()[index] || null; renderRowsWorkspace(); } },
+  setState
+});
+
+function syncDraftFromForm() {
+  updateGlobalsFromForm();
+  updateRowsFromForm();
+  updateRowsThemeFromForm();
+  updateGoalBarFromForm();
+  updateTopLikersFromForm();
+  updateSideGiftsFromForm();
+}
+
+function overlayKindFromTab(tabName) {
+  return tabName === 'original' ? 'carousel' : tabName;
+}
+
+function extractOverlayConfig(config, kind) {
+  const source = config && typeof config === 'object' ? config : {};
+
+  if (kind === 'rows') {
+    return cloneConfig({
+      rowsTheme: source.rowsTheme,
+      rowsOverlay: {
+        ...(source.rowsOverlay || {}),
+        holdOnGiftMs: source.rowsOverlay?.holdOnGiftMs ?? source.holdOnGiftMs
+      }
+    });
+  }
+
+  if (kind === 'side-gifts') return cloneConfig({ sideGifts: source.sideGifts });
+  if (kind === 'goal') return cloneConfig({ goalBar: source.goalBar });
+  if (kind === 'top-likers') return cloneConfig({ topLikers: source.topLikers });
+
+  return cloneConfig({
+    rotateMs: source.rotateMs,
+    holdOnGiftMs: source.holdOnGiftMs,
+    labelMs: source.labelMs,
+    visibleNext: source.visibleNext,
+    soundsEnabled: source.soundsEnabled,
+    animationsEnabled: source.animationsEnabled,
+    profileAnimationEnabled: source.profileAnimationEnabled,
+    profileNameEnabled: source.profileNameEnabled,
+    theme: source.theme,
+    carouselTheme: source.carouselTheme,
+    rewards: source.rewards
+  });
+}
 
 function loadDraftConfig() {
   const urlConfig = readConfigFromHash();
@@ -640,6 +731,26 @@ function loadDraftConfig() {
   } catch {
     return normalizeConfig(baseConfig);
   }
+}
+
+function applyRowsDefaultsRevision() {
+  if (window.location.hash) return;
+
+  try {
+    if (localStorage.getItem(rowsDefaultsRevisionKey) === rowsDefaultsRevision) return;
+
+    draftConfig.rowsOverlay = getRevisedRowsDefaults(draftConfig.rowsOverlay);
+    localStorage.setItem(rewardStorageKey, JSON.stringify(draftConfig));
+    localStorage.setItem(rowsDefaultsRevisionKey, rowsDefaultsRevision);
+  } catch {
+    draftConfig.rowsOverlay = getRevisedRowsDefaults(draftConfig.rowsOverlay);
+  }
+}
+
+function getRevisedRowsDefaults(rows = {}) {
+  // A configured array, including an empty one, is always intentional.
+  // Starter IDs cannot identify an untouched design: users customise them.
+  return normalizeRowsOverlay(rows);
 }
 
 function render() {
@@ -659,6 +770,7 @@ function render() {
   rowsDirections.value = draftConfig.rowsOverlay.directions;
   rowsSpeeds.value = draftConfig.rowsOverlay.speeds;
   rowsHeight.value = draftConfig.rowsOverlay.rowHeight;
+  rowsLabelSize.value = draftConfig.rowsOverlay.labelSize;
   rowsGap.value = draftConfig.rowsOverlay.gap;
   rowsNames.value = draftConfig.rowsOverlay.names ? '1' : '0';
   rowsSounds.value = draftConfig.rowsOverlay.soundsEnabled === false ? '0' : '1';
@@ -678,9 +790,10 @@ function render() {
     renderRowsGifts();
   } else if (activeConfigTab === 'side-gifts') {
     renderSideGifts();
-  } else {
+  } else if (activeConfigTab === 'original') {
     renderRewardsList();
   }
+  updateEditorSections();
 
   updateRewardStats();
   updateRowsGiftStats();
@@ -700,6 +813,8 @@ function renderGoalBarForm() {
   goalReset.value = goal.resetOnConnect ? '1' : '0';
   goalWidth.value = goal.width;
   goalHeight.value = goal.height;
+  goalFontFields.forEach(field => { field.input.value = goal[field.key] ?? ''; });
+  renderGoalAppearanceForm();
   updateGoalFieldVisibility();
 
   goalColorFields.forEach(field => {
@@ -707,6 +822,19 @@ function renderGoalBarForm() {
     field.color.value = value;
     field.hex.value = value.toUpperCase();
   });
+}
+
+function renderGoalAppearanceForm() {
+  const appearance = normalizeGoalAppearance(draftConfig.goalBar.appearance);
+  const values = appearance || normalizeGoalAppearance({ enabled: true });
+  goalAppearanceEnabled.checked = Boolean(appearance);
+  goalAppearanceFields.forEach(field => {
+    field.color.value = values[field.key]; field.hex.value = values[field.key].toUpperCase();
+  });
+  goalAppearanceOpacity.value = values.backgroundOpacity;
+  goalAppearanceGlow.value = values.glowStrength;
+  goalAppearanceGloss.checked = values.gloss;
+  document.querySelectorAll('[data-goal-custom-control]').forEach(element => { element.disabled = !appearance; });
 }
 
 function updateGoalFieldVisibility() {
@@ -749,7 +877,7 @@ function renderSideGiftsForm() {
   const sideGifts = draftConfig.sideGifts;
   sideGiftsSide.value = sideGifts.side;
   sideGiftsWidth.value = sideGifts.width;
-  sideGiftsHeight.value = sideGifts.height;
+  sideGiftsHeight.value = getEffectiveSideGiftsPreviewHeight(sideGifts);
   sideGiftsIconSize.value = sideGifts.iconSize;
   sideGiftsGap.value = sideGifts.gap;
   sideGiftsInsetX.value = sideGifts.insetX;
@@ -818,95 +946,7 @@ function updateProfileNameToggleVisibility() {
   }
 }
 
-function renderRewardsList() {
-  rewardList.classList.remove('rows-gift-board');
-  rewardList.append(createInsertRewardControl(0));
-
-  draftConfig.rewards.forEach((reward, index) => {
-    const editor = template.content.firstElementChild.cloneNode(true);
-    editor.dataset.index = String(index);
-    editor.dataset.mode = 'carousel';
-    editor.draggable = true;
-
-    // Set reward number
-    editor.querySelector('.reward-number').textContent = String(index + 1);
-
-    // Setup header
-    editor.querySelector('[data-field="enabled"]').checked = reward.enabled !== false;
-    editor.querySelector('[data-field="title"]').value = reward.title;
-    editor.querySelector('[data-field="triggerType"]').value = reward.triggerType;
-    editor.querySelector('[data-field="likesRequired"]').value = reward.likesRequired;
-    editor.querySelector('[data-field="likesHeartColor"]').value = reward.likesHeartColor;
-    editor.querySelector('[data-field="likesNumberColor"]').value = reward.likesNumberColor;
-    editor.querySelector('[data-field="likesHeartSize"]').value = reward.likesHeartSize;
-    editor.querySelector('[data-field="likesNumberSize"]').value = reward.likesNumberSize;
-
-    // Setup form fields
-    editor.querySelector('[data-field="giftNames"]').value = reward.giftNames.join(', ');
-    editor.querySelector('[data-field="giftIds"]').value = reward.giftIds.join(', ');
-    editor.querySelector('[data-field="image"]').value = reward.image;
-    populateSoundSelect(editor, reward.sound);
-    editor.querySelector('[data-field="sound"]').value = reward.sound;
-    editor.querySelector('[data-field="volume"]').value = reward.volume;
-    populateGiftGrid(editor, reward);
-    updateTriggerFields(editor, reward);
-    alignAudioPreview(editor);
-
-    // Setup preview
-    updatePreview(editor, reward);
-
-    // Setup events
-    editor.addEventListener('input', event => {
-      if (event.target.matches('[data-gift-search]')) {
-        populateGiftGrid(editor, draftConfig.rewards[index], event.target.value);
-        return;
-      }
-
-      if (event.target.dataset.field) {
-        updateRewardFromEditor(index, editor);
-        markDirty();
-        updateEditorState(editor, draftConfig.rewards[index]);
-        if (event.target.matches('[data-field="image"], [data-field="sound"], [data-field="volume"], [data-field="triggerType"], [data-field^="likes"]')) {
-          updatePreview(editor, draftConfig.rewards[index]);
-        }
-      }
-    });
-
-    editor.addEventListener('click', event => {
-      const actionButton = event.target.closest('[data-action]');
-      const action = actionButton?.dataset.action;
-      if (!action) return;
-
-      if (action === 'select-gift-catalog') {
-        applyGiftSelection(index, editor, actionButton.dataset.image);
-        return;
-      }
-
-      if (action === 'toggle-gift-favorite') {
-        toggleGiftFavorite(actionButton.dataset.image);
-        populateGiftGrid(editor, draftConfig.rewards[index], editor.querySelector('[data-gift-search]')?.value || '');
-        return;
-      }
-
-      if (action === 'play-sound') {
-        playSoundPreview(editor, draftConfig.rewards[index]);
-        return;
-      }
-
-      if (action === 'toggle-details') {
-        toggleDetailsSection(editor);
-        return;
-      }
-
-      handleRewardAction(action, index);
-    });
-
-    updateEditorState(editor, reward);
-    setupCarouselRewardDrag(editor, index);
-    rewardList.append(editor);
-    rewardList.append(createInsertRewardControl(index + 1));
-  });
-}
+function renderRewardsList() { renderRowsWorkspace(); }
 
 function setupCarouselRewardDrag(editor, index) {
   editor.addEventListener('dragstart', event => {
@@ -982,65 +1022,7 @@ function clearCarouselDragState() {
 }
 
 function renderRowsGifts() {
-  rememberRowsBoardScroll();
-  ensureRowsGiftRows();
-  rowsGiftList.innerHTML = '';
-  rowsGiftList.classList.add('rows-gift-board');
-
-  for (let rowIndex = 1; rowIndex <= draftConfig.rowsOverlay.rows; rowIndex += 1) {
-    const column = document.createElement('section');
-    const rowGifts = draftConfig.rowsOverlay.gifts
-      .map((gift, index) => ({ gift, index }))
-      .filter(item => item.gift.row === rowIndex);
-
-    column.className = 'rows-gift-column';
-    column.dataset.row = String(rowIndex);
-    column.innerHTML = `
-      <header class="rows-gift-column-header">
-        <strong>Row ${rowIndex}</strong>
-        <span>${rowGifts.length} gifts</span>
-        ${getRowsGiftSettingsMarkup(rowIndex)}
-        <button data-action="delete-row" type="button" title="Delete row">🗑️</button>
-      </header>
-      <div class="rows-gift-dropzone" data-row-dropzone></div>
-    `;
-
-    setupRowsGiftSettings(column, rowIndex);
-
-    const dropzone = column.querySelector('[data-row-dropzone]');
-    setupRowsGiftDropzone(dropzone, rowIndex);
-    dropzone.addEventListener('scroll', () => {
-      rowsBoardScrollState.set(String(rowIndex), dropzone.scrollLeft);
-    });
-
-    rowGifts.forEach(({ gift, index }) => {
-      dropzone.append(createRowsGiftEditor(gift, index));
-    });
-    dropzone.append(createAddCard(`Add gift to row ${rowIndex}`, () => addRowGift(rowIndex)));
-
-    const deleteRowButton = column.querySelector('[data-action="delete-row"]');
-    deleteRowButton?.addEventListener('click', () => deleteRowsBoardRow(rowIndex));
-
-    rowsGiftList.append(column);
-  }
-
-  const newRowDrop = document.createElement('section');
-  newRowDrop.className = 'rows-gift-column rows-gift-new-row';
-  newRowDrop.dataset.row = 'new';
-  newRowDrop.innerHTML = `
-    <header class="rows-gift-column-header">
-      <strong>New row</strong>
-      <span>Drop here or add</span>
-    </header>
-    <div class="rows-gift-dropzone" data-row-dropzone></div>
-  `;
-  const newRowDropzone = newRowDrop.querySelector('[data-row-dropzone]');
-  setupRowsGiftDropzone(newRowDropzone, 'new');
-  newRowDropzone.append(createAddCard('Add new row', addRowsBoardRow));
-  rowsGiftList.append(newRowDrop);
-
-  updateRowsGiftStats();
-  restoreRowsBoardScroll();
+  renderRowsWorkspace();
 }
 
 function getRowsGiftSettingsMarkup(row) {
@@ -1052,7 +1034,7 @@ function getRowsGiftSettingsMarkup(row) {
   return `
     <div class="rows-gift-settings" data-row-settings="${row}">
       <label>
-        <span>Gifts</span>
+        <span>Cards visible</span>
         <input data-row-setting="perRow" type="number" min="1" max="12" step="1" value="${escapeAttribute(perRow)}">
       </label>
       <label>
@@ -1076,6 +1058,7 @@ function getRowsGiftSettingsMarkup(row) {
 
 function setupRowsGiftSettings(column, row) {
   column.querySelectorAll('[data-row-setting]').forEach(input => {
+    input.addEventListener('change',()=>renderRowsWorkspace());
     input.addEventListener('input', () => {
       updateRowsGiftSetting(row, input.dataset.rowSetting, input);
       markDirty();
@@ -1293,16 +1276,7 @@ function createRowsGiftEditor(gift, index) {
     return editor;
 }
 
-function renderSideGifts() {
-  sideGiftList.innerHTML = '';
-  sideGiftList.classList.add('side-gift-board');
-
-  draftConfig.sideGifts.gifts.forEach((gift, index) => {
-    sideGiftList.append(createSideGiftEditor(gift, index));
-  });
-  sideGiftList.append(createAddCard('Add side gift', addSideGift));
-  updateSideGiftStats();
-}
+function renderSideGifts() { renderRowsWorkspace(); }
 
 function createSideGiftEditor(gift, index) {
   const editor = template.content.firstElementChild.cloneNode(true);
@@ -1329,7 +1303,7 @@ function createSideGiftEditor(gift, index) {
   triggerFields?.insertAdjacentHTML('beforeend', `
     <div class="config-field">
       <label>Side</label>
-      <select data-field="side">
+      <select data-field="side" aria-label="Display side">
         <option value="auto"${gift.side === 'auto' ? ' selected' : ''}>Auto split</option>
         <option value="left"${gift.side === 'left' ? ' selected' : ''}>Left</option>
         <option value="right"${gift.side === 'right' ? ' selected' : ''}>Right</option>
@@ -1517,10 +1491,12 @@ function moveRowsGift(sourceIndex, row, beforeIndex = null, insertAfter = false)
     targetGroup.splice(insertIndex, 0, movedGift);
   }
 
+  const selectedIndex = groups.flat().indexOf(rowsSelectedGift);
   draftConfig.rowsOverlay.gifts = groups.flat().map((gift, index) => ({
     ...gift,
     row: clamp(Number(gift.row || 1), 1, draftConfig.rowsOverlay.rows)
   }));
+  rowsSelectedGift = draftConfig.rowsOverlay.gifts[selectedIndex] || null;
 
   markDirty();
   renderPreservingScroll();
@@ -1535,7 +1511,7 @@ function getRowsGiftGroups() {
 
 function ensureRowsGiftRows() {
   const rowCount = draftConfig.rowsOverlay.rows;
-  dedupeRowsGifts();
+  // Each configured card is an independent action, even when gifts repeat.
   const needsAssignment = draftConfig.rowsOverlay.gifts.some(gift => !Number.isInteger(Number(gift.row)));
 
   if (needsAssignment) {
@@ -1571,6 +1547,8 @@ function dedupeRowsGifts() {
 }
 
 function getRowsGiftIdentity(gift) {
+  if (gift.triggerType && gift.triggerType !== 'gift') return ''; // Event cards may intentionally share a gift backup.
+
   const ids = (gift.giftIds || []).map(normalizeId).filter(Boolean);
   if (ids.length) {
     return `id:${ids[0]}`;
@@ -1624,7 +1602,7 @@ function updatePreview(editor, reward) {
 
 function resolveRewardImageUrl(image) {
   const value = String(image || '');
-  if (window.location.hostname.endsWith('github.io') && value.startsWith('./rewards/')) {
+  if (value.startsWith('./rewards/')) {
     return `${remoteRewardImageBase}${encodeURIComponent(value.replace('./rewards/', ''))}`;
   }
 
@@ -1632,13 +1610,13 @@ function resolveRewardImageUrl(image) {
 }
 
 function ensureRowsGiftDefaults() {
-  if (!draftConfig.rowsOverlay.gifts.length) {
+  if (!Array.isArray(draftConfig.rowsOverlay.gifts)) {
     draftConfig.rowsOverlay.gifts = getDefaultRowsGifts().map(normalizeRowsGift);
   }
 }
 
 function ensureSideGiftDefaults() {
-  if (!draftConfig.sideGifts.gifts.length) {
+  if (!Array.isArray(draftConfig.sideGifts.gifts)) {
     draftConfig.sideGifts.gifts = getDefaultSideGifts().map(normalizeSideGift);
   }
 }
@@ -1662,7 +1640,7 @@ function populateSoundSelect(editor, selectedSound = '') {
     return;
   }
 
-  const sounds = [...soundCatalog];
+  const sounds = [...soundCatalog,...(window.studioSoundLibrary||[]).filter(sound=>!sound.removed).map(sound=>({label:sound.name,sound:sound.url}))];
 
   if (selectedSound && !sounds.some(item => item.sound === selectedSound)) {
     sounds.push({ label: getSoundLabel(selectedSound), sound: selectedSound });
@@ -1674,6 +1652,7 @@ function populateSoundSelect(editor, selectedSound = '') {
 }
 
 function getSoundLabel(soundPath) {
+  const hosted=(window.studioSoundLibrary||[]).find(item=>item.url===soundPath);if(hosted)return hosted.name+(hosted.removed?' (removed from library)':'');
   return String(soundPath || '')
     .split('/')
     .pop()
@@ -1765,19 +1744,8 @@ function populateGiftGrid(editor, reward, filter = '') {
   const selectedEntry = getSelectedGiftEntry(reward);
   const selectedImage = selectedEntry?.image || '';
   const query = normalizeName(filter);
-  const matches = getGiftCatalogEntries().filter(entry => {
-    if (!query) return true;
-
-    const haystack = [
-      entry.name,
-      entry.label,
-      entry.id,
-      entry.giftId
-    ].filter(Boolean).join(' ');
-
-    return normalizeName(haystack).includes(query);
-  });
-  const sortedMatches = sortGiftEntriesForPicker(matches);
+  const matches = getGiftCatalogEntries().filter(entry => matchesGiftSearch(entry, filter));
+  const sortedMatches = sortGiftEntriesForPicker(matches, query);
   const entries = getVisibleGiftEntries(sortedMatches, selectedEntry);
 
   if (!matches.length) {
@@ -1797,6 +1765,8 @@ function populateGiftGrid(editor, reward, filter = '') {
         <button data-action="select-gift-catalog" data-image="${escapeAttribute(entry.image)}" type="button" class="gift-catalog-select">
           <img src="${escapeAttribute(resolveRewardImageUrl(entry.image))}" alt="" loading="lazy" decoding="async">
           <strong>${escapeHtml(entry.label)}</strong>
+          <span class="gift-coin-value">${entry.coins !== null && entry.coins !== undefined ? escapeHtml(String(entry.coins)) + ' coins' : 'Coin value unknown'}</span>
+          ${entry.creatorManaged ? '<span class="gift-source-badge">' + (entry.source === 'manual' ? 'Imported' : 'Discovered') + '</span>' : ''}
         </button>
       </div>
     `;
@@ -1813,8 +1783,15 @@ function getVisibleGiftEntries(matches, selectedEntry) {
   return visible;
 }
 
-function sortGiftEntriesForPicker(entries) {
+function sortGiftEntriesForPicker(entries, query = '') {
   return [...entries].sort((first, second) => {
+    const firstRank = getGiftSearchRank(first, query);
+    const secondRank = getGiftSearchRank(second, query);
+
+    if (firstRank !== secondRank) {
+      return firstRank - secondRank;
+    }
+
     const firstFavorite = isGiftFavorite(first.image) ? 0 : 1;
     const secondFavorite = isGiftFavorite(second.image) ? 0 : 1;
 
@@ -1826,12 +1803,35 @@ function sortGiftEntriesForPicker(entries) {
   });
 }
 
+function getGiftSearchRank(entry, query) {
+  const normalizedQuery = normalizeName(query);
+  if (!normalizedQuery) return 0;
+
+  const values = [
+    entry.name,
+    entry.label,
+    entry.id,
+    entry.giftId
+  ]
+    .map(normalizeName)
+    .filter(Boolean);
+  if (values.some(value => value === normalizedQuery)) return 0;
+  if (values.some(value => value.startsWith(normalizedQuery))) return 1;
+
+  const words = values.flatMap(value => value.split(/\s+/).filter(Boolean));
+  if (words.some(word => word === normalizedQuery)) return 2;
+  if (words.some(word => word.startsWith(normalizedQuery))) return 3;
+  return 4;
+}
+
 function getGiftFavoriteKey(imagePath) {
+  if(String(imagePath).startsWith('id:'))return String(imagePath);
+  try{const entry=getImageCatalogEntry(imagePath);if(entry?.id)return 'id:'+entry.id;}catch{}
   return normalizePath(imagePath).toLowerCase();
 }
 
 function isGiftFavorite(imagePath) {
-  return giftFavorites.has(getGiftFavoriteKey(imagePath));
+  return giftFavorites.has(getGiftFavoriteKey(imagePath))||giftFavorites.has(normalizePath(imagePath).toLowerCase());
 }
 
 function toggleGiftFavorite(imagePath) {
@@ -1842,8 +1842,8 @@ function toggleGiftFavorite(imagePath) {
     return;
   }
 
-  if (giftFavorites.has(key)) {
-    giftFavorites.delete(key);
+  if (isGiftFavorite(imagePath)) {
+    giftFavorites.delete(key);giftFavorites.delete(normalizePath(imagePath).toLowerCase());
     setState(`Removed favourite: ${entry.label}`);
   } else {
     giftFavorites.add(key);
@@ -1875,25 +1875,11 @@ function getGiftGridSummary(total, visible) {
 }
 
 function getSelectedGiftEntry(reward) {
-  const giftNames = reward?.giftNames || [];
-  const giftIds = reward?.giftIds || [];
+  const views = editorCatalogueViews();
   const image = normalizePath(reward?.image || '').toLowerCase();
-  const normalizedNames = giftNames.map(normalizeName);
-  const normalizedIds = giftIds.map(id => String(id));
-  const entries = getGiftCatalogEntries();
-
-  if (image) {
-    const imageMatch = entries.find(entry => normalizePath(entry.image || '').toLowerCase() === image);
-    if (imageMatch) {
-      return imageMatch;
-    }
-  }
-
-  return entries.find(entry => normalizedNames.includes(normalizeName(entry.name || entry.label))) ||
-    entries.find(entry => {
-      const id = String(entry.id || entry.giftId || '');
-      return id && normalizedIds.includes(id);
-    });
+  const byImage = image && imageCatalog.get(image);
+  return byImage || (reward?.giftIds || []).map(id => views.byId.get(String(id))).find(Boolean)
+    || (reward?.giftNames || []).map(name => views.byName.get(normalizeName(name))).find(Boolean);
 }
 
 function addImageCatalogEntry(entry) {
@@ -1912,6 +1898,7 @@ function addImagePath(imagePath, label = '', details = {}) {
   const current = imageCatalog.get(key) || {};
   const id = normalizeId(details.id || details.giftId || current.id || current.giftId || getIdFromLabel(label || details.label || current.label) || getIdFromImagePath(normalizedPath));
 
+  invalidateEditorCatalogue();
   imageCatalog.set(key, {
     ...current,
     ...details,
@@ -1922,11 +1909,15 @@ function addImagePath(imagePath, label = '', details = {}) {
 }
 
 function getImageCatalogEntries() {
-  return [...imageCatalog.values()].sort((first, second) => first.label.localeCompare(second.label));
+  return editorCatalogueViews().entries;
 }
 
 function getGiftCatalogEntries() {
-  return getImageCatalogEntries().filter(entry => entry.image);
+  const views = editorCatalogueViews();
+  if(views.gifts && views.archive === includeGiftArchive && views.current === currentGiftCatalogue && views.creator === creatorGiftEntries)return views.gifts;
+  const creatorIds = new Set(creatorGiftEntries.map(gift=>gift.id));
+  views.archive=includeGiftArchive;views.current=currentGiftCatalogue;views.creator=creatorGiftEntries;
+  return views.gifts=views.entries.filter(entry=>entry.image&&String(entry.label||entry.name||'').trim()&&(!currentGiftCatalogue?.gifts?.length||includeGiftArchive||entry.catalogueManaged||entry.creatorManaged)&&(entry.creatorManaged||!creatorIds.has(entry.id)||includeGiftArchive));
 }
 
 function getImageCatalogEntry(imagePath) {
@@ -2027,18 +2018,63 @@ function updateSideGiftStats() {
 }
 
 function setActiveTab(tabName) {
+  if (tabName === activeConfigTab && !document.body.classList.contains('studio-output-active')) return;
   activeConfigTab = tabName;
+  window.dispatchEvent(new CustomEvent('rewardconfig:tabchanged', { detail: { tabName } }));
 
   tabButtons.forEach(button => {
     button.classList.toggle('is-active', button.dataset.configTab === tabName);
+    if (button.dataset.configTab === tabName) button.setAttribute('aria-current', 'page'); else button.removeAttribute('aria-current');
   });
+
+  const activeButton = Array.from(tabButtons).find(button => button.dataset.configTab === tabName);
+  if (studioCurrentTitle && activeButton) {
+    studioCurrentTitle.textContent = activeButton.dataset.studioTitle || activeButton.textContent.trim();
+  }
 
   configPanels.forEach(panel => {
     panel.hidden = panel.dataset.configPanel !== tabName;
   });
 
-  addRewardButton.hidden = true;
+  setStudioWorkspace('editor');
   renderPreservingScroll();
+}
+
+function setStudioWorkspace(workspace, options = {}) {
+  const showOutputs = workspace === 'outputs';
+  document.body.classList.toggle('studio-output-active', showOutputs);
+
+  if (studioOutputWorkspace) studioOutputWorkspace.hidden = !showOutputs;
+  studioOutputTab?.classList.toggle('is-active', showOutputs);
+  studioOutputTab?.setAttribute('aria-pressed', String(showOutputs));
+  document.title = `King Gumption Studio — ${showOutputs ? 'Canvas Designer' : 'Overlay Editor'}`;
+
+  if (showOutputs) {
+    tabButtons.forEach(button => button.classList.remove('is-active'));
+    if (studioOutputFrame && !studioOutputFrame.hasAttribute('src')) {
+      studioOutputFrame.src = studioOutputFrame.dataset.src;
+    } else {
+      activateOutputFrame();
+    }
+  } else {
+    const activeButton = Array.from(tabButtons).find(button => button.dataset.configTab === activeConfigTab);
+    activeButton?.classList.add('is-active');
+  }
+
+  syncEditorPreviewActivity();
+  if (options.updateUrl === false) return;
+  const url = new URL(window.location.href);
+  if (showOutputs) {
+    url.searchParams.set('workspace', 'outputs');
+  } else {
+    url.searchParams.delete('workspace');
+  }
+  history.replaceState(history.state, '', `${url.pathname}${url.search}${url.hash}`);
+}
+
+function activateOutputFrame() {
+  if (studioOutputFrame?.dataset.ready !== '1') return;
+  studioOutputFrame?.contentWindow?.postMessage({ type: 'studio:activate-output' }, window.location.origin);
 }
 
 function updateGlobalsFromForm() {
@@ -2054,6 +2090,7 @@ function updateGlobalsFromForm() {
 }
 
 function updateRowsFromForm() {
+  const currentGifts = draftConfig.rowsOverlay.gifts;
   draftConfig.rowsOverlay = normalizeRowsOverlay({
     rows: rowsCount.value,
     perRow: rowsPerRow.value,
@@ -2061,6 +2098,7 @@ function updateRowsFromForm() {
     directions: rowsDirections.value,
     speeds: rowsSpeeds.value,
     rowHeight: rowsHeight.value,
+    labelSize: rowsLabelSize.value,
     gap: rowsGap.value,
     names: rowsNames.value !== '0',
     soundsEnabled: rowsSounds.value !== '0',
@@ -2069,11 +2107,23 @@ function updateRowsFromForm() {
     profileNameEnabled: rowsProfileAnimation.value === '1' && rowsProfileName.value === '1',
     gifts: draftConfig.rowsOverlay.gifts
   });
+  // Saving normalizes values, but inspector handlers must retain the same card objects.
+  draftConfig.rowsOverlay.gifts = draftConfig.rowsOverlay.gifts.map((gift, index) => Object.assign(currentGifts[index] || {}, gift));
   ensureRowsGiftRows();
 }
 
 function updateGoalBarFromForm() {
+  const appearance = goalAppearanceEnabled.checked ? {
+    enabled: true,
+    ...(draftConfig.goalBar.appearance?.noBackground?{noBackground:true}:{}),
+    ...Object.fromEntries(goalAppearanceFields.map(field => [field.key, field.color.value])),
+    backgroundOpacity: goalAppearanceOpacity.value,
+    glowStrength: goalAppearanceGlow.value,
+    gloss: goalAppearanceGloss.checked
+  } : undefined;
   draftConfig.goalBar = normalizeGoalBar({
+    ...(draftConfig.goalBar.graphic?{graphic:draftConfig.goalBar.graphic}:{}),
+    appearance,
     type: goalType.value,
     useLiveFollowerCount: goalLiveFollowers.value !== '0',
     label: goalLabel.value,
@@ -2083,6 +2133,7 @@ function updateGoalBarFromForm() {
     resetOnConnect: goalReset.value !== '0',
     width: goalWidth.value,
     height: goalHeight.value,
+    ...Object.fromEntries(goalFontFields.map(field => [field.key, field.input.value])),
     accent: goalColorFields.find(field => field.key === 'accent')?.hex.value,
     glow: goalColorFields.find(field => field.key === 'glow')?.hex.value,
     text: goalColorFields.find(field => field.key === 'text')?.hex.value
@@ -2091,6 +2142,7 @@ function updateGoalBarFromForm() {
 
 function updateTopLikersFromForm() {
   draftConfig.topLikers = normalizeTopLikers({
+    ...(draftConfig.topLikers.graphic?{graphic:draftConfig.topLikers.graphic}:{}),
     limit: topLikersLimit.value,
     showAvatar: topLikersAvatars.value !== '0',
     showNames: topLikersNames.value !== '0',
@@ -2125,11 +2177,13 @@ function updateTopLikersPreviewFrameSize() {
 }
 
 function updateSideGiftsFromForm() {
+  const currentGifts = draftConfig.sideGifts.gifts;
   draftConfig.sideGifts = normalizeSideGifts({
+    ...(draftConfig.sideGifts.graphic?{graphic:draftConfig.sideGifts.graphic}:{}),
     ...draftConfig.sideGifts,
     side: sideGiftsSide.value,
     width: sideGiftsWidth.value,
-    height: sideGiftsHeight.value,
+    height: getEffectiveSideGiftsPreviewHeight(draftConfig.sideGifts),
     iconSize: sideGiftsIconSize.value,
     gap: sideGiftsGap.value,
     insetX: sideGiftsInsetX.value,
@@ -2148,6 +2202,9 @@ function updateSideGiftsFromForm() {
     profileAnimationEnabled: sideGiftsProfileAnimation.value === '1',
     profileNameEnabled: sideGiftsProfileAnimation.value === '1' && sideGiftsProfileName.value === '1'
   });
+  draftConfig.sideGifts.gifts = draftConfig.sideGifts.gifts.map((gift,index)=>Object.assign(currentGifts[index] || {},gift));
+  draftConfig.sideGifts.height = getEffectiveSideGiftsPreviewHeight(draftConfig.sideGifts);
+  sideGiftsHeight.value = draftConfig.sideGifts.height;
   sideGiftsColorFields.forEach(field => {
     draftConfig.sideGifts[field.key] = normalizeHex(field.hex.value, defaultSideGifts[field.key]);
   });
@@ -2241,6 +2298,8 @@ function renderThemeForm() {
 
 function updateThemeFromForm() {
   const nextTheme = {
+    ...(draftConfig.carouselTheme?.graphic?{graphic:draftConfig.carouselTheme.graphic}:{}),
+    ...(draftConfig.carouselTheme?.backgroundEnabled===false?{backgroundEnabled:false}:{}),
     preset: themePreset.value,
     opacity: clamp(Number(themeOpacity.value), 0.35, 1),
     glowStrength: clamp(Number(themeGlowStrength.value), 0, 1.5)
@@ -2266,6 +2325,8 @@ function updateThemeFromForm() {
 
 function updateRowsThemeFromForm() {
   const nextTheme = {
+    ...(draftConfig.rowsTheme?.graphic?{graphic:draftConfig.rowsTheme.graphic}:{}),
+    ...(draftConfig.rowsTheme?.backgroundEnabled===false?{backgroundEnabled:false}:{}),
     preset: rowsThemePreset.value,
     opacity: clamp(Number(rowsThemeOpacity.value), 0.35, 1),
     glowStrength: clamp(Number(rowsThemeGlowStrength.value), 0, 1.5)
@@ -2529,10 +2590,6 @@ function moveReward(sourceIndex, targetIndex) {
   renderPreservingScroll();
 }
 
-function addReward() {
-  insertReward(draftConfig.rewards.length);
-}
-
 function insertReward(index) {
   draftConfig.rewards.splice(index, 0, {
     enabled: false,
@@ -2652,174 +2709,17 @@ function deleteRowsBoardRow(row) {
   renderPreservingScroll();
 }
 
-function saveConfig() {
-  updateGlobalsFromForm();
-  updateRowsFromForm();
-  updateRowsThemeFromForm();
-  updateGoalBarFromForm();
-  updateTopLikersFromForm();
-  localStorage.setItem(rewardStorageKey, JSON.stringify(draftConfig));
-
-  const version = saveNamedConfigVersion();
-  renderConfigVersions(version?.id);
-  setState(version ? `Saved version: ${version.name}` : 'Saved for this browser');
-}
-
 function resetConfig() {
-  if (!confirm('Reset all rewards to file config? This cannot be undone.')) return;
-  draftConfig = normalizeConfig(baseConfig);
+  if (!confirm('Reset this overlay to its starter settings? You can undo the reset before leaving this design.')) return;
+  const kind=overlayKindFromTab(activeConfigTab);
+  draftConfig = normalizeConfig({...draftConfig,...extractOverlayConfig(normalizeConfig(baseConfig),kind)});
   localStorage.removeItem(rewardStorageKey);
   if (window.location.hash) {
     history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
   }
-  setState('Reset to file config');
+  markDirty();
+  setState('Reset to file config — unsaved changes');
   renderPreservingScroll();
-}
-
-function saveNamedConfigVersion() {
-  const selectedVersion = getSelectedConfigVersion();
-  const name = normalizeVersionName(configVersionName.value || selectedVersion?.name || '');
-
-  if (!name) {
-    return null;
-  }
-
-  const versions = loadConfigVersions();
-  const selectedId = configVersionSelect.value;
-  const existingIndex = selectedId
-    ? versions.findIndex(version => version.id === selectedId)
-    : versions.findIndex(version => normalizeName(version.name) === normalizeName(name));
-  const now = new Date().toISOString();
-  const nextVersion = {
-    id: existingIndex >= 0 ? versions[existingIndex].id : createConfigVersionId(),
-    name,
-    updatedAt: now,
-    config: cloneConfig(draftConfig)
-  };
-
-  if (existingIndex >= 0) {
-    versions[existingIndex] = nextVersion;
-  } else {
-    versions.push(nextVersion);
-  }
-
-  saveConfigVersions(versions);
-  return nextVersion;
-}
-
-function loadSelectedConfigVersion() {
-  const version = getSelectedConfigVersion();
-  if (!version) {
-    setState('Choose a saved version first');
-    configVersionSelect.focus();
-    return;
-  }
-
-  draftConfig = normalizeConfig(version.config);
-  ensureRowsGiftDefaults();
-  localStorage.setItem(rewardStorageKey, JSON.stringify(draftConfig));
-  configVersionName.value = version.name;
-  applyThemeToDocument(getCarouselTheme());
-  render();
-  renderConfigVersions(version.id);
-  setState(`Loaded version: ${version.name}`);
-}
-
-function deleteSelectedConfigVersion() {
-  const version = getSelectedConfigVersion();
-  if (!version) {
-    setState('Choose a saved version first');
-    configVersionSelect.focus();
-    return;
-  }
-
-  if (!confirm(`Delete saved version "${version.name}"?`)) {
-    return;
-  }
-
-  saveConfigVersions(loadConfigVersions().filter(item => item.id !== version.id));
-  configVersionName.value = '';
-  renderConfigVersions();
-  setState(`Deleted version: ${version.name}`);
-}
-
-function getSelectedConfigVersion() {
-  const selectedId = configVersionSelect.value;
-  return loadConfigVersions().find(version => version.id === selectedId) || null;
-}
-
-function renderConfigVersions(selectedId = configVersionSelect.value) {
-  const versions = loadConfigVersions();
-  configVersionSelect.innerHTML = '<option value="">Saved versions</option>';
-
-  versions.forEach(version => {
-    const option = document.createElement('option');
-    option.value = version.id;
-    option.textContent = `${version.name} (${formatVersionDate(version.updatedAt)})`;
-    configVersionSelect.append(option);
-  });
-
-  configVersionSelect.value = versions.some(version => version.id === selectedId) ? selectedId : '';
-}
-
-function loadConfigVersions() {
-  try {
-    const versions = JSON.parse(localStorage.getItem(rewardVersionsStorageKey) || '[]');
-    return Array.isArray(versions)
-      ? versions
-        .filter(version => version && version.id && version.name && version.config)
-        .sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')))
-      : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveConfigVersions(versions) {
-  localStorage.setItem(rewardVersionsStorageKey, JSON.stringify(versions));
-}
-
-function normalizeVersionName(value) {
-  return String(value || '').replace(/\s+/g, ' ').trim();
-}
-
-function createConfigVersionId() {
-  if (window.crypto?.randomUUID) {
-    return window.crypto.randomUUID();
-  }
-
-  return `version-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function formatVersionDate(value) {
-  const date = new Date(value);
-
-  if (Number.isNaN(date.getTime())) {
-    return 'saved';
-  }
-
-  return date.toLocaleString([], {
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-}
-
-function copyOverlayUrl(page, successText) {
-  updateGlobalsFromForm();
-  updateRowsFromForm();
-  updateRowsThemeFromForm();
-  updateGoalBarFromForm();
-  updateTopLikersFromForm();
-
-  const url = getUrlForPage(page, draftConfig);
-
-  copyText(url.toString()).then(() => {
-    setState(`✓ ${successText}`);
-  }).catch(() => {
-    setState('Could not copy URL');
-  });
 }
 
 function loadConfigFromUrlInput() {
@@ -2841,10 +2741,15 @@ function loadConfigFromUrlInput() {
   ensureRowsGiftDefaults();
   applyThemeToDocument(getCarouselTheme());
   render();
-  setState('✓ URL loaded — unsaved changes');
+  markDirty();
 }
 
 function getUrlForPage(page, config = draftConfig, options = {}) {
+  const graphicKind=page.includes('rows')?'rows':page.includes('side-gifts')?'side-gifts':page.includes('top-likers')?'top-likers':page.includes('thin')?'goal':'carousel';
+  if(window.KGGraphics?.definition(graphicKind,config)){
+    const url=new URL('./index-graphic.html',location.href);url.searchParams.set('kind',graphicKind);url.searchParams.set('preview','1');url.searchParams.set('mute','1');url.searchParams.set('sampleEvents',options.test||options.sampleEvents?'1':'0');
+    const bytes=new TextEncoder().encode(JSON.stringify(config));let binary='';bytes.forEach(b=>binary+=String.fromCharCode(b));url.hash='config='+btoa(binary).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/g,'');return url;
+  }
   const url = new URL(window.location.href);
   const pathParts = url.pathname.split('/');
   pathParts[pathParts.length - 1] = page;
@@ -2860,15 +2765,21 @@ function getUrlForPage(page, config = draftConfig, options = {}) {
     search.set('mute', '1');
   }
 
+  if(typeof options.sampleEvents==='boolean')search.set('sampleEvents',options.sampleEvents?'1':'0');
   if (options.previewFit) {
     search.set('previewFit', '1');
   }
 
+  if (options.stateKey) {
+    search.set('stateKey', String(options.stateKey));
+  }
+
   if (options.preview || options.test) {
-    search.set('previewRefresh', String(options.previewRefresh || 0));
+    search.set('previewRefresh', 'stable');
+    search.set('editorPreview','1');
   }
   url.search = search.toString();
-  url.hash = `config=${encodeURIComponent(page === 'index-thin.html' ? encodeGoalConfig(config) : encodeConfig(config))}`;
+  url.hash = `config=${encodeURIComponent(page === 'index-thin.html' ? encodeGoalConfig(config) : (options.preview || options.test ? encodeEditorPreviewConfig(page, config) : encodeConfig(config)))}`;
   return url;
 }
 
@@ -2882,23 +2793,6 @@ function getShareSearchParams() {
   }
 
   return shareParams.toString();
-}
-
-function copyText(text) {
-  if (navigator.clipboard?.writeText) {
-    return navigator.clipboard.writeText(text);
-  }
-
-  const input = document.createElement('textarea');
-  input.value = text;
-  input.setAttribute('readonly', '');
-  input.style.position = 'fixed';
-  input.style.opacity = '0';
-  document.body.append(input);
-  input.select();
-  const copied = document.execCommand('copy');
-  input.remove();
-  return copied ? Promise.resolve() : Promise.reject(new Error('copy failed'));
 }
 
 function readConfigFromHash() {
@@ -2985,6 +2879,7 @@ function compactThemeForUrl(theme) {
   const normalized = normalizeTheme(theme || {});
   const presetTheme = themePresets[normalized.preset] || defaultTheme;
   return removeEmptyUrlFields({
+    j: normalized.backgroundEnabled===false?0:undefined,
     p: normalized.preset !== 'glass-purple' ? normalized.preset : undefined,
     a: normalizeHex(normalized.accent, '') !== normalizeHex(presetTheme.accent, '') ? normalized.accent : undefined,
     b: normalizeHex(normalized.secondary, '') !== normalizeHex(presetTheme.secondary, '') ? normalized.secondary : undefined,
@@ -3007,12 +2902,13 @@ function compactRowsOverlayForUrl(rowsOverlay) {
     d: rows.directions !== 'left,left' ? rows.directions : undefined,
     e: rows.speeds !== '28,28' ? rows.speeds : undefined,
     f: rows.rowHeight !== 96 ? rows.rowHeight : undefined,
+    n: rows.labelSize !== 11 ? rows.labelSize : undefined,
     g: rows.gap || undefined,
     h: rows.names === false ? 0 : undefined,
     i: rows.soundsEnabled === false ? 0 : undefined,
     k: rows.animationsEnabled === false ? 0 : undefined,
-    l: rows.profileAnimationEnabled === true ? 1 : undefined,
-    m: rows.profileAnimationEnabled === true && rows.profileNameEnabled === true ? 1 : undefined,
+    l: rows.profileAnimationEnabled === false ? 0 : undefined,
+    m: rows.profileAnimationEnabled !== false && rows.profileNameEnabled === false ? 0 : undefined,
     j: rows.gifts.map(compactRowsGiftForUrl)
   });
 }
@@ -3077,7 +2973,11 @@ function compactGoalBarForUrl(goalBar) {
     i: normalizeHex(goal.text, '') !== defaultGoalBar.text ? goal.text : undefined,
     j: goal.type !== defaultGoalBar.type ? goal.type : undefined,
     l: goal.target !== defaultGoalBar.target ? goal.target : undefined,
-    m: goal.useLiveFollowerCount === false ? 0 : undefined
+    m: goal.useLiveFollowerCount === false ? 0 : undefined,
+    n: goal.appearance,
+    o: goal.labelSize,
+    p: goal.counterSize,
+    r: goal.targetSize
   });
 }
 
@@ -3108,14 +3008,20 @@ function compactTopLikersForUrl(topLikers) {
     t: normalizeHex(likers.muted, '') !== defaultTopLikers.muted ? likers.muted : undefined,
     u: normalizeHex(likers.glow, '') !== defaultTopLikers.glow ? likers.glow : undefined,
     v: decimalsMatch(likers.opacity, defaultTopLikers.opacity) ? undefined : likers.opacity,
-    x: decimalsMatch(likers.tileOpacity, defaultTopLikers.tileOpacity) ? undefined : likers.tileOpacity
+    x: decimalsMatch(likers.tileOpacity, defaultTopLikers.tileOpacity) ? undefined : likers.tileOpacity,
+    aa: normalizeHex(likers.milestoneCard, '') !== defaultTopLikers.milestoneCard ? likers.milestoneCard : undefined,
+    ac:likers.firstPlaceAccent,ad:likers.firstPlaceText,
+    ab: normalizeHex(likers.milestoneText, '') !== defaultTopLikers.milestoneText ? likers.milestoneText : undefined
   });
 }
 
 
 function compactRowsGiftForUrl(gift) {
   return compactGiftForUrl(gift, {
-    r: Number.isInteger(Number(gift.row)) ? Number(gift.row) : undefined
+    r: Number.isInteger(Number(gift.row)) ? Number(gift.row) : undefined,
+    u: gift.useGiftImage ? 1 : 0,
+    x: gift.giftImageNames?.length ? gift.giftImageNames : undefined,
+    y: gift.giftImageIds?.length ? gift.giftImageIds : undefined
   });
 }
 
@@ -3145,11 +3051,11 @@ function compactGiftForUrl(gift, extra = {}) {
     s: gift.sound || undefined,
     v: Number(gift.volume ?? 0.85) !== 0.85 ? gift.volume : undefined,
     q: normalizeTriggerType(gift.triggerType) !== 'gift' ? normalizeTriggerType(gift.triggerType) : undefined,
-    l: normalizeTriggerType(gift.triggerType) === 'likes' ? gift.likesRequired : undefined,
-    j: normalizeTriggerType(gift.triggerType) === 'likes' && gift.likesHeartColor !== '#ef233c' ? gift.likesHeartColor : undefined,
-    k: normalizeTriggerType(gift.triggerType) === 'likes' && gift.likesNumberColor !== '#ffffff' ? gift.likesNumberColor : undefined,
-    o: normalizeTriggerType(gift.triggerType) === 'likes' && gift.likesHeartSize !== 160 ? gift.likesHeartSize : undefined,
-    p: normalizeTriggerType(gift.triggerType) === 'likes' && gift.likesNumberSize !== 96 ? gift.likesNumberSize : undefined,
+    l: gift.likesRequired !== 50 ? gift.likesRequired : undefined,
+    j: gift.likesHeartColor !== '#ef233c' ? gift.likesHeartColor : undefined,
+    k: gift.likesNumberColor !== '#ffffff' ? gift.likesNumberColor : undefined,
+    o: gift.likesHeartSize !== 160 ? gift.likesHeartSize : undefined,
+    p: gift.likesNumberSize !== 96 ? gift.likesNumberSize : undefined,
     ...extra
   });
 }
@@ -3186,6 +3092,7 @@ function expandCompactTheme(theme) {
 
   return removeEmptyUrlFields({
     preset: theme.p || 'glass-purple',
+    ...(theme.j===0?{backgroundEnabled:false}:{}),
     accent: theme.a,
     secondary: theme.b,
     background: theme.c,
@@ -3210,12 +3117,13 @@ function expandCompactRowsOverlay(rows) {
     directions: rows.d,
     speeds: rows.e,
     rowHeight: rows.f,
+    labelSize: rows.n,
     gap: rows.g,
     names: rows.h === 0 ? false : undefined,
     soundsEnabled: rows.i === 0 ? false : undefined,
     animationsEnabled: rows.k === 0 ? false : undefined,
-    profileAnimationEnabled: rows.l === 1 ? true : undefined,
-    profileNameEnabled: rows.m === 1 ? true : undefined,
+    profileAnimationEnabled: rows.l === 0 ? false : rows.l === 1 ? true : undefined,
+    profileNameEnabled: rows.m === 0 ? false : rows.m === 1 ? true : undefined,
     gifts: Array.isArray(rows.j) ? rows.j.map(expandCompactRowsGift) : undefined
   });
 }
@@ -3286,7 +3194,9 @@ function expandCompactGoalBar(goal) {
     text: goal.i,
     type: goal.j,
     target: goal.l,
-    useLiveFollowerCount: goal.m === 0 ? false : undefined
+    useLiveFollowerCount: goal.m === 0 ? false : undefined,
+    ...normalizeGoalFonts({ labelSize: goal.o, counterSize: goal.p, targetSize: goal.r }),
+    appearance: normalizeGoalAppearance(goal.n)
   });
 }
 
@@ -3320,7 +3230,10 @@ function expandCompactTopLikers(likers) {
     muted: likers.t,
     glow: likers.u,
     opacity: likers.v,
-    tileOpacity: likers.x
+    tileOpacity: likers.x,
+    firstPlaceAccent:likers.ac,firstPlaceText:likers.ad,
+    milestoneCard: likers.aa,
+    milestoneText: likers.ab
   });
 }
 
@@ -3328,7 +3241,10 @@ function expandCompactTopLikers(likers) {
 function expandCompactRowsGift(gift) {
   return {
     ...expandCompactGift(gift),
-    row: gift?.r
+    row: gift?.r,
+    useGiftImage: gift?.u === undefined ? undefined : gift.u === 1,
+    giftImageNames: Array.isArray(gift?.x) ? gift.x : [],
+    giftImageIds: Array.isArray(gift?.y) ? gift.y : []
   };
 }
 
@@ -3379,8 +3295,9 @@ function scheduleOverlayPreviewRefresh() {
   previewRefreshTimer = setTimeout(refreshOverlayPreviews, 240);
 }
 
-function refreshOverlayPreviews() {
+function refreshOverlayPreviews(options = {}) {
   const previewConfig = cloneConfig(draftConfig);
+  const initializeAll = options?.initializeAll === true;
   previewRefreshIndex += 1;
   const refreshCarousel = activeConfigTab === 'original';
   const refreshRows = activeConfigTab === 'rows';
@@ -3412,6 +3329,7 @@ function refreshOverlayPreviews() {
       test: Boolean(sideGiftsPreviewTest?.checked),
       preview: !sideGiftsPreviewTest?.checked,
       previewFit: true,
+      mute: document.querySelector('#side-gifts-preview-mute')?.checked !== false,
       previewRefresh: previewRefreshIndex
     }));
   }
@@ -3419,6 +3337,7 @@ function refreshOverlayPreviews() {
   if (goalPreview && refreshGoal) {
     setPreviewUrl(goalPreview, getUrlForPage('index-thin.html', previewConfig, {
       preview: true,
+      sampleEvents: document.querySelector('#goal-preview-test')?.checked !== false,
       previewRefresh: previewRefreshIndex
     }));
   }
@@ -3426,13 +3345,21 @@ function refreshOverlayPreviews() {
   if (topLikersPreview && refreshTopLikers) {
     updateTopLikersPreviewFrameSize();
     setPreviewUrl(topLikersPreview, getUrlForPage('index-top-likers-test.html', previewConfig, {
-      test: true,
+      test: document.querySelector('#top-likers-preview-test')?.checked !== false,
+      preview: document.querySelector('#top-likers-preview-test')?.checked === false,
+      stateKey: 'editor-preview',
       previewRefresh: previewRefreshIndex
     }));
   }
 }
 
 function setPreviewUrl(frame, url) {
+  const kind=frame===carouselPreview?'carousel':frame===rowsPreview?'rows':frame===sideGiftsPreview?'side-gifts':frame===goalPreview?'goal':'top-likers';
+  const config=extractOverlayConfig(draftConfig,kind),withoutTheme=value=>{const copy=cloneConfig(value);delete copy.theme;delete copy.carouselTheme;delete copy.rowsTheme;return JSON.stringify(copy);};
+  const old=frame.studioConfig;frame.studioConfig=cloneConfig(config);
+  if(old&&withoutTheme(old)===withoutTheme(config)&&frame.contentWindow?.studioApplyTheme&&new URL(frame.src).searchParams.get('test')===url.searchParams.get('test')&&new URL(frame.src).searchParams.get('mute')===url.searchParams.get('mute')){
+    frame.contentWindow.studioApplyTheme(config);frame.dataset.previewUrl=url.toString();return;
+  }
   const nextUrl = url.toString();
 
   if (frame.dataset.previewUrl === nextUrl) {
@@ -3441,22 +3368,28 @@ function setPreviewUrl(frame, url) {
 
   preserveScrollDuring(() => {
     frame.dataset.previewUrl = nextUrl;
-    frame.src = nextUrl;
+    frame.addEventListener('load', () => {fitEditorPreview(frame);syncEditorPreviewActivity();}, {once:true});
+    const navigationUrl = new URL(nextUrl);
+    navigationUrl.searchParams.set('previewRefresh', String(previewRefreshIndex));
+    frame.src = navigationUrl.toString();
   });
 }
 
 function markDirty() {
   scheduleOverlayPreviewRefresh();
   setState('⚠ Unsaved changes');
+  window.dispatchEvent(new CustomEvent('rewardconfig:changed'));
 }
 
 function setState(text) {
-  configState.textContent = text;
+  const label=String(text).replace(/^[\s✓⚠\uFE0F]+/u,'').trim();
+  configState.textContent=label;configState.title=label;
+  configState.dataset.state=/unsaved/i.test(label)?'warning':/failed|could not|error/i.test(label)?'error':'ready';
 }
 
 function normalizeConfig(config) {
   const fallbackRewards = Array.isArray(baseConfig.rewards) ? baseConfig.rewards : [];
-  const rewards = Array.isArray(config.rewards) && config.rewards.length ? config.rewards : fallbackRewards;
+  const rewards = Array.isArray(config.rewards) ? config.rewards : fallbackRewards;
   const themeSource = config.theme || config.carouselTheme || {};
   const carouselThemeSource = config.carouselTheme || config.theme || {};
   const rowsThemeSource = config.rowsTheme || config.theme || config.carouselTheme || {};
@@ -3504,6 +3437,8 @@ function normalizeTheme(theme) {
 
   return {
     preset,
+    ...(theme.graphic?{graphic:theme.graphic}:{}),
+    ...(theme.backgroundEnabled===false?{backgroundEnabled:false}:{}),
     accent: normalizeHex(theme.accent, presetTheme.accent),
     secondary: normalizeHex(theme.secondary, presetTheme.secondary),
     background: normalizeHex(theme.background, presetTheme.background),
@@ -3611,23 +3546,25 @@ function applyThemeToDocument(themeInput) {
 }
 
 function normalizeRowsOverlay(config) {
-  const hasConfiguredGifts = Array.isArray(config.gifts) && config.gifts.length > 0;
-  const gifts = hasConfiguredGifts ? config.gifts : getDefaultRowsGifts();
-  const migratedGap = !hasConfiguredGifts && Number(config.gap) === 12 ? 0 : config.gap;
+  const useDefaultGifts = !Array.isArray(config.gifts);
+  const gifts = useDefaultGifts ? getDefaultRowsGifts() : config.gifts;
+  const migratedGap = config.gap;
 
   return {
     rows: clamp(numberOrDefault(config.rows, 2), 1, 8),
+    schemaVersion: 1,
     perRow: normalizeCsv(config.perRow, '6,6'),
     scrollRows: normalizeCsv(config.scrollRows, ''),
     directions: normalizeCsv(config.directions, 'left,left'),
     speeds: normalizeCsv(config.speeds, '28,28'),
     rowHeight: clamp(numberOrDefault(config.rowHeight, 96), 64, 160),
+    labelSize: clamp(numberOrDefault(config.labelSize, 11), 8, 24),
     gap: clamp(numberOrDefault(migratedGap, 0), 0, 32),
     names: config.names !== false,
     soundsEnabled: config.soundsEnabled !== false,
     animationsEnabled: config.animationsEnabled !== false,
-    profileAnimationEnabled: config.profileAnimationEnabled === true,
-    profileNameEnabled: config.profileAnimationEnabled === true && config.profileNameEnabled === true,
+    profileAnimationEnabled: config.profileAnimationEnabled !== false,
+    profileNameEnabled: config.profileAnimationEnabled !== false && config.profileNameEnabled !== false,
     gifts: gifts.map(normalizeRowsGift)
   };
 }
@@ -3635,6 +3572,7 @@ function normalizeRowsOverlay(config) {
 function normalizeSideGifts(config) {
   const side = String(config.side || defaultSideGifts.side).toLowerCase();
   return {
+    ...(config.graphic?{graphic:config.graphic}:{}),
     side: side === 'left' || side === 'right' ? side : 'both',
     width: clamp(Math.floor(numberOrDefault(config.width, defaultSideGifts.width)), 180, 1920),
     height: clamp(Math.floor(numberOrDefault(config.height, defaultSideGifts.height)), 240, 1920),
@@ -3682,6 +3620,7 @@ function normalizeGoalBar(config) {
   const defaultLabel = defaultGoalLabel(type);
   const legacyStep = Math.max(1, Math.floor(numberOrDefault(config.step, defaultGoalBar.step)));
   return {
+    ...(config.graphic?{graphic:config.graphic}:{}),
     type,
     label: String(config.label || defaultLabel).replace(/\s+/g, ' ').trim().slice(0, 32) || defaultLabel,
     target: Math.max(1, Math.floor(numberOrDefault(config.target, legacyStep))),
@@ -3693,12 +3632,17 @@ function normalizeGoalBar(config) {
     height: clamp(numberOrDefault(config.height, defaultGoalBar.height), 30, 120),
     accent: normalizeHex(config.accent, defaultGoalBar.accent),
     glow: normalizeHex(config.glow, defaultGoalBar.glow),
-    text: normalizeHex(config.text, defaultGoalBar.text)
+    text: normalizeHex(config.text, defaultGoalBar.text),
+    ...normalizeGoalFonts(config),
+    ...(normalizeGoalAppearance(config.appearance) ? { appearance: normalizeGoalAppearance(config.appearance) } : {})
   };
 }
 
 function normalizeTopLikers(config) {
   return {
+    ...(config.firstPlaceAccent?{firstPlaceAccent:normalizeHex(config.firstPlaceAccent,'#ffd83d')}:{}),
+    ...(config.firstPlaceText?{firstPlaceText:normalizeHex(config.firstPlaceText,'#ffffff')}:{}),
+    ...(config.graphic?{graphic:config.graphic}:{}),
     limit: clamp(Math.floor(numberOrDefault(config.limit, defaultTopLikers.limit)), 1, 10),
     showAvatar: config.showAvatar !== false,
     showNames: config.showNames !== false,
@@ -3722,6 +3666,8 @@ function normalizeTopLikers(config) {
     text: normalizeHex(config.text, defaultTopLikers.text),
     muted: normalizeHex(config.muted, defaultTopLikers.muted),
     glow: normalizeHex(config.glow, defaultTopLikers.glow),
+    milestoneCard: normalizeHex(config.milestoneCard, defaultTopLikers.milestoneCard),
+    milestoneText: normalizeHex(config.milestoneText, defaultTopLikers.milestoneText),
     opacity: clamp(numberOrDefault(config.opacity, defaultTopLikers.opacity), 0, 1),
     tileOpacity: clamp(numberOrDefault(config.tileOpacity, defaultTopLikers.tileOpacity), 0, 1)
   };
@@ -3760,21 +3706,50 @@ function isDefaultGoalLabel(label) {
 }
 
 function getDefaultRowsGifts() {
-  const catalog = Array.isArray(window.rewardImageCatalog) ? window.rewardImageCatalog : [];
+  return [
+    { id: '33', name: 'Heart Me', image: './rewards/033_Heart_Me.png', row: 1 },
+    { id: '30', name: 'GG', image: './rewards/030_GG.png', row: 1 },
+    { id: '817', name: 'Gold Boxing Glove', giftNames: ['Gold Boxing Gloves'], image: './rewards/817_Gold_Boxing_Gloves.png', row: 1 },
+    { id: '792', name: 'Finger Heart', image: './rewards/792_Finger_heart.png', row: 1 },
+    { id: '856', name: 'Doughnut', image: './rewards/856_Doughnut.png', row: 1 },
+    { id: '913', name: 'Super GG', image: './rewards/913_Super_GG.png', row: 1 },
+    { id: '1176', name: 'Coral', image: './rewards/1176_Coral.png', row: 2 },
+    { id: '1258', name: 'Lucky Air Drop', giftNames: ['Lucky Air Drop', 'Lucky Airdrop', 'Lucky Airdrop Box'], image: './rewards/1258_Lucky_Airdrop_Box.png', row: 2 },
+    { id: '1313', name: 'Arcade Game', image: './rewards/1313_Arcade_Game.png', row: 2 },
+    { id: '1312', name: 'Gaming Chair', image: './rewards/1312_Gaming_Chair.png', row: 2 },
+    { id: '1270', name: 'Galaxy', image: './rewards/1270_Galaxy.png', row: 2 },
+    { id: '1596', name: 'TikTok Universe', image: './rewards/1596_TikTok_Universe.png', row: 2 }
+  ].map(gift => ({
+    enabled: true,
+    title: gift.name,
+    giftNames: gift.giftNames || [gift.name],
+    giftIds: [gift.id],
+    image: gift.image,
+    row: gift.row,
+    sound: '',
+    volume: 0.85
+  }));
+}
 
-  return catalog.map(entry => {
-    const name = entry.name || entry.label || getImageLabel(entry.image || '');
+function isLegacyDefaultRowsGiftSet(gifts) {
+  if (!Array.isArray(gifts)) return false;
 
-    return {
-      enabled: true,
-      title: name,
-      giftNames: name ? [name] : [],
-      giftIds: entry.id || entry.giftId ? [String(entry.id || entry.giftId)] : [],
-      image: String(entry.image || entry.path || entry.url || ''),
-      sound: '',
-      volume: 0.85
-    };
-  }).filter(gift => gift.image);
+  const actualIds = gifts.map(gift => normalizeId(
+    gift?.giftIds?.[0]
+      || gift?.id
+      || gift?.giftId
+      || getIdFromImagePath(gift?.image)
+  )).sort((first, second) => Number(first) - Number(second));
+
+  const legacySets = [
+    ['18', '30', '33', '792', '817', '856', '913', '1176', '1258', '1270', '1312', '1313'],
+    ['30', '33', '817', '856', '913', '1176', '1258', '1270', '1312', '1313', '1596']
+  ];
+
+  return legacySets.some(expectedIds => (
+    actualIds.length === expectedIds.length
+      && actualIds.every((id, index) => id === expectedIds[index])
+  ));
 }
 
 function getDefaultSideGifts() {
@@ -3804,16 +3779,17 @@ function getDefaultSideGifts() {
 function normalizeRowsGift(gift) {
   const triggerType = normalizeTriggerType(gift.triggerType);
   const hasUseGiftImage = Object.prototype.hasOwnProperty.call(gift, 'useGiftImage');
+  const giftNames = Array.isArray(gift.giftNames) ? gift.giftNames.map(String) : [];
   return {
     enabled: gift.enabled !== false,
-    title: String(gift.title || gift.name || 'Row Gift'),
+    title: String(gift.title || gift.name || giftNames[0] || getImageLabel(gift.image || '') || 'Row Gift'),
     triggerType,
     likesRequired: clamp(Math.floor(numberOrDefault(gift.likesRequired, 50)), 1, 1000000000),
     likesHeartColor: normalizeHex(gift.likesHeartColor, '#ef233c'),
     likesNumberColor: normalizeHex(gift.likesNumberColor, '#ffffff'),
     likesHeartSize: clamp(Math.floor(numberOrDefault(gift.likesHeartSize, 160)), 40, 160),
     likesNumberSize: clamp(Math.floor(numberOrDefault(gift.likesNumberSize, 96)), 16, 96),
-    giftNames: Array.isArray(gift.giftNames) ? gift.giftNames.map(String) : [],
+    giftNames,
     giftIds: Array.isArray(gift.giftIds) ? gift.giftIds.map(normalizeId).filter(Boolean) : [],
     image: getCatalogImageForReward(gift),
     useGiftImage: triggerType === 'gift' && (gift.useGiftImage === true || (!hasUseGiftImage && isHeartMeGift(gift))),
@@ -3864,7 +3840,9 @@ function splitList(value) {
 
 function normalizeSound(sound) {
   const value = String(sound || '').trim();
-  return availableSounds.has(value) ? value : '';
+  if(availableSounds.has(value))return value;
+  try{const url=new URL(value,location.href);if(url.origin===location.origin&&/^\/api\/v1\/sounds\/[A-Za-z0-9_-]{40,50}\.wav$/.test(url.pathname))return url.href;}catch{}
+  return ''; 
 }
 
 function normalizeCsv(value, fallback) {
@@ -3878,7 +3856,7 @@ function normalizeName(name) {
 
 function normalizeTriggerType(value) {
   const type = String(value || '').trim().toLowerCase();
-  return type === 'follow' || type === 'likes' ? type : 'gift';
+  return ['follow', 'likes', 'share'].includes(type) ? type : 'gift';
 }
 
 function getTriggerIcon(item) {
@@ -3887,6 +3865,9 @@ function getTriggerIcon(item) {
     return '';
   }
 
+  if (type === 'share') {
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 104"><path d="M61 72 88 46 61 20M15 85V70c0-13 10-24 24-24h49" fill="none" stroke="#fe2c55" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" transform="translate(3 3)"/><path d="M61 72 88 46 61 20M15 85V70c0-13 10-24 24-24h49" fill="none" stroke="#25f4ee" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  }
   const isFollow = type === 'follow';
   const likes = Math.max(1, Math.floor(Number(item?.likesRequired || 50)));
   const heartColor = normalizeHex(item?.likesHeartColor, '#ef233c');
@@ -3941,47 +3922,21 @@ function hexToRgba(hex, alpha) {
 
 function getCatalogImageForReward(reward) {
   const currentImage = String(reward.image || '');
+  if (/\/api\/v1\/gifts\/(?:images|creator-images)\//.test(currentImage)) return currentImage;
   const match = findCatalogEntryForReward(reward);
   return match?.image || currentImage;
 }
 
 function findCatalogEntryForReward(reward) {
-  const catalog = Array.isArray(window.rewardImageCatalog) ? window.rewardImageCatalog : [];
-  if (!catalog.length) {
-    return null;
-  }
-
-  const currentImage = normalizePath(reward.image || '').toLowerCase();
-  const ids = [
-    ...(reward.giftIds || []),
-    ...(reward.giftImageIds || []),
-    getIdFromImagePath(reward.image)
-  ].map(normalizeId).filter(Boolean);
-  const names = [
-    ...(reward.giftNames || []),
-    ...(reward.giftImageNames || []),
-    reward.title,
-    getImageLabel(reward.image)
-  ].map(normalizeName).filter(Boolean);
-
-  const imageMatch = currentImage
-    ? catalog.find(entry => normalizePath(entry.image || entry.path || entry.url || '').toLowerCase() === currentImage)
-    : null;
-  if (imageMatch) {
-    return imageMatch;
-  }
-
-  const nameMatches = catalog.filter(entry => names.includes(
-    normalizeName(entry.name || entry.label || getImageLabel(entry.image))
-  ));
-  if (nameMatches.length === 1) {
-    return nameMatches[0];
-  }
-
-  const idMatches = catalog.filter(entry => ids.includes(
-    normalizeId(entry.id || entry.giftId || getIdFromImagePath(entry.image || entry.path || entry.url))
-  ));
-  return idMatches.length === 1 ? idMatches[0] : null;
+  const views = editorLegacyCatalogueViews();
+  const image = normalizePath(reward.image || '').toLowerCase();
+  if (image && views.byImage.has(image)) return views.byImage.get(image);
+  const names = [...(reward.giftNames || []), ...(reward.giftImageNames || []), reward.title, getImageLabel(reward.image)].map(normalizeName).filter(Boolean);
+  const nameMatches = new Set(names.flatMap(name => views.byName.get(name) || []));
+  if (nameMatches.size === 1) return [...nameMatches][0];
+  const ids = [...(reward.giftIds || []), ...(reward.giftImageIds || []), getIdFromImagePath(reward.image)].map(normalizeId).filter(Boolean);
+  const idMatches = new Set(ids.flatMap(id => views.byId.get(id) || []));
+  return idMatches.size === 1 ? [...idMatches][0] : null;
 }
 
 function numberOrDefault(value, fallback) {
@@ -4024,3 +3979,162 @@ function escapeHtml(value) {
     "'": '&#39;'
   })[char]);
 }
+
+// Optional appearance v1. Absence keeps all legacy CSS and activity colours intact.
+function normalizeGoalFonts(config) {
+  const result = {};
+  for (const key of ['labelSize', 'counterSize', 'targetSize']) {
+    const value = config[key];
+    if (value === undefined || value === null || value === '' || typeof value === 'boolean') continue;
+    const number = Number(value);
+    if (Number.isFinite(number)) result[key] = Math.max(8, Math.min(48, Math.round(number)));
+  }
+  return result;
+}
+
+function normalizeGoalAppearance(value) {
+  if (!value || typeof value !== 'object' || value.enabled !== true) return undefined;
+  const defaults = {
+    background: '#15101f',
+    border: '#79548e',
+    label: '#03f5d8',
+    trackBackground: '#050a12',
+    trackBorder: '#03f5d8',
+    progressStart: '#03f5d8',
+    progressEnd: '#7affed',
+    progressGlow: '#03f5d8',
+    counterBackground: '#7affed',
+    counterText: '#061013',
+    counterBorder: '#ffffff',
+    glow: '#c447ff'
+  };
+  const result = { enabled: true };
+  for (const [key, fallback] of Object.entries(defaults)) {
+    result[key] = typeof value[key] === 'string' && /^#[0-9a-f]{6}$/i.test(value[key]) ? value[key] : fallback;
+  }
+  const percent = (v, fallback) => v !== null && v !== '' && Number.isFinite(Number(v)) ? Math.min(100, Math.max(0, Number(v))) : fallback;
+  result.backgroundOpacity = percent(value.backgroundOpacity, 65);
+  result.glowStrength = percent(value.glowStrength, 35);
+  result.gloss = value.gloss !== false;
+  if(value.noBackground===true)result.noBackground=true;
+  return result;
+}
+
+
+function refreshGiftCatalogueGrids() {
+  if (document.querySelector('#rows-gift-picker[open]')) renderRowsPickerGifts();
+
+  document.querySelectorAll('[data-gift-grid]').forEach(grid => {
+    const editor = grid.closest('.reward-editor');
+    if (!editor) return;
+    const reward = {
+      image: editor.querySelector('[data-field="image"]')?.value || '',
+      giftIds: (editor.querySelector('[data-field="giftIds"]')?.value || '').split(',').map(value => value.trim()),
+      giftNames: (editor.querySelector('[data-field="giftNames"]')?.value || '').split(',').map(value => value.trim())
+    };
+    populateGiftGrid(editor, reward, editor.querySelector('[data-gift-search]')?.value || '');
+  });
+}
+
+function applyGiftCatalogue(payload) {
+  if (!Array.isArray(payload?.gifts) || !payload.gifts.length) return;
+  for (const [key, entry] of imageCatalog) {
+    if (entry.catalogueManaged) entry.catalogueManaged = false;
+  }
+  payload.gifts.forEach(entry => addImageCatalogEntry({ ...entry, catalogueManaged: true }));
+  creatorGiftEntries.forEach(entry => addImageCatalogEntry({ ...entry, creatorManaged: true }));
+  currentGiftCatalogue = payload;
+  refreshGiftCatalogueGrids();
+}
+
+let giftCatalogueOffline=false;
+let lastGiftCatalogueSuccessAt=0;
+let lastGiftCatalogueSession='';
+async function loadGiftCatalogue(force = false) {
+  const session=window.overlayCloud?.session?.token||'';
+  if(!force&&currentGiftCatalogue&&session===lastGiftCatalogueSession&&Date.now()-lastGiftCatalogueSuccessAt<60000)return;
+  if (catalogueRefreshInFlight) return catalogueRefreshInFlight;
+  // Catalogue sync is independent of maintenance controls on the editing page.
+  catalogueRefreshInFlight = (async () => {
+    try {
+      const creatorRequest = loadCreatorGifts();
+      let payload;
+      if (force) {
+        const response = await window.overlayCloud.request('/v1/gifts/sync', { method: 'POST' });
+        payload = response.catalogue;
+      } else {
+        const response = await fetch('/api/v1/gifts/catalogue', { cache: 'no-store' });
+        if (!response.ok) throw new Error('Catalogue unavailable');
+        payload = await response.json();
+      }
+      await creatorRequest;
+      applyGiftCatalogue(payload);
+      giftCatalogueOffline=false;lastGiftCatalogueSuccessAt=Date.now();lastGiftCatalogueSession=session;
+    } catch {
+      giftCatalogueOffline=true;
+      if(document.querySelector('#rows-gift-picker[open]'))renderRowsPickerGifts();
+      // Retain the last loaded catalogue and all saved designs if sync is unavailable.
+    } finally {
+      catalogueRefreshInFlight = null;
+    }
+  })();
+  return catalogueRefreshInFlight;
+}
+
+// Keep an editor left open during a stream aligned with the published catalogue.
+const giftCatalogueTimer = setInterval(() => {
+  if (!document.hidden && window.overlayCloud?.signedIn) loadGiftCatalogue();
+}, 15 * 60 * 1000);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && window.overlayCloud?.signedIn) loadGiftCatalogue();
+});
+window.addEventListener('beforeunload', () => clearInterval(giftCatalogueTimer), { once: true });
+
+function matchesGiftSearch(entry, filter) {
+  let query=String(filter||'').toLowerCase().trim();
+  const coins=entry.coins===null||entry.coins===undefined?null:Number(entry.coins);
+  const value=query.match(/(?:coins?:\s*)?(?:(>=|<=|>|<)\s*(\d+)|(\d+)\s*[-–]\s*(\d+)|coins?:\s*(\d+)|(\d+)\s*coins?\b)/);
+  if(value) {
+    if(coins===null||!Number.isFinite(coins))return false;
+    if(value[1]) { const n=Number(value[2]);if(!({'>=':coins>=n,'<=':coins<=n,'>':coins>n,'<':coins<n}[value[1]]))return false; }
+    else if(value[3]) { if(coins<Number(value[3])||coins>Number(value[4]))return false; }
+    else if(coins!==Number(value[5]??value[6]))return false;
+    query=query.replace(value[0],'').trim();
+  } else if(/^\d+$/.test(query)) {
+    return String(entry.id||entry.giftId||'')===query || coins===Number(query);
+  }
+  return !query || normalizeName([entry.name,entry.label,entry.id,entry.giftId].filter(Boolean).join(' ')).includes(normalizeName(query));
+}
+
+async function loadCreatorGifts() {
+  const session=window.overlayCloud?.session?.token;
+  if(!session)return;
+  try {
+    const result=await window.overlayCloud.request('/v1/gifts/creator');
+    if(window.overlayCloud?.session?.token!==session)return;
+    applyCreatorGifts(result.gifts);
+  } catch {
+    const status=document.querySelector('#creator-gift-status');
+    if(status)status.textContent='Your creator library is temporarily unavailable. Loaded gifts are retained.';
+  }
+}
+function applyCreatorGifts(gifts) {
+  if(!Array.isArray(gifts))return;
+  invalidateEditorCatalogue();
+  for(const [key,entry] of imageCatalog)if(entry.creatorManaged)imageCatalog.delete(key);
+  creatorGiftEntries=gifts;
+  gifts.forEach(entry=>addImageCatalogEntry({...entry,creatorManaged:true}));
+  const status=document.querySelector('#creator-gift-status');
+  if(status)status.textContent=gifts.length+' creator gifts in your library. New gifts appear after they are received through TikFinity.';
+  refreshGiftCatalogueGrids();
+}
+window.addEventListener('overlaycloud:session',()=>{
+  invalidateEditorCatalogue();
+  for(const [key,entry] of imageCatalog)if(entry.creatorManaged)imageCatalog.delete(key);
+  creatorGiftEntries=[];
+  if(window.overlayCloud?.signedIn)loadCreatorGifts();
+});
+// Poll only the small account catalogue while the editor is open during a stream.
+const creatorGiftTimer=setInterval(()=>{if(!document.hidden&&window.overlayCloud?.signedIn)loadCreatorGifts();},30000);
+window.addEventListener('beforeunload',()=>clearInterval(creatorGiftTimer),{once:true});
+

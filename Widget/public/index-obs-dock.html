@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <script src="/site-theme.js?v=20261118-studio3"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' http://127.0.0.1:8787 http://localhost:8787 https: wss: ws://localhost:21213; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <title>King Gumption Studio — Canvases</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css?v=20261118-studio3">
+    <link rel="stylesheet" href="../../site-chrome.css?v=20260810-1">
+      <link rel="stylesheet" href="/site-theme.css?v=20261117-character">
+  <link rel="stylesheet" href="./studio-polish.css?v=20261117-medium1">
+<link rel="stylesheet" href="./studio-ux.css?v=20261118-studio3">
+<link rel="stylesheet" href="/Widget/public/studio-icon-motion.css?v=20261118-studio3">
+</head>
+  <body class="reward-config-source obs-dock-manager-source">
+    <header class="site-header designer-site-nav">
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">KG</span><span class="brand-copy"><strong>King Gumption</strong><small>Studio</small></span></a>
+      <nav aria-label="Main navigation"><a href="/studio/">Overlay editor</a></nav>
+    </header>
+    <main class="obs-dock-manager">
+      <header class="obs-dock-manager-header">
+        <div class="obs-dock-brand">
+          <span class="dock-panel-kicker">Canvas Designer</span>
+          <h1>Your canvases</h1>
+          <p id="dock-manager-status">Starting…</p>
+        </div>
+        <a class="btn-secondary cloud-manager-link obs-editor-link" href="/studio/">
+          <span>Open Overlay Editor</span>
+        </a>
+      </header>
+
+      <details id="dock-manager-setup" class="dock-manager-panel dock-manager-help">
+        <summary>
+          <span><strong>How canvases work</strong><small>Arrange your overlays, copy one link, then add it to your stream. Enable TikFinity’s Event API on the same computer. Sample activity previews the design. Switch it off to receive live events.</small></span>
+          <span class="dock-disclosure-label">View guide</span>
+        </summary>
+        <div class="dock-help-content">
+          <ol class="dock-setup-steps">
+            <li><span>1</span><div><strong>Edit the layout</strong><p>Add overlays, then drag and resize them on the canvas.</p></div></li>
+            <li><span>2</span><div><strong>Copy the link</strong><p>The same link keeps working when you change the layout.</p></div></li>
+            <li><span>3</span><div><strong>Add it to your stream</strong><p>Use a Browser Source or Link source in your streaming software.</p></div></li>
+          </ol>
+          <p class="dock-manager-optional"><strong>Setup tip:</strong> Use the canvas width and height shown in Canvas settings.</p>
+        </div>
+      </details>
+
+      <section id="dock-manager-disabled" class="dock-manager-panel" hidden>
+        <h2>Cloud API not configured</h2>
+        <p>Deploy <code>Widget/cloudflare</code>, then set the Worker and app URLs in <code>overlay-cloud-config.js</code>.</p>
+      </section>
+
+      <form id="dock-manager-auth" class="dock-manager-panel dock-manager-auth" hidden>
+        <div class="dock-auth-intro">
+          <span class="dock-panel-kicker">Your workspace</span>
+          <h2>Sign in to manage your canvases</h2>
+          <p>Your layouts and permanent canvas links are stored securely in your account.</p>
+        </div>
+        <label class="dock-field"><span>Email address</span><input id="dock-manager-email" type="email" autocomplete="email" placeholder="you@example.com" required></label>
+        <label class="dock-field"><span>Password</span><input id="dock-manager-password" type="password" autocomplete="current-password" minlength="10" placeholder="10+ characters" required></label>
+        <button type="submit" class="btn-primary">Sign In</button>
+        <button id="dock-manager-register" type="button" class="btn-secondary" hidden>Create Account</button>
+        <p class="studio-privacy-note">Forgot your password? <a href="mailto:redacted@example.invalid?subject=Studio%20account%20recovery">Contact account support</a>. We will need to verify account ownership.</p>
+        <p id="dock-registration-note" class="dock-auth-privacy">Read the <a href="/privacy/" target="_blank" rel="noopener">privacy notice</a> before creating an account.</p>
+      </form>
+
+      <section id="dock-manager-account" class="dock-manager-account" hidden>
+        <div class="dock-manager-account-row">
+          <div class="dock-account-identity"><span class="dock-account-avatar" aria-hidden="true"></span><div><small>Signed in as</small><strong id="dock-manager-account-email"></strong></div></div>
+          <div class="dock-account-links"><a href="/privacy/" target="_blank" rel="noopener">Privacy</a><a href="/studio/">Account controls</a><button id="dock-manager-sign-out" type="button" class="btn-secondary">Sign Out</button></div>
+        </div>
+
+        <section class="dock-manager-panel dock-library-panel">
+          <div class="dock-list-heading">
+            <div><span class="dock-panel-kicker">Canvases</span><h2>Choose an canvas</h2><p>Edit its layout, then copy its link into your streaming app.</p></div>
+            <button id="dock-manager-refresh" type="button" class="btn-secondary">↻ Refresh</button>
+          </div>
+          <div class="live-connection-check"><button id="check-live-connection" type="button">Check TikFinity connection</button><p id="live-connection-status" role="status">Check from the computer running your streaming software and TikFinity.</p></div><div id="dock-manager-list" class="dock-manager-list"></div>
+        </section>
+
+        <details class="dock-manager-panel dock-create-disclosure">
+          <summary>
+            <span><strong>Create another canvas</strong><small>You already have vertical and horizontal canvases.</small></span>
+            <span class="dock-disclosure-label">New canvas</span>
+          </summary>
+          <form id="dock-create-form" class="dock-create-form dock-output-create-form">
+            <label class="dock-field dock-output-name"><span>Canvas name</span><input id="dock-create-name" type="text" maxlength="80" placeholder="e.g. Gameplay Output" required></label>
+            <label class="dock-field dock-output-preset"><span>Format</span><select id="dock-create-preset"><option value="horizontal">Horizontal 16:9</option><option value="vertical">Vertical 9:16</option><option value="square">Square</option><option value="custom">Custom</option></select></label>
+            <div class="dock-dimensions dock-output-dimensions" role="group" aria-label="Browser Source dimensions">
+              <label class="dock-field"><span>Width</span><input id="dock-create-width" type="number" min="160" max="7680" value="1920"></label>
+              <span class="dock-dimension-divider" aria-hidden="true">×</span>
+              <label class="dock-field"><span>Height</span><input id="dock-create-height" type="number" min="160" max="7680" value="1080"></label>
+            </div>
+            <button type="submit" class="btn-success dock-create-submit"><span aria-hidden="true">＋</span> Create Canvas</button>
+          </form>
+        </details>
+      </section>
+    </main>
+
+    <dialog id="dock-copy-dialog" class="dock-copy-dialog" aria-labelledby="dock-copy-dialog-title">
+      <form method="dialog">
+        <span class="dock-panel-kicker">Link copied</span>
+        <h2 id="dock-copy-dialog-title">Match the canvas size</h2>
+        <p>Set your Browser or Link source to these exact dimensions in your streaming software.</p>
+        <div class="dock-copy-dimensions" aria-label="Required source dimensions">
+          <span><small>Width</small><strong id="dock-copy-width"></strong></span>
+          <b aria-hidden="true">×</b>
+          <span><small>Height</small><strong id="dock-copy-height"></strong></span>
+        </div>
+        <p class="dock-copy-warning">If the width or height is different, the overlay may appear tiny, stretched, or surrounded by empty space.</p>
+        <button type="submit" class="btn-primary">Got it</button>
+      </form>
+    </dialog>
+
+    <template id="dock-card-template">
+      <article class="dock-card dock-output-card">
+        <div class="dock-card-heading">
+          <div class="dock-output-title"><strong data-role="name"></strong><div class="dock-output-meta"><span data-role="format"></span><span data-role="layers"></span></div></div>
+          <div class="dock-card-primary-actions">
+            <button data-action="toggle-editor" type="button" class="btn-primary dock-expand-button" aria-expanded="false">Edit Layout <span aria-hidden="true">⌄</span></button>
+            <button data-action="copy" type="button" class="btn-secondary">Copy Link</button>
+          </div>
+        </div>
+        <details class="dock-output-settings">
+          <summary><span>Canvas settings</span><small>Name, dimensions and advanced link controls</small></summary>
+          <div class="dock-card-fields dock-output-fields">
+            <label class="dock-output-name-field">Canvas name <input data-field="name" type="text" maxlength="80"></label>
+            <label>Width <input data-field="width" type="number" min="160" max="7680"></label>
+            <label>Height <input data-field="height" type="number" min="160" max="7680"></label>
+            <label class="dock-url-row">Permanent link <input data-role="url" type="text" readonly></label>
+          </div>
+          <div class="dock-card-actions">
+            <button data-action="save-output" type="button" class="btn-success">Save Settings</button>
+            <button data-action="open" type="button" class="btn-secondary">Open Preview</button>
+            <button data-action="rotate" type="button" class="btn-secondary">Replace Link</button>
+            <button data-action="delete" type="button" class="btn-danger">Delete Canvas</button>
+          </div>
+        </details>
+        <section class="dock-composer" data-role="composer" hidden>
+          <div class="dock-composer-toolbar">
+            <div class="dock-canvas-heading">
+              <span class="dock-panel-kicker">Layout</span><h3>Arrange your overlays</h3><p>Drag to move. Use the corner handle to resize. Anything outside the canvas is cropped.</p>
+              <label class="dock-preview-test-toggle">
+                <input data-role="test-preview" type="checkbox">
+                <span><strong>Show sample data</strong><small>Appears in this canvas link; switch it off before going live.</small></span>
+              </label>
+            </div>
+            <details class="dock-add-layer-controls" open><summary>Add an overlay</summary>
+              <label class="dock-field"><span>Overlay type</span><select data-role="add-kind"><option value="carousel">Gift Carousel</option><option value="rows">Rows Overlay</option><option value="side-gifts">Side Gifts</option><option value="goal">Goal Bar</option><option value="top-likers">Top Likers</option></select></label>
+              <label class="dock-field"><span>Saved design</span><select data-role="add-variant"></select></label>
+              <button data-action="add-item" type="button" class="btn-success">＋ Add Overlay</button>
+            </details>
+          </div>
+          <div class="dock-composer-workspace">
+            <div class="dock-canvas-viewport"><div class="dock-layout-canvas" data-role="canvas"></div></div>
+            <aside class="dock-layer-panel" data-role="layer-panel"></aside>
+          </div>
+        </section>
+      </article>
+    </template>
+
+    <script src="./overlay-cloud-config.js?v=20260718-1"></script>
+    <script src="./overlay-cloud.js?v=20261117-medium1"></script>
+    <script src="./graphics-core.js?v=20261118-studio3"></script>
+    <script src="./obs-dock-manager.js?v=20261118-studio3"></script>
+    <script src="../../site-chrome.js?v=20261117-medium1"></script>
+  </body>
+</html>

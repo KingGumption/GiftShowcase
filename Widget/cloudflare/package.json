@@ -1,0 +1,15 @@
+{
+  "name": "king-gumption-site",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node ../scripts/release-check.mjs",
+    "build": "node build-site.mjs",
+    "dev": "node build-site.mjs && npx wrangler dev --port 8081",
+    "deploy": "node build-site.mjs && npx wrangler deploy"
+  },
+  "devDependencies": {
+    "playwright-core": "1.65.1",
+    "axe-core": "4.14.1"
+  }
+}

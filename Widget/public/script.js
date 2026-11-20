@@ -21,9 +21,14 @@ const initialGoalTarget = Math.max(1, Number(params.get('target') || goalConfig.
 const startingLikes = Math.max(0, Number(params.get('start') || goalConfig.start || 0));
 const resetOnConnect = params.has('resetOnConnect') ? params.get('resetOnConnect') !== '0' : goalConfig.resetOnConnect;
 const useLiveFollowerCount = goalType !== 'followers' || (params.has('liveFollowers') ? params.get('liveFollowers') !== '0' : goalConfig.useLiveFollowerCount !== false);
-const storageKey = `tiktok-goal-widget:${goalType}:${initialGoalTarget}:${likeGoalStep}:${useLiveFollowerCount ? 'live' : 'session'}`;
+const dockStateKey = params.get('stateKey') || '';
+const storageKey = dockStateKey
+  ? `tiktok-goal-widget:dock:${dockStateKey}:${goalType}`
+  : `tiktok-goal-widget:${goalType}:${initialGoalTarget}:${likeGoalStep}:${useLiveFollowerCount ? 'live' : 'session'}`;
 const debugTikfinity = params.get('debug') === '1';
 const debugTikfinityLimit = Math.max(1, Math.min(200, Number(params.get('debugLimit') || 30) || 30));
+const relayMode = params.get('relay') === '1';
+const previewMode = params.get('preview') === '1';
 
 let reconnectTimer;
 let state = loadState();
@@ -32,29 +37,35 @@ let lastSupportKey = '';
 let pendingGiftStreaks = new Map();
 let countedSupportStreaks = new Map();
 let debugTikfinityCount = 0;
+let connectionInitialized = false;
 
 const streakSettleDelay = 2400;
 
-connect();
+if (previewMode) {
+  // Static editor preview: render defaults without opening a TikFinity connection.
+} else if (relayMode) {
+  setupGoalDockRelay();
+} else {
+  connect();
+}
 applyGoalBarConfig(goalConfig);
 render(state);
-setInterval(updateLikeHeat, 500);
+if (!previewMode) setInterval(updateLikeHeat, 500);
 
 function connect() {
   const ws = new WebSocket(tikfinityUrl);
 
   ws.addEventListener('open', () => {
-    if (resetOnConnect) {
-      resetStateForNewConnection();
-    }
+    initializeGoalConnection();
 
     state.connected = true;
-    state.status = 'Connected to TikFinity';
+    state.status = 'Connected to live activity';
     saveState();
     render(state);
   });
 
   ws.addEventListener('message', event => {
+    window.creatorGiftDiscovery?.observe(event.data);
     const message = parseMessage(event.data);
     logTikfinityDebugMessage(event.data, message);
 
@@ -67,11 +78,33 @@ function connect() {
 
   ws.addEventListener('close', () => {
     state.connected = false;
-    state.status = 'Waiting for TikFinity';
+    state.status = 'Ready';
     render(state);
     clearTimeout(reconnectTimer);
     reconnectTimer = setTimeout(connect, 1500);
   });
+}
+
+function setupGoalDockRelay() {
+  initializeGoalConnection();
+  state.connected = true;
+  state.status = 'Connected through Stream Output';
+  render(state);
+  window.addEventListener('message', event => {
+    if (event.source !== window.parent || event.data?.type !== 'dock:tiktok-raw') return;
+    const message = parseMessage(event.data.data);
+    logTikfinityDebugMessage(event.data.data, message);
+    if (message) handleTikfinityEvent(message.event, message.data || {});
+  });
+  window.parent.postMessage({ type: 'dock:renderer-ready' }, '*');
+}
+
+function initializeGoalConnection() {
+  // A transport reconnect is not a new broadcast.
+  if (connectionInitialized) return;
+  connectionInitialized = true;
+  if (resetOnConnect) resetStateForNewConnection();
+  saveState();
 }
 
 function logTikfinityDebugMessage(rawMessage, parsedMessage) {
@@ -84,7 +117,7 @@ function logTikfinityDebugMessage(rawMessage, parsedMessage) {
   const eventName = parsedMessage?.event || 'unparsed';
   const interestingFields = parsedMessage ? findInterestingTikfinityFields(parsedMessage) : [];
 
-  console.groupCollapsed(`[TikFinity debug ${debugTikfinityCount}/${debugTikfinityLimit}] ${eventName}`);
+  console.groupCollapsed(`[Live-event debug ${debugTikfinityCount}/${debugTikfinityLimit}] ${eventName}`);
   console.log('Raw message:', rawMessage);
   console.log('Parsed message:', parsedMessage);
 
@@ -95,7 +128,7 @@ function logTikfinityDebugMessage(rawMessage, parsedMessage) {
   }
 
   if (debugTikfinityCount === debugTikfinityLimit) {
-    console.info(`TikFinity debug limit reached. Add debugLimit=100 to the URL to log more messages.`);
+    console.info(`Live-event debug limit reached. Add debugLimit=100 to the URL to log more messages.`);
   }
 
   console.groupEnd();
@@ -147,6 +180,20 @@ function summarizeDebugValue(value) {
 
 function handleTikfinityEvent(eventName, data) {
   const event = String(eventName || '').toLowerCase();
+  const roomId = String(data.roomId || data.room_id || data.common?.roomId || '');
+  if (event === 'streamend') {
+    state.streamEnded = true;
+    saveState();
+    return;
+  }
+  const liveEvent = ['connected', 'like', 'gift', 'follow', 'follower', 'newfollow', 'social', 'chat', 'member', 'roomuser'].includes(event);
+  if (resetOnConnect && ((roomId && state.roomId && roomId !== state.roomId) || (state.streamEnded && liveEvent))) {
+    resetStateForNewConnection();
+  }
+  if (roomId) state.roomId = roomId;
+  if (liveEvent) state.streamEnded = false;
+  saveState();
+  render(state);
 
   if (goalType === 'followers') {
     const previousFollowers = state.likes;
@@ -157,7 +204,7 @@ function handleTikfinityEvent(eventName, data) {
       state.likeGoal = nextLikeGoal(state.likes);
       recordLikeBurst(Math.max(0, totalFollowers - previousFollowers));
       if (debugTikfinity) {
-        console.info('Follower goal synced from TikFinity follower total:', {
+        console.info('Follower goal synced from live-event follower total:', {
           event,
           totalFollowers,
           previousFollowers,
@@ -175,7 +222,7 @@ function handleTikfinityEvent(eventName, data) {
       state.likeGoal = nextLikeGoal(state.likes);
       recordLikeBurst(1);
       if (debugTikfinity) {
-        console.info('Follower goal incremented from TikFinity event:', { event, data });
+        console.info('Follower goal incremented from live event:', { event, data });
       }
       saveState();
       render(state);
@@ -189,10 +236,17 @@ function handleTikfinityEvent(eventName, data) {
     }
 
     const previousLikes = state.likes;
-    const totalLikes = Number(data.totalLikeCount || data.totalLikes || data.likeCountTotal || 0);
+    const rawTotal = data.totalLikeCount ?? data.totalLikes ?? data.likeCountTotal;
+    const totalLikes = Number(rawTotal);
+    const hasTotal = rawTotal !== undefined && rawTotal !== null && rawTotal !== '' && Number.isFinite(totalLikes) && totalLikes >= 0;
     const increment = Number(data.likeCount || data.likes || 0);
-    state.likes = Math.max(state.likes, totalLikes || state.likes + increment);
-    recordLikeBurst(Math.max(0, state.likes - previousLikes || increment));
+    // TikFinity's broadcast total is authoritative, including zero. This also
+    // recovers when the overlay missed the stream boundary while offline.
+    if (resetOnConnect && hasTotal && totalLikes < state.likes) resetStateForNewConnection();
+    state.likes = resetOnConnect && hasTotal
+      ? Math.max(startingLikes, totalLikes)
+      : Math.max(state.likes, hasTotal ? totalLikes : state.likes + increment);
+    recordLikeBurst(Math.max(0, state.likes - previousLikes));
     state.likeGoal = nextLikeGoal(state.likes);
     saveState();
     render(state);
@@ -429,7 +483,7 @@ function render(nextState) {
   }
 
   if (!supporter || !giftDetail || !supportAvatar || !giftIcon) {
-    updateStatus(nextState.status || 'Ready', nextState.connected);
+    updateStatus('', true);
     return;
   }
 
@@ -445,13 +499,13 @@ function render(nextState) {
     fitSupportText();
   } else {
     lastSupportKey = '';
-    setSupporterName('Waiting...');
+    setSupporterName('No support yet');
     giftDetail.textContent = 'No gifts yet';
     setSupportImages('', '');
     fitSupportText();
   }
 
-  updateStatus(nextState.status || 'Ready', nextState.connected);
+  updateStatus('', true);
 }
 
 function getSupportKey(support) {
@@ -594,6 +648,7 @@ function nextLikeGoal(likes) {
 }
 
 function applyGoalBarConfig(config) {
+  document.body.classList.toggle('goal-no-background',config.appearance?.noBackground===true);
   if (!document.body.classList.contains('thin-source')) {
     return;
   }
@@ -611,9 +666,23 @@ function applyGoalBarConfig(config) {
   const root = document.documentElement;
   root.style.setProperty('--thin-goal-width', `${config.width || 1080}px`);
   root.style.setProperty('--thin-goal-height', `${config.height || 44}px`);
+  const fonts = normalizeGoalFonts(config);
+  for (const key of ['labelSize', 'counterSize', 'targetSize']) {
+    root.style.setProperty('--thin-goal-' + key, fonts[key] ? fonts[key] + 'px' : '');
+  }
   root.style.setProperty('--thin-goal-accent', config.accent || '#03f5d8');
   root.style.setProperty('--thin-goal-glow', config.glow || '#c447ff');
   root.style.setProperty('--thin-goal-text', config.text || '#ffffff');
+  const appearance = normalizeGoalAppearance(config.appearance);
+  document.body.classList.toggle('goal-custom', Boolean(appearance));
+  document.body.classList.toggle('goal-custom-matte', Boolean(appearance && !appearance.gloss));
+  if (appearance) {
+    for (const [key, value] of Object.entries(appearance)) {
+      if (typeof value === 'string') root.style.setProperty('--goal-custom-' + key, value);
+    }
+    root.style.setProperty('--goal-custom-background-alpha', appearance.backgroundOpacity + '%');
+    root.style.setProperty('--goal-custom-glow-alpha', appearance.glowStrength + '%');
+  }
 }
 
 function loadGoalBarConfig() {
@@ -657,6 +726,7 @@ function readSavedOverlayConfig() {
 }
 
 function readOverlayConfigFromHash() {
+  if (window.directWidgetConfig) return window.directWidgetConfig;
   const encoded = new URLSearchParams(window.location.hash.slice(1)).get('config');
 
   if (!encoded) {
@@ -695,7 +765,9 @@ function expandCompactGoalBar(goal) {
     text: goal.i,
     type: goal.j,
     target: goal.l,
-    useLiveFollowerCount: goal.m === 0 ? false : undefined
+    useLiveFollowerCount: goal.m === 0 ? false : undefined,
+    ...normalizeGoalFonts({ labelSize: goal.o, counterSize: goal.p, targetSize: goal.r }),
+    appearance: normalizeGoalAppearance(goal.n)
   };
 }
 
@@ -715,7 +787,9 @@ function normalizeGoalBarConfig(config, defaults) {
     height: clampNumber(Number(config.height || defaults.height), 30, 120),
     accent: normalizeGoalHex(config.accent, defaults.accent),
     glow: normalizeGoalHex(config.glow, defaults.glow),
-    text: normalizeGoalHex(config.text, defaults.text)
+    text: normalizeGoalHex(config.text, defaults.text),
+    ...normalizeGoalFonts(config),
+    ...(normalizeGoalAppearance(config.appearance) ? { appearance: normalizeGoalAppearance(config.appearance) } : {})
   };
 }
 
@@ -772,21 +846,28 @@ function toBase64(value) {
 }
 
 function loadState() {
+  if(previewMode)return {connected:false,status:'Preview',likes:startingLikes,likeGoal:nextLikeGoal(startingLikes),biggestSupport:null};
   try {
     const saved = JSON.parse(localStorage.getItem(storageKey) || '{}');
+    const liveActivityExpired = !saved.savedAt || Date.now() - Number(saved.savedAt) > 7 * 24 * 60 * 60 * 1000;
     const likes = Math.max(Number(saved.likes || 0), startingLikes);
+    if (liveActivityExpired && saved.biggestSupport) {
+      localStorage.setItem(storageKey, JSON.stringify({ likes, savedAt: Date.now() }));
+    }
 
     return {
       connected: false,
-      status: 'Waiting for TikFinity',
+      status: 'Ready',
       likes,
       likeGoal: nextLikeGoal(likes),
-      biggestSupport: saved.biggestSupport || null
+      biggestSupport: liveActivityExpired ? null : saved.biggestSupport || null,
+      roomId: String(saved.roomId || ''),
+      streamEnded: saved.streamEnded === true
     };
   } catch {
     return {
       connected: false,
-      status: 'Waiting for TikFinity',
+      status: 'Ready',
       likes: startingLikes,
       likeGoal: nextLikeGoal(startingLikes),
       biggestSupport: null
@@ -797,7 +878,10 @@ function loadState() {
 function saveState() {
   localStorage.setItem(storageKey, JSON.stringify({
     likes: state.likes,
-    biggestSupport: state.biggestSupport
+    roomId: state.roomId,
+    streamEnded: state.streamEnded,
+    biggestSupport: state.biggestSupport,
+    savedAt: Date.now()
   }));
 }
 
@@ -805,6 +889,11 @@ function resetStateForNewConnection() {
   state.likes = startingLikes;
   state.likeGoal = nextLikeGoal(startingLikes);
   state.biggestSupport = null;
+  state.streamEnded = false;
+  likeBursts = [];
+  lastSupportKey = '';
+  pendingGiftStreaks.forEach(pending => clearTimeout(pending.timer));
+  pendingGiftStreaks.clear();
   countedSupportStreaks.clear();
 }
 
@@ -833,7 +922,9 @@ function updateThinCounterWidth(text) {
     return;
   }
 
-  const width = Math.max(44, Math.min(168, String(text).length * 10 + 34));
+  const customSize = normalizeGoalFonts(goalConfig).counterSize;
+  const scale = customSize ? customSize / 15 : 1;
+  const width = Math.max(44, Math.min(168 * scale, String(text).length * 10 * scale + 34));
   counter.style.setProperty('--thin-counter-width', `${width}px`);
 }
 
@@ -931,4 +1022,52 @@ function escapeHtml(value) {
     '"': '&quot;',
     "'": '&#39;'
   })[char]);
+}
+
+// Optional appearance v1. Absence keeps all legacy CSS and activity colours intact.
+function normalizeGoalFonts(config) {
+  const result = {};
+  for (const key of ['labelSize', 'counterSize', 'targetSize']) {
+    const value = config[key];
+    if (value === undefined || value === null || value === '' || typeof value === 'boolean') continue;
+    const number = Number(value);
+    if (Number.isFinite(number)) result[key] = Math.max(8, Math.min(48, Math.round(number)));
+  }
+  return result;
+}
+
+function normalizeGoalAppearance(value) {
+  if (!value || typeof value !== 'object' || value.enabled !== true) return undefined;
+  const defaults = {
+    background: '#15101f',
+    border: '#79548e',
+    label: '#03f5d8',
+    trackBackground: '#050a12',
+    trackBorder: '#03f5d8',
+    progressStart: '#03f5d8',
+    progressEnd: '#7affed',
+    progressGlow: '#03f5d8',
+    counterBackground: '#7affed',
+    counterText: '#061013',
+    counterBorder: '#ffffff',
+    glow: '#c447ff'
+  };
+  const result = { enabled: true };
+  for (const [key, fallback] of Object.entries(defaults)) {
+    result[key] = typeof value[key] === 'string' && /^#[0-9a-f]{6}$/i.test(value[key]) ? value[key] : fallback;
+  }
+  const percent = (v, fallback) => v !== null && v !== '' && Number.isFinite(Number(v)) ? Math.min(100, Math.max(0, Number(v))) : fallback;
+  result.backgroundOpacity = percent(value.backgroundOpacity, 65);
+  result.glowStrength = percent(value.glowStrength, 35);
+  result.gloss = value.gloss !== false;
+  if(value.noBackground===true)result.noBackground=true;
+  return result;
+}
+
+if(new URLSearchParams(window.location?.search||'').get('editorPreview')==='1'){window.studioSampleEvent=()=>{state.likes=Number(state.likes||0)+Math.max(1,Math.round(initialGoalTarget/10));render(state);};}
+
+// Isolated preview samples never open a local connection or persist live counts.
+if(previewMode&&(params.get('editorPreview')==='1'||params.get('demo')==='homepage')){
+  window.studioSampleEvent=()=>{state.likes=(Number(state.likes||0)+Math.max(1,Math.round(initialGoalTarget/10)))%(initialGoalTarget+1);render(state);};
+  if(params.get('sampleEvents')!=='0')setInterval(()=>{if(window.editorPreviewActive!==false&&!document.hidden)window.studioSampleEvent();},3000);
 }

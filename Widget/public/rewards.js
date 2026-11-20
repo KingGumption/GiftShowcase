@@ -12,7 +12,10 @@ const params = new URLSearchParams(window.location.search);
 const tikfinityUrl = params.get('endpoint') || 'ws://localhost:21213/';
 const testMode = params.get('test') === '1';
 const previewMode = params.get('preview') === '1';
-const muteMode = params.get('mute') === '1';
+let muteMode = params.get('mute') === '1';
+const relayMode = params.get('relay') === '1';
+const dockStateKey = params.get('stateKey') || '';
+const rewardLikeStorageKey = dockStateKey ? `reward-overlay-dock-likes:carousel:${dockStateKey}` : '';
 const rotateMs = Math.max(1200, Number(params.get('rotateMs') || rewardConfig.rotateMs || 2600));
 const holdOnGiftMs = Math.max(2200, Number(params.get('holdMs') || rewardConfig.holdOnGiftMs || 6500));
 const labelMs = Math.max(900, Number(params.get('labelMs') || rewardConfig.labelMs || 2600));
@@ -32,12 +35,13 @@ let labelScrollTimer;
 let presentationTimer;
 let reconnectTimer;
 let pendingGiftStreaks = new Map();
-let giftQueue = [];
+const giftQueues = new Map();
 let isPresentingGift = false;
+let activeGiftQueueKey = '';
 let pendingSoundReward = null;
 let audioUnlocked = false;
 let rewardAudio = new Map();
-let receivedLikeCount = 0;
+let receivedLikeCount = loadRewardLikeTotal();
 
 const streakSettleDelay = 2400;
 const rewardTransitionMs = 820;
@@ -66,7 +70,11 @@ if (previewMode) {
 } else {
   setupRewardAudio();
   setupRewardAudioUnlock();
-  connect();
+  if (relayMode) {
+    setupRewardDockRelay();
+  } else {
+    connect();
+  }
 }
 
 function loadRewardConfig() {
@@ -90,6 +98,7 @@ function loadRewardConfig() {
 }
 
 function readConfigFromHash() {
+  if (window.directWidgetConfig) return window.directWidgetConfig;
   const encoded = new URLSearchParams(window.location.hash.slice(1)).get('config');
 
   if (!encoded) {
@@ -139,6 +148,7 @@ function expandCompactTheme(theme) {
 
   return removeEmptyUrlFields({
     preset: theme.p || 'glass-purple',
+    ...(theme.j===0?{backgroundEnabled:false}:{}),
     accent: theme.a,
     secondary: theme.b,
     background: theme.c,
@@ -218,7 +228,7 @@ function removeEmptyUrlFields(value) {
 }
 
 function normalizeRewardConfig(config = {}, fallback = {}) {
-  const rewards = Array.isArray(config.rewards) && config.rewards.length
+  const rewards = Array.isArray(config.rewards)
     ? config.rewards
     : Array.isArray(fallback.rewards)
       ? fallback.rewards
@@ -243,6 +253,7 @@ function normalizeRewardConfig(config = {}, fallback = {}) {
 }
 
 function applyThemeToDocument(theme = {}) {
+  document.body.classList.toggle('reward-no-background',theme.backgroundEnabled===false);
   const defaults = {
     accent: '#03f5d8',
     secondary: '#531c7b',
@@ -383,10 +394,11 @@ function connect() {
   const ws = new WebSocket(tikfinityUrl);
 
   ws.addEventListener('open', () => {
-    updateStatus('Connected to TikFinity', true);
+    updateStatus('Connected to live activity', true);
   });
 
   ws.addEventListener('message', event => {
+    window.creatorGiftDiscovery?.observe(event.data);
     const message = parseMessage(event.data);
     if (!message) {
       return;
@@ -396,10 +408,20 @@ function connect() {
   });
 
   ws.addEventListener('close', () => {
-    updateStatus('Waiting for TikFinity', false);
+    updateStatus('', true);
     clearTimeout(reconnectTimer);
     reconnectTimer = setTimeout(connect, 1500);
   });
+}
+
+function setupRewardDockRelay() {
+  updateStatus('Connected through Stream Output', true);
+  window.addEventListener('message', event => {
+    if (event.source !== window.parent || event.data?.type !== 'dock:tiktok-raw') return;
+    const message = parseMessage(event.data.data);
+    if (message) handleTikTokEvent(String(message.event || '').toLowerCase(), message.data || {});
+  });
+  window.parent.postMessage({ type: 'dock:renderer-ready' }, '*');
 }
 
 function handleTikTokEvent(eventName, data) {
@@ -408,8 +430,8 @@ function handleTikTokEvent(eventName, data) {
     return;
   }
 
-  if (eventName === 'follow') {
-    applyEventReward('follow', data, 1);
+  if (eventName === 'follow' || eventName === 'share') {
+    applyEventReward(eventName, data, 1);
     return;
   }
 
@@ -417,6 +439,7 @@ function handleTikTokEvent(eventName, data) {
     const increment = getLikeIncrement(data);
     if (increment > 0) {
       receivedLikeCount += increment;
+      saveRewardLikeTotal();
       applyEventReward('likes', data, increment);
     }
   }
@@ -468,6 +491,7 @@ function getSupporterName(data, fallback) {
 }
 
 function renderRewards() {
+  rewardWidget.style.display=rewards.length?'':'none';
   const loopedRewards = Array.from({ length: 5 }, () => rewards).flat();
 
   rewardTrack.innerHTML = loopedRewards.map((reward, index) => `
@@ -490,7 +514,7 @@ function getRewardImageMarkup(reward) {
 
 function resolveRewardImageUrl(image) {
   const value = String(image || '');
-  if (window.location.hostname.endsWith('github.io') && value.startsWith('./rewards/')) {
+  if (value.startsWith('./rewards/')) {
     return `${remoteRewardImageBase}${encodeURIComponent(value.replace('./rewards/', ''))}`;
   }
 
@@ -502,9 +526,11 @@ function setVisibleRewardCount() {
 }
 
 function startRotation() {
+  if(!rewards.length)return;
   clearInterval(rotateTimer);
 
   rotateTimer = setInterval(() => {
+    if(window.editorPreviewActive===false)return;
     advanceToReward((activeIndex + 1) % rewards.length);
   }, rotateMs);
 }
@@ -515,13 +541,14 @@ function resumeRotation() {
   rewardWidget.classList.remove('profile-animation-active');
   rewardWidget.classList.remove('profile-has-avatar');
 
-  const nextGift = giftQueue.shift();
+  const nextGift = dequeueNextGift(activeGiftQueueKey);
 
   if (nextGift) {
     presentGift(nextGift);
     return;
   }
 
+  activeGiftQueueKey = '';
   startRotation();
 }
 
@@ -533,6 +560,7 @@ function setInitialReward(index) {
 }
 
 function advanceToReward(index, giftEvent = null) {
+  if(!rewards.length)return;
   const nextIndex = wrapIndex(index);
   const distance = (nextIndex - activeIndex + rewards.length) % rewards.length;
 
@@ -651,15 +679,45 @@ function applyGift(gift) {
   const matchedGift = { gift, rewardIndex };
 
   if (isPresentingGift) {
-    giftQueue.push(matchedGift);
+    enqueueGiftPresentation(matchedGift);
     return;
   }
 
   presentGift(matchedGift);
 }
 
+function enqueueGiftPresentation(matchedGift) {
+  const queueKey = getGiftPresentationKey(matchedGift);
+  const queue = giftQueues.get(queueKey) || [];
+  queue.push(matchedGift);
+  giftQueues.set(queueKey, queue);
+}
+
+function dequeueNextGift(previousQueueKey = '') {
+  const readyKeys = [...giftQueues.keys()].filter(key => giftQueues.get(key)?.length);
+  const queueKey = readyKeys.find(key => key !== previousQueueKey) || readyKeys[0];
+  if (!queueKey) {
+    return null;
+  }
+
+  const queue = giftQueues.get(queueKey);
+  const matchedGift = queue.shift();
+  if (!queue.length) {
+    giftQueues.delete(queueKey);
+  }
+  return matchedGift;
+}
+
+function getGiftPresentationKey({ gift, rewardIndex }) {
+  if (Number.isInteger(rewardIndex)) {
+    return `reward:${rewardIndex}`;
+  }
+  return gift?.giftId ? `gift:${gift.giftId}` : `gift:${normalizeName(gift?.giftName || '')}`;
+}
+
 function presentGift({ gift, rewardIndex }) {
   isPresentingGift = true;
+  activeGiftQueueKey = getGiftPresentationKey({ gift, rewardIndex });
   clearInterval(rotateTimer);
   clearTimeout(holdTimer);
   clearTimeout(presentationTimer);
@@ -751,63 +809,15 @@ function scheduleRewardLabelScrollUpdate(root = rewardTrack) {
 }
 
 function updateRewardLabelScroll(root = rewardTrack) {
-  const labels = root.matches?.('.reward-card strong')
-    ? [root]
-    : [...root.querySelectorAll('.reward-card strong')];
-
-  labels.forEach(label => {
-    const spans = [...label.querySelectorAll('.reward-label-original, .reward-label-profile')];
-    label.classList.remove('is-label-scrolling');
-    spans.forEach(span => {
-      span.style.removeProperty('--reward-label-scroll-distance');
-      span.style.removeProperty('--reward-label-scroll-duration');
-    });
-
-    const distance = getRewardLabelScrollDistance(label, spans);
-    if (!distance) {
-      return;
-    }
-
-    if (label.classList.contains('profile-name-active')) {
-      return;
-    }
-
-    const duration = Math.min(10, Math.max(4.8, distance / 12));
-    label.classList.add('is-label-scrolling');
-    spans.forEach(span => {
-      span.style.setProperty('--reward-label-scroll-distance', `${distance}px`);
-      span.style.setProperty('--reward-label-scroll-duration', `${duration}s`);
-    });
-  });
+  const labels=root.matches?.('.reward-card strong')?[root]:[...root.querySelectorAll('.reward-card strong')];
+  const entries=labels.map(label=>({label,spans:[...label.querySelectorAll('.reward-label-original, .reward-label-profile')]}));
+  entries.forEach(({label,spans})=>{label.classList.remove('is-label-scrolling');spans.forEach(span=>{span.style.removeProperty('--reward-label-scroll-distance');span.style.removeProperty('--reward-label-scroll-duration')})});
+  const measured=entries.map(entry=>({...entry,distance:getRewardLabelScrollDistance(entry.label,entry.spans)}));
+  measured.forEach(({label,spans,distance})=>{if(!distance||label.classList.contains('profile-name-active'))return;const duration=Math.min(10,Math.max(4.8,distance/12));label.classList.add('is-label-scrolling');spans.forEach(span=>{span.style.setProperty('--reward-label-scroll-distance',`${distance}px`);span.style.setProperty('--reward-label-scroll-duration',`${duration}s`)})});
 }
-
-function getRewardLabelScrollDistance(label, spans) {
-  const labelWidth = label.clientWidth;
-  if (!labelWidth) {
-    return 0;
-  }
-
-  return spans.reduce((distance, span) => {
-    if (!span.textContent.trim()) {
-      return distance;
-    }
-
-    const previousWidth = span.style.width;
-    const previousMinWidth = span.style.minWidth;
-    const previousOverflow = span.style.overflow;
-    const previousTextOverflow = span.style.textOverflow;
-    span.style.width = 'max-content';
-    span.style.minWidth = '0';
-    span.style.overflow = 'visible';
-    span.style.textOverflow = 'clip';
-    const naturalWidth = Math.ceil(span.getBoundingClientRect().width);
-    span.style.width = previousWidth;
-    span.style.minWidth = previousMinWidth;
-    span.style.overflow = previousOverflow;
-    span.style.textOverflow = previousTextOverflow;
-
-    return Math.max(distance, naturalWidth - labelWidth);
-  }, 0);
+function getRewardLabelScrollDistance(label,spans) {
+  const width=label.clientWidth;
+  return width?spans.reduce((distance,span)=>span.textContent.trim()?Math.max(distance,Math.ceil(span.scrollWidth)-width):distance,0):0;
 }
 
 window.addEventListener('resize', () => scheduleRewardLabelScrollUpdate());
@@ -904,45 +914,53 @@ function getRewardAudio(reward) {
 }
 
 function startTestMode() {
-  updateStatus('Test mode', true);
+  updateStatus('Queue demo', true);
 
-  const testRewards = [
-    ...rewards.filter(reward => reward.triggerType === 'follow'),
-    ...rewards.filter(reward => reward.triggerType === 'likes'),
-    ...rewards.filter(reward => reward.triggerType === 'gift')
-  ];
-  let testIndex = 0;
+  const giftRewards = rewards.filter(reward => reward.triggerType === 'gift');
+  const testRewards = giftRewards.length ? giftRewards : rewards;
+  let cycleIndex = 0;
 
-  window.setTimeout(sendTestGift, getRandomTestDelay(700, 1800));
+  window.setTimeout(sendQueueDemo, 700);
 
-  function sendTestGift() {
-    const reward = testRewards[testIndex % testRewards.length];
-    const giftName = reward.giftImageNames[0] || reward.giftNames[0] || reward.title;
-    const giftId = reward.giftImageIds[0] || reward.giftIds[0] || '';
-    const supporter = reward.triggerType === 'follow'
-      ? 'Test Follower'
-      : reward.triggerType === 'likes'
-        ? `Test ${reward.likesRequired} Likes`
-        : getTestSupporterName(testIndex);
+  function sendQueueDemo() {
+    if (!testRewards.length) {
+      return;
+    }
 
-    applyGift({
-      supporter,
-      giftName,
-      giftId,
-      imageUrl: reward.useGiftImage ? getTestGiftImage(reward, testIndex) : '',
-      triggerType: reward.triggerType,
-      rewardIndex: rewards.indexOf(reward),
-      avatarUrl: reward.triggerType === 'gift' ? getTestAvatarImage(testIndex) : '',
-      streakKey: `test|${giftId || giftName}`
-    });
+    const repeatedReward = testRewards[cycleIndex % testRewards.length];
+    const concurrentReward = testRewards.length > 1
+      ? testRewards[(cycleIndex + 1) % testRewards.length]
+      : null;
 
-    testIndex += 1;
-    window.setTimeout(sendTestGift, getRandomTestDelay(holdOnGiftMs + 700, holdOnGiftMs + 3200));
+    queueTestReward(repeatedReward, cycleIndex, 'Queue Gifter 1', 0);
+    queueTestReward(repeatedReward, cycleIndex + 1, 'Queue Gifter 2', 180);
+    if (concurrentReward) {
+      queueTestReward(concurrentReward, cycleIndex + 2, 'Concurrent Gifter', 260);
+    }
+    queueTestReward(repeatedReward, cycleIndex + 3, 'Queue Gifter 3', 360);
+
+    cycleIndex += 1;
+    window.setTimeout(sendQueueDemo, (holdOnGiftMs * (concurrentReward ? 4 : 3)) + 1400);
   }
-}
 
-function getRandomTestDelay(min, max) {
-  return Math.round(min + (Math.random() * (max - min)));
+  function queueTestReward(reward, testIndex, supporter, delay) {
+    window.setTimeout(() => {
+      if(window.editorPreviewActive===false)return;
+      const giftName = reward.giftImageNames[0] || reward.giftNames[0] || reward.title;
+      const giftId = reward.giftImageIds[0] || reward.giftIds[0] || '';
+
+      applyGift({
+        supporter,
+        giftName,
+        giftId,
+        imageUrl: reward.useGiftImage ? getTestGiftImage(reward, testIndex) : '',
+        triggerType: reward.triggerType,
+        rewardIndex: rewards.indexOf(reward),
+        avatarUrl: reward.triggerType === 'gift' ? getTestAvatarImage(testIndex) : '',
+        streakKey: `test|${giftId || giftName}`
+      });
+    }, delay);
+  }
 }
 
 function getTestSupporterName(index = 0) {
@@ -957,7 +975,7 @@ function setupGiftSimulator() {
     const requestedName = normalizeName(options.giftName || options.name || '');
     const requestedId = String(options.giftId || options.id || '');
     const fallbackIndex = rewards.findIndex(reward => reward.giftNames.length || reward.giftIds.length);
-    const rewardIndex = rewards.findIndex(reward => {
+    const rewardIndex = Number.isInteger(options.rewardIndex) && rewards[options.rewardIndex] ? options.rewardIndex : rewards.findIndex(reward => {
       return (requestedName && reward.giftNames.includes(requestedName)) ||
         (requestedId && reward.giftIds.includes(requestedId));
     });
@@ -1008,9 +1026,19 @@ function setupGiftSimulator() {
 
     const increment = Math.max(1, Math.floor(Number(count || likeRewards[0].likesRequired)));
     receivedLikeCount += increment;
+    saveRewardLikeTotal();
     applyEventReward('likes', { nickname: `Test ${increment} Likes` }, increment);
     updateStatus(`Simulated ${increment} likes`, true);
   };
+}
+
+function loadRewardLikeTotal() {
+  if (!rewardLikeStorageKey) return 0;
+  return Math.max(0, Number(localStorage.getItem(rewardLikeStorageKey) || 0) || 0);
+}
+
+function saveRewardLikeTotal() {
+  if (rewardLikeStorageKey) localStorage.setItem(rewardLikeStorageKey, String(receivedLikeCount));
 }
 
 function getRandomTestRewardIndex(testRewards, lastRewardIndex) {
@@ -1051,6 +1079,7 @@ function getTestGiftImage(reward, index) {
 }
 
 function getTestAvatarImage(index = 0) {
+  if(window.studioDemoViewers)return window.studioDemoViewers.byIndex(index).avatarUrl;
   const hue = (Number(index) * 67 + 185) % 360;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="48" fill="hsl(${hue} 72% 42%)"/><circle cx="48" cy="35" r="18" fill="white"/><path d="M17 88c3-25 16-38 31-38s28 13 31 38" fill="white"/></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -1126,12 +1155,7 @@ function normalizeRewards(nextRewards) {
     };
   });
 
-  return normalized.length ? normalized : [{
-    title: 'Reward',
-    image: '',
-    giftNames: [],
-    giftIds: []
-  }];
+  return normalized;
 }
 
 function normalizeGift(data) {
@@ -1164,7 +1188,7 @@ function findAvatarImage(data) {
 
 function normalizeTriggerType(value) {
   const type = String(value || '').trim().toLowerCase();
-  return type === 'follow' || type === 'likes' ? type : 'gift';
+  return ['follow', 'likes', 'share'].includes(type) ? type : 'gift';
 }
 
 function getTriggerIcon(item) {
@@ -1173,6 +1197,9 @@ function getTriggerIcon(item) {
     return '';
   }
 
+  if (type === 'share') {
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 104"><path d="M61 72 88 46 61 20M15 85V70c0-13 10-24 24-24h49" fill="none" stroke="#fe2c55" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" transform="translate(3 3)"/><path d="M61 72 88 46 61 20M15 85V70c0-13 10-24 24-24h49" fill="none" stroke="#25f4ee" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  }
   const isFollow = type === 'follow';
   const likes = Math.max(1, Math.floor(Number(item?.likesRequired || 50)));
   const heartColor = normalizeHex(item?.likesHeartColor, '#ef233c');
@@ -1236,6 +1263,7 @@ function normalizeId(id) {
 
 function getCatalogImageForReward(reward) {
   const currentImage = String(reward.image || '');
+  if (/\/api\/v1\/gifts\/(?:images|creator-images)\//.test(currentImage)) return currentImage;
   const match = findCatalogEntryForReward(reward);
   return match?.image || currentImage;
 }
@@ -1354,3 +1382,5 @@ function escapeHtml(value) {
     "'": '&#39;'
   })[char]);
 }
+
+if(new URLSearchParams(window.location?.search||'').get('editorPreview')==='1'){window.studioApplyTheme=config=>applyThemeToDocument(config.carouselTheme||config.theme||{});window.studioSetPreviewMute=value=>{muteMode=Boolean(value);if(muteMode)window.studioStopPreviewAudio?.();};window.studioSampleEvent=()=>window.simulateRewardGift?.({rewardIndex:0});}

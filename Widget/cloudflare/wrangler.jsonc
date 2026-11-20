@@ -1,0 +1,77 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "gift-showcase-api",
+  "main": "src/worker.mjs",
+  "compatibility_date": "2026-07-18",
+  "workers_dev": true,
+  "preview_urls": false,
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "run_worker_first": [
+      "/*"
+    ]
+  },
+  "routes": [
+    {
+      "pattern": "kinggumption.com",
+      "custom_domain": true
+    },
+    {
+      "pattern": "www.kinggumption.com",
+      "custom_domain": true
+    }
+  ],
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "gift-showcase-eu"
+    }
+  ],
+  "durable_objects": {
+    "bindings": [
+      {
+        "name": "DOCK_HUBS",
+        "class_name": "DockHub"
+      }
+    ]
+  },
+  "migrations": [
+    {
+      "tag": "v1",
+      "new_sqlite_classes": [
+        "DockHub"
+      ]
+    }
+  ],
+  "vars": {
+    "ALLOWED_ORIGINS": "https://kinggumption.com,https://www.kinggumption.com,http://localhost:8080,http://127.0.0.1:8080,http://localhost:8081,http://127.0.0.1:8081",
+    "REGISTRATION_ENABLED": "true",
+    "ACCOUNT_EMAIL_ENABLED": "false",
+    "PRIVACY_URL": "https://kinggumption.com/privacy/",
+    "TIKTOK_LIVE_URL": "https://www.tiktok.com/@kinggumption/live",
+    "TWITCH_CHANNEL_LOGIN": "kinggumption",
+    "TWITCH_LIVE_URL": "https://www.twitch.tv/kinggumption",
+    "YOUTUBE_LIVE_URL": "https://www.youtube.com/@KingGumption/live",
+    "AUTH_RATE_LIMIT_MAX": "8",
+    "AUTH_RATE_LIMIT_WINDOW_MINUTES": "15",
+    "REVISION_RETENTION_DAYS": "365",
+    "REVISION_LIMIT": "50",
+    "GIFT_CATALOGUE_REGION": "GB",
+    "TIKFINITY_CATALOGUE_ENABLED": "true",
+    "INVITE_ONLY": "true"
+  },
+  "triggers": {
+    "crons": [
+      "0 4 * * *",
+      "15 * * * *",
+      "45 * * * *"
+    ]
+  },
+  "r2_buckets": [
+    {
+      "binding": "GIFT_IMAGES",
+      "bucket_name": "giftshowcase-rewards"
+    }
+  ]
+}

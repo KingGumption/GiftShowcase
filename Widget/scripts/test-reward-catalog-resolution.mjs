@@ -56,3 +56,10 @@ assert.equal(resolve({ ...compactJabDom, image: correctImage })?.image, correctI
 assert.equal(resolve({ ...compactJabDom, title: '', giftNames: [] }), null, 'Ambiguous ID-only lookup should not guess');
 
 console.log('Reward catalogue collision regression checks passed.');
+
+vm.runInContext(extractFunction(rendererSource,'getCatalogImageForReward'),rendererContext);
+for(const path of ['/api/v1/gifts/images/GB/817.webp','/api/v1/gifts/creator-images/0123456789abcdef0123456789abcdef.webp']) {
+ rendererContext.item={...compactJabDom,image:'https://kinggumption.com'+path};
+ assert.equal(vm.runInContext('getCatalogImageForReward(item)',rendererContext),rendererContext.item.image,'Canonical image must win over an archive name/ID match');
+}
+console.log('Stable regional and creator images survive legacy catalogue collisions.');

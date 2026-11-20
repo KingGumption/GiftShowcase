@@ -78,6 +78,8 @@ window.rewardOverlayConfig = {
     "text": "#ffffff",
     "muted": "#ffffff",
     "glow": "#c447ff",
+    "milestoneCard": "#7b2cff",
+    "milestoneText": "#ffffff",
     "opacity": 0.8,
     "tileOpacity": 0.6
   },
@@ -261,9 +263,12 @@ window.rewardOverlayConfig = {
     "directions": "left,left",
     "speeds": "28,28",
     "rowHeight": 96,
+    "labelSize": 11,
     "gap": 0,
     "names": true,
-    "profileNameEnabled": false,
+    "animationsEnabled": true,
+    "profileAnimationEnabled": true,
+    "profileNameEnabled": true,
     "gifts": [
       {
         "enabled": true,
@@ -274,6 +279,7 @@ window.rewardOverlayConfig = {
         "giftIds": [
           "33"
         ],
+        "row": 1,
         "image": "./rewards/033_Heart_Me.png",
         "useGiftImage": true,
         "giftImageNames": [
@@ -290,17 +296,19 @@ window.rewardOverlayConfig = {
         "giftIds": [
           "30"
         ],
+        "row": 1,
         "image": "./rewards/030_GG.png"
       },
       {
         "enabled": true,
-        "title": "Gold Boxing Gloves",
+        "title": "Gold Boxing Glove",
         "giftNames": [
           "Gold Boxing Gloves"
         ],
         "giftIds": [
           "817"
         ],
+        "row": 1,
         "image": "./rewards/817_Gold_Boxing_Gloves.png"
       },
       {
@@ -312,6 +320,7 @@ window.rewardOverlayConfig = {
         "giftIds": [
           "792"
         ],
+        "row": 1,
         "image": "./rewards/792_Finger_heart.png"
       },
       {
@@ -323,6 +332,7 @@ window.rewardOverlayConfig = {
         "giftIds": [
           "856"
         ],
+        "row": 1,
         "image": "./rewards/856_Doughnut.png"
       },
       {
@@ -334,6 +344,7 @@ window.rewardOverlayConfig = {
         "giftIds": [
           "913"
         ],
+        "row": 1,
         "image": "./rewards/913_Super_GG.png"
       },
       {
@@ -345,17 +356,21 @@ window.rewardOverlayConfig = {
         "giftIds": [
           "1176"
         ],
+        "row": 2,
         "image": "./rewards/1176_Coral.png"
       },
       {
         "enabled": true,
-        "title": "Lucky Airdrop",
+        "title": "Lucky Air Drop",
         "giftNames": [
-          "Lucky Airdrop"
+          "Lucky Air Drop",
+          "Lucky Airdrop",
+          "Lucky Airdrop Box"
         ],
         "giftIds": [
           "1258"
         ],
+        "row": 2,
         "image": "./rewards/1258_Lucky_Airdrop_Box.png"
       },
       {
@@ -367,6 +382,7 @@ window.rewardOverlayConfig = {
         "giftIds": [
           "1313"
         ],
+        "row": 2,
         "image": "./rewards/1313_Arcade_Game.png"
       },
       {
@@ -378,49 +394,53 @@ window.rewardOverlayConfig = {
         "giftIds": [
           "1312"
         ],
+        "row": 2,
         "image": "./rewards/1312_Gaming_Chair.png"
       },
       {
         "enabled": true,
-        "title": "Steven Wingman",
+        "title": "Galaxy",
         "giftNames": [
-          "Steven Wingman"
+          "Galaxy"
         ],
         "giftIds": [
-          "18"
+          "1270"
         ],
-        "image": "./rewards/018_Steven_Wingman.png"
+        "row": 2,
+        "image": "./rewards/1270_Galaxy.png"
+      },
+      {
+        "enabled": true,
+        "title": "TikTok Universe",
+        "giftNames": [
+          "TikTok Universe"
+        ],
+        "giftIds": [
+          "1596"
+        ],
+        "row": 2,
+        "image": "./rewards/1596_TikTok_Universe.png"
       }
     ]
   },
   "rewards": [
     {
       "enabled": true,
-      "title": "TTS",
-      "giftNames": [
-        "Heart Me"
-      ],
-      "giftIds": [
-        "33"
-      ],
+      "title": "Heart Me",
+      "giftNames": ["Heart Me"],
+      "giftIds": ["33"],
       "image": "./rewards/033_Heart_Me.png",
       "useGiftImage": true,
-      "giftImageNames": [
-        "Heart Me"
-      ],
+      "giftImageNames": ["Heart Me"],
       "giftImageIds": [],
-      "sound": "./sounds/heartmesound.mp3",
-      "volume": 0.5
+      "sound": "",
+      "volume": 0.85
     },
     {
-      "enabled": false,
-      "title": "Small Scare",
-      "giftNames": [
-        "GG"
-      ],
-      "giftIds": [
-        "30"
-      ],
+      "enabled": true,
+      "title": "GG Gift",
+      "giftNames": ["GG"],
+      "giftIds": ["30"],
       "image": "./rewards/030_GG.png",
       "useGiftImage": false,
       "sound": "",
@@ -428,13 +448,9 @@ window.rewardOverlayConfig = {
     },
     {
       "enabled": true,
-      "title": "Jab Dom",
-      "giftNames": [
-        "Gold Boxing Gloves"
-      ],
-      "giftIds": [
-        "817"
-      ],
+      "title": "Gold Boxing Glove",
+      "giftNames": ["Gold Boxing Gloves"],
+      "giftIds": ["817"],
       "image": "./rewards/817_Gold_Boxing_Gloves.png",
       "useGiftImage": false,
       "sound": "",
@@ -442,113 +458,20 @@ window.rewardOverlayConfig = {
     },
     {
       "enabled": true,
-      "title": "Transform Dom",
-      "giftNames": [
-        "Finger Heart"
-      ],
-      "giftIds": [
-        "792"
-      ],
+      "title": "Finger Heart",
+      "giftNames": ["Finger Heart"],
+      "giftIds": ["792"],
       "image": "./rewards/792_Finger_heart.png",
       "useGiftImage": false,
       "sound": "",
       "volume": 0.85
     },
     {
-      "enabled": false,
-      "title": "Medium Scare",
-      "giftNames": [
-        "Doughnut"
-      ],
-      "giftIds": [
-        "856"
-      ],
-      "image": "./rewards/856_Doughnut.png",
-      "useGiftImage": false,
-      "sound": "",
-      "volume": 0.85
-    },
-    {
       "enabled": true,
-      "title": "Bean",
-      "giftNames": [
-        "Super GG"
-      ],
-      "giftIds": [
-        "913"
-      ],
-      "image": "./rewards/913_Super_GG.png",
-      "useGiftImage": false,
-      "sound": "./sounds/disgusting.mp3",
-      "volume": 1
-    },
-    {
-      "enabled": false,
-      "title": "Big Scare",
-      "giftNames": [
-        "Coral"
-      ],
-      "giftIds": [
-        "1176"
-      ],
-      "image": "./rewards/1176_Coral.png",
-      "useGiftImage": false,
-      "sound": "",
-      "volume": 0.85
-    },
-    {
-      "enabled": false,
-      "title": "Lucky Airdrop",
-      "giftNames": [
-        "Luck Airdrop",
-        "Lucky Airdrop"
-      ],
-      "giftIds": [
-        "1258"
-      ],
-      "image": "./rewards/1258_Lucky_Airdrop_Box.png",
-      "useGiftImage": false,
-      "sound": "",
-      "volume": 0.85
-    },
-    {
-      "enabled": true,
-      "title": "X-Hot Bean",
-      "giftNames": [
-        "Arcade Game"
-      ],
-      "giftIds": [
-        "1313"
-      ],
-      "image": "./rewards/1313_Arcade_Game.png",
-      "useGiftImage": false,
-      "sound": "./sounds/imfine.mp3",
-      "volume": 1
-    },
-    {
-      "enabled": false,
-      "title": "MEGA LOUD!",
-      "giftNames": [
-        "Gaming Chair"
-      ],
-      "giftIds": [
-        "1312"
-      ],
-      "image": "./rewards/1312_Gaming_Chair.png",
-      "useGiftImage": false,
-      "sound": "",
-      "volume": 0.85
-    },
-    {
-      "enabled": false,
-      "title": "Gaming Keyboard",
-      "giftNames": [
-        "Gaming Keyboard"
-      ],
-      "giftIds": [
-        "1425"
-      ],
-      "image": "./rewards/1425_Gaming_Keyboard.png",
+      "title": "Galaxy",
+      "giftNames": ["Galaxy"],
+      "giftIds": ["1270"],
+      "image": "./rewards/1270_Galaxy.png",
       "useGiftImage": false,
       "sound": "",
       "volume": 0.85

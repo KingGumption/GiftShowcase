@@ -46,10 +46,14 @@ function createElement(classes = []) {
   };
 }
 
-function createHarness() {
+function createHarness(options = {}) {
   const elements = new Map();
   const timers = [];
   const storage = new Map();
+  const listeners = new Map();
+  const sockets = [];
+  const parent = { postMessage() {} };
+  if (options.saved) storage.set('tiktok-goal-widget:dock:test:likes', JSON.stringify(options.saved));
 
   [
     '#like-count',
@@ -74,6 +78,7 @@ function createHarness() {
   class FakeWebSocket {
     constructor() {
       this.listeners = new Map();
+      sockets.push(this);
     }
 
     addEventListener(event, handler) {
@@ -136,9 +141,11 @@ function createHarness() {
       }
     },
     window: {
+      parent,
+      addEventListener: (name, handler) => listeners.set(name, handler),
       location: {
-        hash: '#config=eyJfIjoicjIiLCJxIjp7ImoiOiJzdXBwb3J0IiwibCI6MTAwfX0',
-        search: ''
+        hash: options.hash ?? '#config=eyJfIjoicjIiLCJxIjp7ImoiOiJzdXBwb3J0IiwibCI6MTAwfX0',
+        search: options.search || ''
       },
       rewardOverlayConfig: {}
     }
@@ -150,6 +157,10 @@ function createHarness() {
   return {
     context,
     elements,
+    sockets,
+    relay(event, data, source = parent) {
+      listeners.get('message')({ source, data: { type: 'dock:tiktok-raw', data: JSON.stringify({event, data}) } });
+    },
     runNextTimer() {
       const timer = timers.shift();
       assert.equal(typeof timer, 'function', 'expected a queued timer');
@@ -219,4 +230,64 @@ test('separate single rose streaks from same user count separately when msgId ch
   assert.equal(harness.getCount(), 1);
   harness.runNextTimer();
   assert.equal(harness.getCount(), 2);
+});
+
+const likeOptions = { hash: '', search: '?relay=1&stateKey=test', saved: { likes: 45000, savedAt: Date.now() } };
+test('Stream Output resets saved 45k and accepts the new broadcast total', () => {
+  const h = createHarness(likeOptions);
+  assert.equal(h.getCount(), 0);
+  h.relay('like', { totalLikeCount: 45000 });
+  h.relay('like', { totalLikeCount: 120 });
+  assert.equal(h.getCount(), 120);
+  h.relay('like', { totalLikeCount: 0, likeCount: 9 });
+  assert.equal(h.getCount(), 0);
+  h.relay('like', { likeCount: 3 });
+  assert.equal(h.getCount(), 3);
+  h.relay('like', { totalLikeCount: 999 }, {});
+  assert.equal(h.getCount(), 3, 'Only the parent can relay events');
+});
+test('same-room reconnect preserves progress; changed room resets', () => {
+  const h = createHarness(likeOptions);
+  h.relay('connected', { roomId: 'first' });
+  h.relay('like', { totalLikeCount: 45000 });
+  h.relay('connected', { roomId: 'first' });
+  assert.equal(h.getCount(), 45000);
+  h.relay('connected', { roomId: 'second' });
+  assert.equal(h.getCount(), 0);
+});
+test('stream end preserves the final score until the next stream activity', () => {
+  const h = createHarness(likeOptions);
+  h.relay('like', { totalLikeCount: 45000 });
+  h.relay('streamEnd', {});
+  assert.equal(h.getCount(), 45000);
+  h.relay('like', { likeCount: 2 });
+  assert.equal(h.getCount(), 2);
+});
+test('keep-count setting preserves stored progress across stream boundaries', () => {
+  const h = createHarness({ ...likeOptions, search: '?relay=1&stateKey=test&resetOnConnect=0' });
+  assert.equal(h.getCount(), 45000);
+  h.relay('streamEnd', {});
+  h.relay('connected', { roomId: 'new' });
+  h.relay('like', { totalLikeCount: 3 });
+  assert.equal(h.getCount(), 45000);
+});
+test('direct websocket resets on initial connection but not transport reconnect', () => {
+  const h = createHarness({ ...likeOptions, search: '?stateKey=test' });
+  assert.equal(h.getCount(), 45000);
+  h.sockets[0].listeners.get('open')();
+  h.context.handleTikfinityEvent('like', { totalLikeCount: 150 });
+  h.sockets[0].listeners.get('close')();
+  h.runNextTimer();
+  h.sockets[1].listeners.get('open')();
+  assert.equal(h.getCount(), 150);
+});
+test('new stream cancels pending gift streaks from the old stream', () => {
+  const h = createHarness();
+  h.context.handleTikfinityEvent('gift', gift());
+  h.context.handleTikfinityEvent('streamEnd', {});
+  h.context.handleTikfinityEvent('connected', { roomId: 'next' });
+  assert.throws(() => h.runNextTimer(), /expected a queued timer/);
+  assert.equal(h.getCount(), 0);
+  h.context.handleTikfinityEvent('gift', gift({ repeatEnd: true }));
+  assert.equal(h.getCount(), 1);
 });

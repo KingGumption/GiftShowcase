@@ -1,18 +1,23 @@
 const rewardRowsWidget = document.querySelector('#reward-rows-widget');
 const remoteRewardImageBase = 'https://pub-099cf604176d4f20bce0cd8bb2c4d3c6.r2.dev/';
 const savedRowsConfig = loadRowsOverlayConfig();
-savedRowsConfig.profileNameEnabled = savedRowsConfig.profileAnimationEnabled === true && savedRowsConfig.profileNameEnabled === true;
+savedRowsConfig.animationsEnabled = savedRowsConfig.animationsEnabled !== false;
+savedRowsConfig.profileAnimationEnabled = savedRowsConfig.profileAnimationEnabled !== false;
+savedRowsConfig.profileNameEnabled = savedRowsConfig.profileAnimationEnabled && savedRowsConfig.profileNameEnabled !== false;
 const params = new URLSearchParams(window.location.search);
 const tikfinityUrl = params.get('endpoint') || 'ws://localhost:21213/';
 const testMode = params.get('test') === '1';
 const previewMode = params.get('preview') === '1';
-const muteMode = params.get('mute') === '1';
+let muteMode = params.get('mute') === '1';
+const relayMode = params.get('relay') === '1';
+const dockStateKey = params.get('stateKey') || '';
+const rowsLikeStorageKey = dockStateKey ? `reward-overlay-dock-likes:rows:${dockStateKey}` : '';
 const highlightMs = Math.max(900, Number(params.get('highlightMs') || savedRowsConfig.holdOnGiftMs || 6500) || 6500);
 rewardRowsWidget.style.setProperty('--reward-profile-duration', `${highlightMs}ms`);
 
 const catalogGifts = normalizeCatalog(window.rewardImageCatalog || []);
 const configuredRowsGifts = normalizeRowsGifts(savedRowsConfig.gifts || []);
-const gifts = configuredRowsGifts.length ? configuredRowsGifts : catalogGifts;
+const gifts = Array.isArray(savedRowsConfig.gifts) ? configuredRowsGifts : catalogGifts;
 
 const rowCount = clampInteger(savedRowsConfig.rows || 2, 1, 8);
 const perRowValues = getListParam(savedRowsConfig.perRow).map(value => clampInteger(Number(value), 1, 12));
@@ -21,13 +26,15 @@ const speedValues = getListParam(savedRowsConfig.speeds).map(value => clampInteg
 const scrollRows = getScrollRows();
 const gap = clampInteger(savedRowsConfig.gap ?? 0, 0, 32);
 const rowHeight = clampInteger(savedRowsConfig.rowHeight || 96, 64, 160);
+const labelSize = clampInteger(savedRowsConfig.labelSize || 11, 8, 24);
 const showNames = savedRowsConfig.names !== false;
-let highlightTimer;
-let releaseFocusTimer;
 let reconnectTimer;
 let labelScrollTimer;
-let receivedLikeCount = 0;
+let receivedLikeCount = loadRowsLikeTotal();
 const rowScrollStates = new WeakMap();
+const rowGiftAnimationQueues = new Map();
+const rowFocusStates = new WeakMap();
+const pendingRowLabelScrollRoots = new Set();
 const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const longTestSupporters = [
   'PrincessSparkleThunderstormTheThird',
@@ -44,6 +51,8 @@ if (previewMode) {
   // Static config preview only.
 } else if (testMode) {
   startRowsTestMode();
+} else if (relayMode) {
+  setupRowsDockRelay();
 } else {
   connectRows();
 }
@@ -95,10 +104,11 @@ function updateRowTileLabel(label, title) {
 function renderRows() {
   rewardRowsWidget.style.setProperty('--reward-row-gap', `${gap}px`);
   rewardRowsWidget.style.setProperty('--reward-row-height', `${rowHeight}px`);
+  rewardRowsWidget.style.setProperty('--reward-row-label-size', `${labelSize}px`);
   rewardRowsWidget.innerHTML = '';
 
   if (!gifts.length) {
-    rewardRowsWidget.innerHTML = '<p class="reward-rows-empty">No gifts in catalogue</p>';
+    rewardRowsWidget.style.display='none';
     return;
   }
 
@@ -260,7 +270,7 @@ function getLoopableRowGifts(rowGifts, visibleCount) {
 
 function getRowMarkup(rowGifts) {
   return rowGifts.map((gift, index) => `
-    <article class="reward-gift-tile reward-trigger-${escapeAttribute(gift.triggerType)}" data-gift-index="${index}" data-gift-keys="${escapeAttribute(gift.keys.join('|'))}" data-gift-image-keys="${escapeAttribute(gift.giftImageKeys.join('|'))}" data-use-gift-image="${gift.useGiftImage ? '1' : '0'}" data-sound="${escapeAttribute(gift.sound)}" data-volume="${escapeAttribute(gift.volume)}">
+    <article class="reward-gift-tile reward-trigger-${escapeAttribute(gift.triggerType)}" data-gift-index="${index}" ${params.get('editorPreview')==='1'?'data-editor-card-index="'+gift.editorSourceIndex+'"':''} data-gift-keys="${escapeAttribute(gift.keys.join('|'))}" data-gift-image-keys="${escapeAttribute(gift.giftImageKeys.join('|'))}" data-use-gift-image="${gift.useGiftImage ? '1' : '0'}" data-sound="${escapeAttribute(gift.sound)}" data-volume="${escapeAttribute(gift.volume)}">
       <img src="${escapeAttribute(resolveRewardImageUrl(gift.image))}" alt="">
       ${showNames ? `<strong data-original-label="${escapeAttribute(gift.label)}"><span class="reward-label-original">${escapeHtml(gift.label)}</span><span class="reward-label-profile" aria-hidden="true"></span></strong>` : ''}
     </article>
@@ -269,7 +279,7 @@ function getRowMarkup(rowGifts) {
 
 function resolveRewardImageUrl(image) {
   const value = String(image || '');
-  if (window.location.hostname.endsWith('github.io') && value.startsWith('./rewards/')) {
+  if (value.startsWith('./rewards/')) {
     return `${remoteRewardImageBase}${encodeURIComponent(value.replace('./rewards/', ''))}`;
   }
 
@@ -334,10 +344,11 @@ function normalizeCatalog(list) {
 }
 
 function normalizeRowsGifts(list) {
-  return dedupeGifts(list.filter(gift => gift.enabled !== false).map(gift => {
+  return list.filter(gift => gift.enabled !== false).map(gift => {
     const triggerType = normalizeTriggerType(gift.triggerType);
     const hasUseGiftImage = Object.prototype.hasOwnProperty.call(gift, 'useGiftImage');
     return {
+      editorSourceIndex:list.indexOf(gift),
       id: normalizeId(gift.giftIds?.[0] || ''),
       label: getDisplayLabel(gift.title || gift.giftNames?.[0] || gift.image || 'Gift'),
       triggerType,
@@ -363,12 +374,12 @@ function normalizeRowsGifts(list) {
         names: gift.giftImageNames || []
       }),
       keys: getGiftKeys({
-        ids: gift.giftIds || [],
-        names: [...(gift.giftNames || []), gift.title],
+        ids: triggerType === 'gift' ? gift.giftIds || [] : [],
+        names: triggerType === 'gift' ? [...(gift.giftNames || []), gift.title] : [],
         triggers: [getTriggerKey(gift)]
       })
     };
-  }).filter(gift => gift.image));
+  }).filter(gift => gift.image);
 }
 
 function dedupeGifts(list) {
@@ -417,6 +428,7 @@ function connectRows() {
   const ws = new WebSocket(tikfinityUrl);
 
   ws.addEventListener('message', event => {
+    window.creatorGiftDiscovery?.observe(event.data);
     const message = parseMessage(event.data);
     if (!message) {
       return;
@@ -431,14 +443,23 @@ function connectRows() {
   });
 }
 
+function setupRowsDockRelay() {
+  window.addEventListener('message', event => {
+    if (event.source !== window.parent || event.data?.type !== 'dock:tiktok-raw') return;
+    const message = parseMessage(event.data.data);
+    if (message) handleRowsTikTokEvent(String(message.event || '').toLowerCase(), message.data || {});
+  });
+  window.parent.postMessage({ type: 'dock:renderer-ready' }, '*');
+}
+
 function handleRowsTikTokEvent(eventName, data) {
   if (eventName === 'gift') {
     highlightGift(normalizeGiftEvent(data));
     return;
   }
 
-  if (eventName === 'follow') {
-    highlightGift({ triggerType: 'follow' });
+  if (eventName === 'follow' || eventName === 'share') {
+    highlightGift({ triggerType: eventName });
     return;
   }
 
@@ -453,6 +474,7 @@ function handleRowsTikTokEvent(eventName, data) {
 
   const previousTotal = receivedLikeCount;
   receivedLikeCount += increment;
+  saveRowsLikeTotal();
   gifts.filter(gift => gift.triggerType === 'likes').forEach(gift => {
     if (Math.floor(previousTotal / gift.likesRequired) < Math.floor(receivedLikeCount / gift.likesRequired)) {
       highlightGift({ triggerKey: getTriggerKey(gift) });
@@ -491,6 +513,7 @@ function setupRowsGiftSimulator() {
     const increment = Math.max(1, Math.floor(Number(count || likeGift.likesRequired)));
     const previousTotal = receivedLikeCount;
     receivedLikeCount += increment;
+    saveRowsLikeTotal();
     gifts.filter(gift => gift.triggerType === 'likes').forEach(gift => {
       if (Math.floor(previousTotal / gift.likesRequired) < Math.floor(receivedLikeCount / gift.likesRequired)) {
         highlightGift({ triggerKey: getTriggerKey(gift) });
@@ -499,35 +522,55 @@ function setupRowsGiftSimulator() {
   };
 }
 
-function startRowsTestMode() {
-  const testGifts = [
-    ...gifts.filter(gift => gift.triggerType === 'follow'),
-    ...gifts.filter(gift => gift.triggerType === 'likes'),
-    ...gifts.filter(gift => gift.triggerType === 'gift')
-  ];
-  let testIndex = 0;
-  window.setTimeout(sendTestGift, getRandomTestDelay(500, 1700));
+function loadRowsLikeTotal() {
+  if (!rowsLikeStorageKey) return 0;
+  return Math.max(0, Number(localStorage.getItem(rowsLikeStorageKey) || 0) || 0);
+}
 
-  function sendTestGift() {
-    const gift = testGifts[testIndex % testGifts.length];
-    if (gift) {
+function saveRowsLikeTotal() {
+  if (rowsLikeStorageKey) localStorage.setItem(rowsLikeStorageKey, String(receivedLikeCount));
+}
+
+function startRowsTestMode() {
+  const giftEntries = gifts.filter(gift => gift.triggerType === 'gift');
+  const testGifts = giftEntries.length ? giftEntries : gifts;
+  let cycleIndex = 0;
+  window.setTimeout(sendQueueDemo, 600);
+
+  function sendQueueDemo() {
+    if (!testGifts.length) {
+      return;
+    }
+
+    const repeatedGift = testGifts[cycleIndex % testGifts.length];
+    const concurrentGift = testGifts.length > 1
+      ? testGifts[(cycleIndex + 1) % testGifts.length]
+      : null;
+
+    queueTestGift(repeatedGift, cycleIndex, 'Mia', 0);
+    queueTestGift(repeatedGift, cycleIndex + 1, 'Jordan', 180);
+    if (concurrentGift) {
+      queueTestGift(concurrentGift, cycleIndex + 2, 'Alex', 260);
+    }
+    queueTestGift(repeatedGift, cycleIndex + 3, 'Sam', 360);
+
+    cycleIndex += 1;
+    window.setTimeout(sendQueueDemo, (highlightMs * 3) + 1400);
+  }
+
+  function queueTestGift(gift, testIndex, supporter, delay) {
+    window.setTimeout(() => {
+      if(window.editorPreviewActive===false)return;
       highlightGift({
         giftName: gift.label,
         giftId: gift.id,
         triggerType: gift.triggerType,
         triggerKey: getTriggerKey(gift),
-        supporter: gift.triggerType === 'gift' ? getTestSupporterName(testIndex) : '',
+        supporter: gift.triggerType === 'gift' ? supporter : '',
         avatarUrl: gift.triggerType === 'gift' ? getTestAvatarImage(testIndex) : ''
       });
-      testIndex += 1;
-    }
-
-    window.setTimeout(sendTestGift, getRandomTestDelay(highlightMs + 450, highlightMs + 2600));
+    }, delay);
   }
-}
-
-function getRandomTestDelay(min, max) {
-  return Math.round(min + (Math.random() * (max - min)));
 }
 
 function getTestSupporterName(index = 0) {
@@ -554,34 +597,109 @@ function highlightGift(gift) {
     return;
   }
 
-  const focusTile = getBestFocusTile(matchingTiles);
-
-  clearTimeout(highlightTimer);
-  clearTimeout(releaseFocusTimer);
-  clearRowProfileAnimations();
-  updateRowsGiftImage(matchingTiles, gift);
-  if (savedRowsConfig.animationsEnabled !== false) {
-    focusGiftTile(focusTile);
+  if (savedRowsConfig.animationsEnabled === false) {
+    updateRowsGiftImage(matchingTiles, gift);
+    playRowsGiftSound(getBestFocusTile(matchingTiles));
+    return;
   }
-  playRowsGiftSound(focusTile);
-  runRowsGiftProfileAnimation(matchingTiles, gift);
-  rewardRowsWidget.querySelectorAll('.reward-gift-tile.is-hit').forEach(tile => {
-    tile.classList.remove('is-hit');
-  });
 
-  matchingTiles.forEach(tile => {
-    void tile.offsetWidth;
+  groupRowsAnimationTiles(matchingTiles).forEach((tiles, queueKey) => {
+    enqueueRowsGiftAnimation(queueKey, tiles, gift);
+  });
+}
+
+function groupRowsAnimationTiles(tiles) {
+  return tiles.reduce((groups, tile) => {
+    const keys = String(tile.dataset.giftKeys || '').split('|').filter(Boolean);
+    const queueKey = keys.find(key => key.startsWith('id:')) ||
+      keys.find(key => key.startsWith('trigger:')) ||
+      keys.find(key => key.startsWith('name:')) ||
+      `tile:${groups.size}`;
+    const group = groups.get(queueKey) || [];
+    group.push(tile);
+    groups.set(queueKey, group);
+    return groups;
+  }, new Map());
+}
+
+function enqueueRowsGiftAnimation(queueKey, tiles, gift) {
+  const state = rowGiftAnimationQueues.get(queueKey) || { active: false, pending: [], timer: null };
+  state.pending.push({ tiles, gift });
+  rowGiftAnimationQueues.set(queueKey, state);
+  runNextRowsGiftAnimation(queueKey, state);
+}
+
+function runNextRowsGiftAnimation(queueKey, state) {
+  if (state.active) {
+    return;
+  }
+
+  const job = state.pending.shift();
+  if (!job) {
+    rowGiftAnimationQueues.delete(queueKey);
+    return;
+  }
+
+  state.active = true;
+  const focusTile = getBestFocusTile(job.tiles);
+  clearRowsGiftAnimation(job.tiles);
+  job.tiles.forEach(tile => void tile.offsetWidth);
+  updateRowsGiftImage(job.tiles, job.gift);
+  retainRowFocus(focusTile);
+  playRowsGiftSound(focusTile);
+  runRowsGiftProfileAnimation(job.tiles, job.gift);
+  job.tiles.forEach(tile => {
     tile.classList.add('is-hit');
   });
 
-  highlightTimer = setTimeout(() => {
-    matchingTiles.forEach(tile => tile.classList.remove('is-hit'));
-    releaseFocusTimer = setTimeout(() => {
-      rewardRowsWidget.querySelectorAll('.reward-gift-row.is-focusing').forEach(row => {
-        releaseFocusedRow(row, focusTile);
-      });
-    }, 240);
+  state.timer = window.setTimeout(() => {
+    clearRowsGiftAnimation(job.tiles);
+    releaseRowFocus(focusTile);
+    state.active = false;
+    state.timer = null;
+    runNextRowsGiftAnimation(queueKey, state);
   }, highlightMs);
+}
+
+function clearRowsGiftAnimation(tiles) {
+  tiles.forEach(tile => tile.classList.remove('is-hit'));
+  clearRowProfileAnimations(tiles);
+}
+
+function retainRowFocus(tile) {
+  const row = tile?.closest('.reward-gift-row');
+  if (!row) {
+    return;
+  }
+
+  const state = rowFocusStates.get(row) || { active: 0, focusedTile: null, releaseTimer: null };
+  clearTimeout(state.releaseTimer);
+  state.releaseTimer = null;
+  state.active += 1;
+  state.focusedTile = tile;
+  rowFocusStates.set(row, state);
+  focusGiftTile(tile);
+}
+
+function releaseRowFocus(tile) {
+  const row = tile?.closest('.reward-gift-row');
+  const state = row ? rowFocusStates.get(row) : null;
+  if (!row || !state) {
+    return;
+  }
+
+  state.active = Math.max(0, state.active - 1);
+  if (state.active) {
+    return;
+  }
+
+  clearTimeout(state.releaseTimer);
+  state.releaseTimer = window.setTimeout(() => {
+    if (state.active === 0) {
+      releaseFocusedRow(row, state.focusedTile || tile);
+      rowFocusStates.delete(row);
+    }
+  }, 240);
 }
 
 function updateRowsGiftImage(tiles, gift) {
@@ -623,7 +741,6 @@ function runRowsGiftProfileAnimation(tiles, gift) {
   }
 
   tiles.forEach(tile => {
-    clearTimeout(tile.profileAnimationTimer);
     restoreRowProfileName(tile);
     tile.classList.add('profile-animation-active');
     tile.classList.toggle('profile-has-avatar', Boolean(gift.avatarUrl));
@@ -639,25 +756,17 @@ function runRowsGiftProfileAnimation(tiles, gift) {
       tile.append(profileImage);
     }
 
-    tile.profileAnimationTimer = window.setTimeout(() => {
-      tile.classList.remove('profile-animation-active');
-      tile.classList.remove('profile-has-avatar');
-      tile.querySelectorAll('.reward-row-profile-image').forEach(image => image.remove());
-      restoreRowProfileName(tile);
-      tile.profileAnimationTimer = null;
-    }, highlightMs);
   });
 }
 
-function clearRowProfileAnimations() {
-  rewardRowsWidget.querySelectorAll('.reward-gift-tile.profile-animation-active, .reward-gift-tile.profile-has-avatar').forEach(tile => {
-    clearTimeout(tile.profileAnimationTimer);
-    tile.profileAnimationTimer = null;
+function clearRowProfileAnimations(tiles = null) {
+  const targets = tiles || [...rewardRowsWidget.querySelectorAll('.reward-gift-tile.profile-animation-active, .reward-gift-tile.profile-has-avatar')];
+  targets.forEach(tile => {
     tile.classList.remove('profile-animation-active');
     tile.classList.remove('profile-has-avatar');
+    tile.querySelectorAll('.reward-row-profile-image').forEach(image => image.remove());
     restoreRowProfileName(tile);
   });
-  rewardRowsWidget.querySelectorAll('.reward-row-profile-image').forEach(image => image.remove());
 }
 
 function runRowProfileNameAnimation(tile, gift) {
@@ -693,68 +802,25 @@ function restoreRowProfileName(tile) {
 }
 
 function scheduleRowLabelScrollUpdate(root = rewardRowsWidget) {
+  pendingRowLabelScrollRoots.add(root);
   clearTimeout(labelScrollTimer);
-  labelScrollTimer = setTimeout(() => updateRowLabelScroll(root), 60);
+  labelScrollTimer = setTimeout(() => {
+    const roots = [...pendingRowLabelScrollRoots];
+    pendingRowLabelScrollRoots.clear();
+    roots.forEach(updateRowLabelScroll);
+  }, 60);
 }
 
 function updateRowLabelScroll(root = rewardRowsWidget) {
-  const labels = root.matches?.('.reward-gift-tile strong')
-    ? [root]
-    : [...root.querySelectorAll('.reward-gift-tile strong')];
-
-  labels.forEach(label => {
-    const spans = [...label.querySelectorAll('.reward-label-original, .reward-label-profile')];
-    label.classList.remove('is-label-scrolling');
-    spans.forEach(span => {
-      span.style.removeProperty('--reward-label-scroll-distance');
-      span.style.removeProperty('--reward-label-scroll-duration');
-    });
-
-    const distance = getRowLabelScrollDistance(label, spans);
-    if (!distance) {
-      return;
-    }
-
-    if (label.classList.contains('profile-name-active')) {
-      return;
-    }
-
-    const duration = Math.min(10, Math.max(4.8, distance / 12));
-    label.classList.add('is-label-scrolling');
-    spans.forEach(span => {
-      span.style.setProperty('--reward-label-scroll-distance', `${distance}px`);
-      span.style.setProperty('--reward-label-scroll-duration', `${duration}s`);
-    });
-  });
+  const labels=root.matches?.('.reward-gift-tile strong')?[root]:[...root.querySelectorAll('.reward-gift-tile strong')];
+  const entries=labels.map(label=>({label,spans:[...label.querySelectorAll('.reward-label-original, .reward-label-profile')]}));
+  entries.forEach(({label,spans})=>{label.classList.remove('is-label-scrolling');spans.forEach(span=>{span.style.removeProperty('--reward-label-scroll-distance');span.style.removeProperty('--reward-label-scroll-duration')})});
+  const measured=entries.map(entry=>({...entry,distance:getRowLabelScrollDistance(entry.label,entry.spans)}));
+  measured.forEach(({label,spans,distance})=>{if(!distance||label.classList.contains('profile-name-active'))return;const duration=Math.min(10,Math.max(4.8,distance/12));label.classList.add('is-label-scrolling');spans.forEach(span=>{span.style.setProperty('--reward-label-scroll-distance',`${distance}px`);span.style.setProperty('--reward-label-scroll-duration',`${duration}s`)})});
 }
-
-function getRowLabelScrollDistance(label, spans) {
-  const labelWidth = label.clientWidth;
-  if (!labelWidth) {
-    return 0;
-  }
-
-  return spans.reduce((distance, span) => {
-    if (!span.textContent.trim()) {
-      return distance;
-    }
-
-    const previousWidth = span.style.width;
-    const previousMinWidth = span.style.minWidth;
-    const previousOverflow = span.style.overflow;
-    const previousTextOverflow = span.style.textOverflow;
-    span.style.width = 'max-content';
-    span.style.minWidth = '0';
-    span.style.overflow = 'visible';
-    span.style.textOverflow = 'clip';
-    const naturalWidth = Math.ceil(span.getBoundingClientRect().width);
-    span.style.width = previousWidth;
-    span.style.minWidth = previousMinWidth;
-    span.style.overflow = previousOverflow;
-    span.style.textOverflow = previousTextOverflow;
-
-    return Math.max(distance, naturalWidth - labelWidth);
-  }, 0);
+function getRowLabelScrollDistance(label,spans) {
+  const width=label.clientWidth;
+  return width?spans.reduce((distance,span)=>span.textContent.trim()?Math.max(distance,Math.ceil(span.scrollWidth)-width):distance,0):0;
 }
 
 window.addEventListener('resize', () => scheduleRowLabelScrollUpdate());
@@ -814,7 +880,7 @@ function getTranslateX(transform) {
 }
 
 function playRowsGiftSound(tile) {
-  if (previewMode || muteMode || savedRowsConfig.soundsEnabled === false) {
+  if (muteMode || savedRowsConfig.soundsEnabled === false) {
     return;
   }
 
@@ -1037,7 +1103,7 @@ function normalizeName(name) {
 
 function normalizeTriggerType(value) {
   const type = String(value || '').trim().toLowerCase();
-  return type === 'follow' || type === 'likes' ? type : 'gift';
+  return ['follow', 'likes', 'share'].includes(type) ? type : 'gift';
 }
 
 function getTriggerKey(gift) {
@@ -1051,6 +1117,9 @@ function getTriggerIcon(item) {
     return '';
   }
 
+  if (type === 'share') {
+    return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 104 104"><path d="M61 72 88 46 61 20M15 85V70c0-13 10-24 24-24h49" fill="none" stroke="#fe2c55" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" transform="translate(3 3)"/><path d="M61 72 88 46 61 20M15 85V70c0-13 10-24 24-24h49" fill="none" stroke="#25f4ee" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/></svg>');
+  }
   const isFollow = type === 'follow';
   const likes = Math.max(1, Math.floor(Number(item?.likesRequired || 50)));
   const heartColor = normalizeHex(item?.likesHeartColor, '#ef233c');
@@ -1066,6 +1135,7 @@ function getTriggerIcon(item) {
 }
 
 function getTestAvatarImage(index = 0) {
+  if(window.studioDemoViewers)return window.studioDemoViewers.byIndex(index).avatarUrl;
   const hue = (Number(index) * 67 + 185) % 360;
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96"><rect width="96" height="96" rx="48" fill="hsl(${hue} 72% 42%)"/><circle cx="48" cy="35" r="18" fill="white"/><path d="M17 88c3-25 16-38 31-38s28 13 31 38" fill="white"/></svg>`;
   return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
@@ -1078,6 +1148,7 @@ function normalizeId(id) {
 
 function getCatalogImageForGift(gift) {
   const currentImage = String(gift.image || '');
+  if (/\/api\/v1\/gifts\/(?:images|creator-images)\//.test(currentImage)) return currentImage;
   const match = findCatalogEntryForGift(gift);
   return match?.image || currentImage;
 }
@@ -1125,24 +1196,25 @@ function getListParam(value = '') {
 }
 
 function loadRowsOverlayConfig() {
+  const fallback = window.rewardOverlayConfig?.rowsOverlay || {};
   const urlConfig = readConfigFromHash();
   if (urlConfig?.rowsOverlay) {
-    return {
+    return migrateLegacyRowsGiftDefaults({
+      ...fallback,
       ...urlConfig.rowsOverlay,
-      holdOnGiftMs: urlConfig.holdOnGiftMs,
+      holdOnGiftMs: urlConfig.holdOnGiftMs ?? urlConfig.rowsOverlay.holdOnGiftMs,
       theme: urlConfig.rowsTheme || urlConfig.theme || urlConfig.carouselTheme
-    };
+    }, fallback);
   }
 
-  const fallback = window.rewardOverlayConfig?.rowsOverlay || {};
-
+  if(new URLSearchParams(location.search).get('savedConfig')==='0')return {...fallback,holdOnGiftMs:window.rewardOverlayConfig?.holdOnGiftMs,theme:window.rewardOverlayConfig?.rowsTheme||window.rewardOverlayConfig?.theme};
   try {
     const saved = JSON.parse(localStorage.getItem('reward-overlay-config:v1') || 'null');
-    return {
+    return migrateLegacyRowsGiftDefaults({
       ...(saved?.rowsOverlay || fallback),
       holdOnGiftMs: saved?.holdOnGiftMs || window.rewardOverlayConfig?.holdOnGiftMs,
       theme: saved?.rowsTheme || saved?.theme || saved?.carouselTheme || window.rewardOverlayConfig?.rowsTheme || window.rewardOverlayConfig?.theme
-    };
+    }, fallback);
   } catch {
     return {
       ...fallback,
@@ -1152,7 +1224,33 @@ function loadRowsOverlayConfig() {
   }
 }
 
+function migrateLegacyRowsGiftDefaults(config, fallback) {
+  // Existing labels, layout and empty arrays are user data, even with starter IDs.
+  return config;
+}
+
+function isLegacyDefaultRowsGiftSet(gifts) {
+  if (!Array.isArray(gifts)) return false;
+
+  const actualIds = gifts.map(gift => normalizeId(
+    gift?.giftIds?.[0]
+      || gift?.id
+      || gift?.giftId
+      || getIdFromImagePath(gift?.image)
+  )).sort((first, second) => Number(first) - Number(second));
+  const legacySets = [
+    ['18', '30', '33', '792', '817', '856', '913', '1176', '1258', '1270', '1312', '1313'],
+    ['30', '33', '817', '856', '913', '1176', '1258', '1270', '1312', '1313', '1596']
+  ];
+
+  return legacySets.some(expectedIds => (
+    actualIds.length === expectedIds.length
+      && actualIds.every((id, index) => id === expectedIds[index])
+  ));
+}
+
 function readConfigFromHash() {
+  if (window.directWidgetConfig) return window.directWidgetConfig;
   const encoded = new URLSearchParams(window.location.hash.slice(1)).get('config');
 
   if (!encoded) {
@@ -1200,6 +1298,7 @@ function expandCompactTheme(theme) {
 
   return removeEmptyUrlFields({
     preset: theme.p || 'glass-purple',
+    ...(theme.j===0?{backgroundEnabled:false}:{}),
     accent: theme.a,
     secondary: theme.b,
     background: theme.c,
@@ -1224,12 +1323,13 @@ function expandCompactRowsOverlay(rows) {
     directions: rows.d,
     speeds: rows.e,
     rowHeight: rows.f,
+    labelSize: rows.n,
     gap: rows.g,
     names: rows.h === 0 ? false : undefined,
     soundsEnabled: rows.i === 0 ? false : undefined,
     animationsEnabled: rows.k === 0 ? false : undefined,
-    profileAnimationEnabled: rows.l === 1 ? true : undefined,
-    profileNameEnabled: rows.m === 1 ? true : undefined,
+    profileAnimationEnabled: rows.l === 0 ? false : rows.l === 1 ? true : undefined,
+    profileNameEnabled: rows.m === 0 ? false : rows.m === 1 ? true : undefined,
     gifts: Array.isArray(rows.j) ? rows.j.map(expandCompactRowsGift) : undefined
   });
 }
@@ -1282,6 +1382,7 @@ function removeEmptyUrlFields(value) {
 }
 
 function applyThemeToDocument(theme = {}) {
+  document.body.classList.toggle('reward-no-background',theme.backgroundEnabled===false);
   const defaults = {
     accent: '#03f5d8',
     secondary: '#531c7b',
@@ -1460,3 +1561,6 @@ function escapeHtml(value) {
     "'": '&#39;'
   })[char]);
 }
+
+
+if(new URLSearchParams(window.location?.search||'').get('editorPreview')==='1'){window.studioApplyTheme=config=>applyThemeToDocument(config.rowsTheme||config.theme||{});window.studioSetPreviewMute=value=>{muteMode=Boolean(value);if(muteMode)window.studioStopPreviewAudio?.();};window.studioSampleEvent=()=>window.simulateRowsGift?.({giftId:gifts[0]?.ids?.[0],giftName:gifts[0]?.label});}

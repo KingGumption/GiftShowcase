@@ -1,57 +1,302 @@
 <!doctype html>
 <html lang="en">
-  <head>
+  <head><script src="./hosting-guard.js?v=20261118-studio3"></script>
     <meta charset="utf-8">
+    <script src="/site-theme.js?v=20261118-studio3"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Reward Overlay Config</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; media-src 'self' blob: data: https:; connect-src 'self' http://127.0.0.1:8787 http://localhost:8787 https: ws://127.0.0.1:21213 ws://localhost:21213 wss:; object-src 'none'; base-uri 'self'; form-action 'self'">
+    <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+    <title>King Gumption Studio — Overlay Editor</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="./style.css?v=20260701-3">
-  </head>
-  <body class="reward-config-source">
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./style.css?v=20261118-studio3">
+    <link rel="stylesheet" href="../../site-chrome.css?v=20260810-1">
+      <link rel="stylesheet" href="/site-theme.css?v=20261117-sidebar3">
+  <link rel="stylesheet" href="/Widget/public/studio-icon-motion.css?v=20261118-studio3">
+</head>
+  <body class="reward-config-source cloud-auth-required">
     <main class="reward-config-app">
+      <aside class="studio-sidebar">
+        <a class="studio-brand" href="/" aria-label="King Gumption Studio home">
+          <span class="studio-brand-mark" aria-hidden="true">KG</span>
+          <span><strong>King Gumption</strong><small>Studio</small></span>
+        </a>
+
+        <div class="studio-sidebar-content sidebar-auth-only">
+          <span class="studio-nav-label">Overlays</span>
+          <nav class="config-tabs" aria-label="Overlay types">
+            <button data-config-tab="original" data-studio-title="Gift Carousel" type="button" class="is-active">
+              <span class="studio-nav-icon" aria-hidden="true">✦</span><span>Gift Carousel</span>
+            </button>
+            <button data-config-tab="rows" data-studio-title="Reward Rows" type="button">
+              <span class="studio-nav-icon" aria-hidden="true">▤</span><span>Reward Rows</span>
+            </button>
+            <button data-config-tab="side-gifts" data-studio-title="Side Gifts" type="button">
+              <span class="studio-nav-icon" aria-hidden="true">↕</span><span>Side Gifts</span>
+            </button>
+            <button data-config-tab="goal" data-studio-title="Goal Bar" type="button">
+              <span class="studio-nav-icon" aria-hidden="true">♥</span><span>Goal Bar</span>
+            </button>
+            <button data-config-tab="top-likers" data-studio-title="Top Likers" type="button">
+              <span class="studio-nav-icon" aria-hidden="true">♛</span><span>Top Likers</span>
+            </button>
+          </nav>
+
+          <span class="studio-nav-label studio-workspace-label">Workspace</span>
+          <button id="studio-output-tab" class="studio-nav-link" type="button" aria-controls="studio-output-workspace">
+            <span class="studio-nav-icon" aria-hidden="true">⌗</span><span>Canvas Designer</span>
+          </button>
+        </div>
+
+        <div class="studio-account-panel">
+          <div class="studio-welcome"><h1>Your Studio</h1><p>Sign in to edit your overlays, arrange layouts and manage your Direct links.</p></div>
+          <form id="cloud-auth-form" class="cloud-auth-form studio-sidebar-auth" hidden>
+            <span class="studio-nav-label">Account</span>
+            <label class="auth-field"><span>Email address</span><input id="cloud-auth-email" type="email" autocomplete="email" placeholder="Email" aria-label="Email" required></label>
+            <label class="auth-field"><span>Password</span><input id="cloud-auth-password" type="password" autocomplete="current-password" placeholder="Password" aria-label="Password" minlength="10" required></label>
+            <p id="auth-mode-heading">Sign in to your Studio</p><p id="auth-password-help" hidden>Use an email address and a passphrase of at least 15 characters.</p><button id="cloud-sign-in" type="submit" class="btn-primary">Sign In</button>
+            <button id="cloud-create-account" type="button" class="studio-account-secondary" hidden>Create an account</button>
+            <a id="studio-request-invitation" href="/request-invite/" hidden>Request an invitation ↗</a><p id="cloud-auth-status" class="studio-auth-status" role="status" aria-live="polite" hidden></p>
+            <p id="cloud-registration-note" class="studio-privacy-note">Read the privacy notice before creating an account.</p>
+            <p class="studio-privacy-note">Creating an account means we store your email and overlay settings. <a href="/privacy/" target="_blank" rel="noopener">How we use your data</a></p>
+          </form>
+
+          <div id="cloud-account-session" class="studio-account-session" hidden>
+            <span class="studio-account-avatar" aria-hidden="true">KG</span>
+            <div><small>Signed in</small><strong id="cloud-account-email"></strong></div>
+            <button id="cloud-sign-out" type="button" title="Sign out" aria-label="Sign out"><svg class="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 4H4v16h5M14 8l4 4-4 4M8 12h10"/></svg></button>
+            <details class="studio-account-menu">
+              <summary><svg class="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 3-1 3-3 1-1 3 2 2-1 3 2 2 3-1 2 2 3-1 1-3 3-1 1-3-2-2 1-3-2-2-3 1-2-2Z"/><circle cx="12" cy="11" r="3"/></svg><span>Account settings</span><svg class="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 10 4 4 4-4"/></svg></summary>
+              <div class="studio-account-actions" aria-label="Account and privacy controls">
+                <button id="cloud-export-account" type="button"><svg class="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12m-4-4 4 4 4-4M4 16v5h16v-5"/></svg><span>Download my data</span></button>
+                <button id="cloud-change-email" type="button"><svg class="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 6 9 7 9-7"/></svg><span>Change email</span></button>
+                <button id="cloud-clear-local-data" type="button"><svg class="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m4 16 9-12 8 7-8 10H8l-4-5ZM9 10l8 7M13 21h8"/></svg><span>Clear browser data</span></button>
+                <a href="/privacy/" target="_blank" rel="noopener"><svg class="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m12 3 8 3v6c0 5-8 9-8 9s-8-4-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></svg><span>Privacy notice</span></a>
+                <button id="cloud-delete-account" type="button" class="is-danger"><svg class="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18M9 6V3h6v3M5 6l1 15h12l1-15M10 10v7M14 10v7"/></svg><span>Delete account</span></button>
+              </div>
+            </details>
+          </div>
+        </div>
+
+        <div class="studio-sidebar-footer sidebar-auth-only">
+          <p id="config-state" class="config-status">Loaded</p>
+          <button id="reset-config" type="button" class="studio-reset-button"><svg class="account-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 11a9 9 0 1 1 2 7M3 5v6h6"/></svg><span>Reset editor</span></button>
+        </div>
+      </aside>
+
+      <section id="studio-output-workspace" class="studio-output-workspace" aria-label="Canvas Designer" hidden>
+        <iframe id="studio-output-frame" title="Canvas Designer" data-src="/studio/outputs/?embed=1"></iframe>
+      </section>
+
       <header class="reward-config-header">
         <div class="config-header-content">
-          <h1>🎁 Reward Overlay Config</h1>
-          <p id="config-state" class="config-status">Loaded</p>
-        </div>
-        <div class="config-actions">
-          <button id="add-reward" type="button" class="btn-primary" hidden>+ Add Reward</button>
-          <input id="config-version-name" type="text" placeholder="Version name">
-          <select id="config-version-select" aria-label="Saved config versions">
-            <option value="">Saved versions</option>
-          </select>
-          <button id="save-config" type="button" class="btn-success">Save</button>
-          <button id="load-config-version" type="button" class="btn-secondary">Load</button>
-          <button id="delete-config-version" type="button" class="btn-danger">Delete</button>
-          <button id="copy-carousel-url" type="button" class="btn-secondary">Copy Carousel URL</button>
-          <button id="copy-rows-url" type="button" class="btn-secondary">Copy Rows URL</button>
-          <button id="copy-side-gifts-url" type="button" class="btn-secondary">Copy Side Gifts URL</button>
-          <button id="copy-goal-url" type="button" class="btn-secondary">Copy Goal URL</button>
-          <button id="copy-top-likers-url" type="button" class="btn-secondary">Copy Top Likers URL</button>
-          <button id="copy-config-url" type="button" class="btn-secondary">Copy Config URL</button>
-          <button id="reset-config" type="button" class="btn-danger">Reset</button>
+          <span class="studio-page-kicker">Overlay editor</span>
+          <h1 id="studio-current-title">Gift Carousel</h1>
+          <p>Preview your design, adjust its settings and publish it to your stream.</p>
         </div>
       </header>
 
-      <section class="config-url-loader" aria-label="Load a previously created configuration">
-        <label for="load-config-url">Load Previous Config URL</label>
-        <div class="config-url-loader-controls">
-          <input id="load-config-url" type="url" placeholder="Paste a carousel, rows, or config URL here">
-          <button id="load-config-url-button" type="button" class="btn-primary">Load URL</button>
+      <section id="cloud-config-panel" class="cloud-config-panel" aria-label="Saved designs and canvases">
+        <div class="cloud-config-heading">
+          <div>
+            <h2><span id="cloud-variant-kind-label">Gift Carousel</span></h2>
+            <p id="cloud-config-status">Checking cloud configuration…</p>
+          </div>
         </div>
-        <span class="field-hint">Loads the settings into this editor without saving over your browser config.</span>
+
+        <div id="cloud-config-disabled" class="cloud-config-message" hidden>
+          Deploy the cloud API and set <code>apiBaseUrl</code> in <code>overlay-cloud-config.js</code> to enable accounts and permanent Browser Source canvases.
+        </div>
+
+        <div id="cloud-variant-controls" class="cloud-variant-controls" hidden>
+          <div class="cloud-version-row">
+            <label class="cloud-version-select" for="cloud-variant-select">
+              <span>Saved design</span>
+              <select id="cloud-variant-select" aria-label="Saved design">
+                <option value="">New Gift Carousel design</option>
+              </select>
+            </label>
+            <button id="cloud-save-variant" type="button" class="btn-success">Save</button>
+            <details id="cloud-version-menu" class="cloud-version-menu">
+              <summary aria-label="More version actions" title="More version actions">•••</summary>
+              <div class="cloud-version-menu-popover">
+                <button id="cloud-save-as-variant" type="button">Save a copy</button>
+                <button id="cloud-rename-variant" type="button">Rename</button>
+                <button id="cloud-delete-variant" type="button" class="is-danger">Delete</button>
+              </div>
+            </details>
+          </div>
+
+          <div class="cloud-output-assignment">
+            <label for="cloud-output-select"><strong>Add to canvas</strong></label>
+            <select id="cloud-output-select" aria-label="Canvas"><option value="">Choose an canvas</option></select>
+            <input id="cloud-output-kind" type="hidden" value="carousel">
+            <button id="cloud-add-to-output" type="button" class="btn-primary">Add</button>
+          </div>
+
+          <details class="studio-advanced">
+            <summary>Advanced</summary>
+            <div class="studio-advanced-content">
+              <label class="config-checkbox-label cloud-live-toggle">
+                <input id="cloud-live-updates" type="checkbox">
+                <span>Live-update assigned canvases while editing</span>
+              </label>
+              <div class="config-url-loader" aria-label="Load a previously created configuration">
+                <label for="load-config-url">Load previous config URL</label>
+                <div class="config-url-loader-controls">
+                  <input id="load-config-url" type="url" placeholder="Paste a carousel, rows, or config URL here">
+                  <button id="load-config-url-button" type="button" class="btn-primary">Load URL</button>
+                </div>
+                <span class="field-hint">Loads settings into the editor without overwriting the saved browser config.</span>
+              </div>
+              <div class="studio-migration-row">
+                <div><strong>Old browser versions</strong><span>Move locally saved versions into your account.</span></div>
+                <button id="cloud-migrate-versions" type="button" class="btn-secondary">Migrate Local Versions</button>
+              </div>
+            </div>
+          </details>
+        </div>
       </section>
 
-      <nav class="config-tabs" aria-label="Reward config views">
-        <button data-config-tab="original" type="button" class="is-active">Gift Carousel</button>
-        <button data-config-tab="rows" type="button">Rows Overlay</button>
-        <button data-config-tab="side-gifts" type="button">Side Gifts</button>
-        <button data-config-tab="goal" type="button">Goal Bar</button>
-        <button data-config-tab="top-likers" type="button">Top Likers</button>
-      </nav>
 
+      <dialog id="creator-gift-dialog" class="cloud-variant-dialog creator-gift-dialog" aria-labelledby="creator-gift-title">
+        <form id="creator-gift-form">
+          <header class="creator-gift-header"><div><h2 id="creator-gift-title">Import creator gifts</h2><p>Add a gift now, before someone sends it. Existing designs stay as saved.</p></div><button id="creator-gift-close" type="button" aria-label="Close creator gift import">×</button></header>
+          <div class="creator-gift-fields">
+            <label>Gift ID<input id="creator-gift-id" name="id" inputmode="numeric" pattern="[1-9][0-9]{0,19}" maxlength="20" required></label>
+            <label>Gift name<input id="creator-gift-name" name="name" maxlength="160" required></label>
+            <label>Coins per gift<input id="creator-gift-coins" name="coins" type="number" min="0" max="10000000" step="1" required></label>
+            <label>TikTok image URL<input id="creator-gift-url" name="imageUrl" type="url" placeholder="https://p19-webcast.tiktokcdn.com/…"></label>
+            <label class="creator-gift-upload">Or upload artwork<input id="creator-gift-image" type="file" accept="image/png,image/webp,image/jpeg,image/gif"><span>PNG, WebP, JPEG or GIF · up to 2 MB. Leave both blank to keep existing artwork or use a placeholder.</span></label>
+          </div>
+          <p class="creator-gift-note">Using an existing gift ID updates its library entry and any designs already using its creator image link. Manually imported details take priority over discovery.</p>
+          <div class="creator-gift-footer"><p id="creator-gift-message" role="status"></p><button id="creator-gift-save" type="submit" class="btn-primary">Save gift</button></div>
+        </form>
+        <details class="creator-gift-bulk"><summary>Import a CSV or JSON file</summary>
+          <p>Up to 100 gifts. Columns: <code>id,name,coins,imageUrl</code>. Image URL is optional.</p>
+          <button id="creator-gift-template" type="button">Download CSV template</button>
+          <label>Choose CSV or JSON<input id="creator-gift-file" type="file" accept=".csv,.json,text/csv,application/json"></label>
+          <div id="creator-gift-preview" class="creator-gift-preview" aria-live="polite"></div>
+          <button id="creator-gift-import" type="button" disabled>Import gifts</button>
+        </details>
+      </dialog>
+
+      <dialog id="direct-link-dialog" class="cloud-variant-dialog" aria-labelledby="direct-link-title" aria-describedby="direct-link-size">
+        <div class="direct-link-content">
+          <header class="direct-link-heading">
+            <h2 id="direct-link-title">Direct link</h2>
+            <p>Use this widget on its own as a Browser Source.</p>
+          </header>
+          <p id="direct-link-size" class="direct-link-dimensions"></p>
+          <label class="direct-link-field" for="direct-link-url">
+            Browser Source URL
+            <input id="direct-link-url" type="text" readonly spellcheck="false">
+          </label>
+          <p class="direct-link-note">The link updates when you save this design. Keep it private.</p>
+          <p class="direct-link-note">For live activity, run TikFinity on the same computer as your streaming software.</p>
+          <div class="direct-link-actions">
+            <button id="direct-link-close" type="button">Close</button>
+            <button id="direct-link-copy" type="button">Copy link</button>
+          </div>
+          <p id="direct-link-status" role="status" aria-live="polite"></p>
+        </div>
+      </dialog>
+      <dialog id="cloud-variant-dialog" class="cloud-variant-dialog">
+        <form method="dialog">
+          <div class="cloud-variant-dialog-heading">
+            <h2 id="cloud-variant-dialog-title">New version</h2>
+            <p id="cloud-variant-dialog-description">Name this version so you can find it later.</p>
+          </div>
+          <label for="cloud-variant-name">Version name</label>
+          <input id="cloud-variant-name" type="text" maxlength="80" placeholder="Gift Carousel version name" autocomplete="off">
+          <div class="cloud-variant-dialog-actions">
+            <button id="cloud-variant-dialog-cancel" type="button" class="btn-secondary">Cancel</button>
+            <button id="cloud-variant-dialog-confirm" type="submit" class="btn-success">Save</button>
+          </div>
+        </form>
+      </dialog>
+
+      <section class="config-section" data-config-panel="original" aria-label="Gift carousel preview">
+        <div class="section-header-row">
+          <h2 class="section-title">Carousel Preview</h2>
+          <div class="preview-toggle-group">
+            <label class="preview-test-toggle">
+              <input id="carousel-preview-test" type="checkbox" checked>
+              <span>Sample events</span>
+            </label>
+            <label class="preview-test-toggle">
+              <input id="carousel-preview-mute" type="checkbox" checked>
+              <span>Mute</span>
+            </label>
+          </div>
+        </div>
+        <div class="overlay-preview-frame overlay-preview-frame-carousel">
+          <iframe id="carousel-preview" title="Gift carousel preview"></iframe>
+        </div>
+      </section>
+
+            <section class="config-section" data-config-panel="rows" aria-label="Rows overlay preview" hidden>
+        <div class="section-header-row">
+          <h2 class="section-title">On stream</h2>
+          <div class="preview-toggle-group">
+            <label class="preview-test-toggle">
+              <input id="rows-preview-test" type="checkbox" checked>
+              <span>Sample events</span>
+            </label>
+            <label class="preview-test-toggle">
+              <input id="rows-preview-mute" type="checkbox" checked>
+              <span>Mute</span>
+            </label>
+          </div>
+        </div>
+        <div class="overlay-preview-frame overlay-preview-frame-rows">
+          <iframe id="rows-preview" title="Rows overlay preview"></iframe>
+        </div>
+      </section>
+<section class="config-section" data-config-panel="rows" aria-label="Rows gifts" hidden>
+        <h2 class="section-title">Build your rows</h2>
+        <div class="reward-list-controls">
+          <div class="reward-count">Total: <span id="rows-gift-total">0</span> | Enabled: <span id="rows-gift-enabled">0</span></div>
+          <button id="add-row-gift" type="button" class="btn-primary">+ Add card</button>
+        </div>
+        <section id="rows-gift-list" class="reward-config-list" aria-label="Rows gift list"></section>
+      </section>
+
+            <section class="config-section" data-config-panel="side-gifts" aria-label="Side gifts preview" hidden>
+        <div class="section-header-row">
+          <h2 class="section-title">Side Gifts Preview</h2>
+          <div class="preview-toggle-group">
+            <label class="preview-test-toggle">
+              <input id="side-gifts-preview-test" type="checkbox" checked>
+              <span>Sample events</span>
+            </label>
+          </div>
+        </div>
+        <div class="overlay-preview-frame overlay-preview-frame-side-gifts">
+          <iframe id="side-gifts-preview" title="Side gifts preview"></iframe>
+        </div>
+      </section>
+
+            <section class="config-section" data-config-panel="goal" aria-label="Goal bar preview" hidden>
+        <div class="section-header-row">
+          <h2 class="section-title">Goal Bar Preview</h2>
+        </div>
+        <div class="overlay-preview-frame overlay-preview-frame-goal">
+          <iframe id="goal-preview" title="Goal bar preview"></iframe>
+        </div>
+      </section>
+
+            <section class="config-section" data-config-panel="top-likers" aria-label="Top likers preview" hidden>
+        <div class="section-header-row">
+          <h2 class="section-title">Top Likers Preview</h2>
+        </div>
+        <div class="overlay-preview-frame overlay-preview-frame-top-likers">
+          <iframe id="top-likers-preview" title="Top likers preview"></iframe>
+        </div>
+      </section>
+
+      
       <details class="config-section config-collapse" data-config-panel="original" aria-label="Global reward settings">
         <summary>
           <h2 class="section-title">Carousel Settings</h2>
@@ -210,26 +455,7 @@
         </div>
       </details>
 
-      <section class="config-section" data-config-panel="original" aria-label="Gift carousel preview">
-        <div class="section-header-row">
-          <h2 class="section-title">Carousel Preview</h2>
-          <div class="preview-toggle-group">
-            <label class="preview-test-toggle">
-              <input id="carousel-preview-test" type="checkbox">
-              <span>Test animations</span>
-            </label>
-            <label class="preview-test-toggle">
-              <input id="carousel-preview-mute" type="checkbox" checked>
-              <span>Mute</span>
-            </label>
-          </div>
-        </div>
-        <div class="overlay-preview-frame overlay-preview-frame-carousel">
-          <iframe id="carousel-preview" title="Gift carousel preview"></iframe>
-        </div>
-      </section>
-
-      <details class="config-section config-collapse" data-config-panel="rows" aria-label="Rows global settings" hidden>
+<details class="config-section config-collapse" data-config-panel="rows" aria-label="Rows global settings" hidden>
         <summary>
           <h2 class="section-title">Rows Global Settings</h2>
           <span class="collapse-indicator">Expand</span>
@@ -272,6 +498,11 @@
             <span class="field-hint">Gap between rows in pixels</span>
           </div>
           <div class="config-group-heading">Labels</div>
+          <div class="config-field">
+            <label for="rows-label-size">Label Size</label>
+            <input id="rows-label-size" type="number" min="8" max="24" step="1">
+            <span class="field-hint">Gift-name size in pixels</span>
+          </div>
           <div class="config-field">
             <label for="rows-names">Gift Names</label>
             <select id="rows-names">
@@ -405,33 +636,7 @@
         </div>
       </details>
 
-      <section class="config-section" data-config-panel="rows" aria-label="Rows overlay preview" hidden>
-        <div class="section-header-row">
-          <h2 class="section-title">Rows Preview</h2>
-          <div class="preview-toggle-group">
-            <label class="preview-test-toggle">
-              <input id="rows-preview-test" type="checkbox">
-              <span>Test animations</span>
-            </label>
-            <label class="preview-test-toggle">
-              <input id="rows-preview-mute" type="checkbox" checked>
-              <span>Mute</span>
-            </label>
-          </div>
-        </div>
-        <div class="overlay-preview-frame overlay-preview-frame-rows">
-          <iframe id="rows-preview" title="Rows overlay preview"></iframe>
-        </div>
-      </section>
 
-      <section class="config-section" data-config-panel="rows" aria-label="Rows gifts" hidden>
-        <h2 class="section-title">Rows Gifts</h2>
-        <div class="reward-list-controls">
-          <div class="reward-count">Total: <span id="rows-gift-total">0</span> | Enabled: <span id="rows-gift-enabled">0</span></div>
-          <button id="add-row-gift" type="button" class="btn-primary">+ Add Row Gift</button>
-        </div>
-        <section id="rows-gift-list" class="reward-config-list" aria-label="Rows gift list"></section>
-      </section>
 
       <details class="config-section config-collapse" data-config-panel="side-gifts" aria-label="Side gifts settings" hidden>
         <summary>
@@ -452,12 +657,12 @@
           <div class="config-field">
             <label for="side-gifts-width">Canvas Width</label>
             <input id="side-gifts-width" type="number" min="180" max="1920" step="10">
-            <span class="field-hint">OBS source width, e.g. 540 for vertical TikTok</span>
+            <span class="field-hint">Browser Source width, e.g. 540 for vertical TikTok</span>
           </div>
           <div class="config-field">
-            <label for="side-gifts-height">Canvas Height</label>
-            <input id="side-gifts-height" type="number" min="240" max="1920" step="10">
-            <span class="field-hint">OBS source height, e.g. 960 for vertical TikTok</span>
+            <label for="side-gifts-height">Calculated Height</label>
+            <input id="side-gifts-height" type="number" min="1" max="7680" readonly>
+            <span class="field-hint">Automatically fits the larger left/right gift column</span>
           </div>
           <div class="config-group-heading">Gift Stack</div>
           <div class="config-field">
@@ -637,26 +842,11 @@
         </div>
       </details>
 
-      <section class="config-section" data-config-panel="side-gifts" aria-label="Side gifts preview" hidden>
-        <div class="section-header-row">
-          <h2 class="section-title">Side Gifts Preview</h2>
-          <div class="preview-toggle-group">
-            <label class="preview-test-toggle">
-              <input id="side-gifts-preview-test" type="checkbox" checked>
-              <span>Test animations</span>
-            </label>
-          </div>
-        </div>
-        <div class="overlay-preview-frame overlay-preview-frame-side-gifts">
-          <iframe id="side-gifts-preview" title="Side gifts preview"></iframe>
-        </div>
-      </section>
-
-      <section class="config-section" data-config-panel="side-gifts" aria-label="Side gifts" hidden>
+<section class="config-section" data-config-panel="side-gifts" aria-label="Side gifts" hidden>
         <h2 class="section-title">Side Gifts</h2>
         <div class="reward-list-controls">
           <div class="reward-count">Total: <span id="side-gift-total">0</span> | Enabled: <span id="side-gift-enabled">0</span></div>
-          <button id="add-side-gift" type="button" class="btn-primary">+ Add Side Gift</button>
+          <button id="add-side-gift" type="button" class="btn-primary">+ Add card</button>
         </div>
         <section id="side-gift-list" class="reward-config-list side-gift-config-list" aria-label="Side gift list"></section>
       </section>
@@ -712,7 +902,7 @@
               <option value="1">Reset each connection</option>
               <option value="0">Keep saved count</option>
             </select>
-            <span class="field-hint">Useful when restarting TikFinity between streams</span>
+            <span class="field-hint">Useful when restarting your live-event connection between streams</span>
           </div>
           <div class="config-group-heading">Size</div>
           <div class="config-field goal-field-width">
@@ -724,6 +914,22 @@
             <label for="goal-height">Height</label>
             <input id="goal-height" type="number" min="30" max="120" step="1">
             <span class="field-hint">Thin bar height in pixels</span>
+          </div>
+          <div class="config-group-heading">Font sizes</div>
+          <div class="config-field">
+            <label for="goal-labelSize">Label size (px)</label>
+            <input id="goal-labelSize" type="number" min="8" max="48" step="1" placeholder="Auto (16)">
+            <span class="field-hint">Leave blank for the original responsive size. Increase bar height for larger text.</span>
+          </div>
+          <div class="config-field">
+            <label for="goal-counterSize">Current count size (px)</label>
+            <input id="goal-counterSize" type="number" min="8" max="48" step="1" placeholder="Auto (15)">
+            <span class="field-hint">Leave blank for the original responsive size. Increase bar height for larger text.</span>
+          </div>
+          <div class="config-field">
+            <label for="goal-targetSize">Target number size (px)</label>
+            <input id="goal-targetSize" type="number" min="8" max="48" step="1" placeholder="Auto (17)">
+            <span class="field-hint">Leave blank for the original responsive size. Increase bar height for larger text.</span>
           </div>
           <div class="config-group-heading">Colours</div>
           <div class="config-field color-config-field goal-field-accent">
@@ -747,19 +953,102 @@
               <input id="goal-text-hex" type="text" spellcheck="false" placeholder="#ffffff">
             </div>
           </div>
+          <div class="config-group-heading">Individual colours</div>
+          <div class="config-field">
+            <label><input id="goal-appearance-enabled" type="checkbox"> Use individual colours</label>
+            <span class="field-hint">Off keeps the original styling. On gives each part its own colour, including during live activity.</span>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="goal-custom-background">Panel background</label>
+            <div class="color-control">
+              <input id="goal-custom-background" type="color" value="#15101f" data-goal-custom-control disabled>
+              <input id="goal-custom-background-hex" type="text" value="#15101f" spellcheck="false" aria-label="Panel background hex" data-goal-custom-control disabled>
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="goal-custom-border">Panel outline</label>
+            <div class="color-control">
+              <input id="goal-custom-border" type="color" value="#79548e" data-goal-custom-control disabled>
+              <input id="goal-custom-border-hex" type="text" value="#79548e" spellcheck="false" aria-label="Panel outline hex" data-goal-custom-control disabled>
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="goal-custom-label">Label and icon</label>
+            <div class="color-control">
+              <input id="goal-custom-label" type="color" value="#03f5d8" data-goal-custom-control disabled>
+              <input id="goal-custom-label-hex" type="text" value="#03f5d8" spellcheck="false" aria-label="Label and icon hex" data-goal-custom-control disabled>
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="goal-custom-trackBackground">Empty track</label>
+            <div class="color-control">
+              <input id="goal-custom-trackBackground" type="color" value="#050a12" data-goal-custom-control disabled>
+              <input id="goal-custom-trackBackground-hex" type="text" value="#050a12" spellcheck="false" aria-label="Empty track hex" data-goal-custom-control disabled>
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="goal-custom-trackBorder">Track outline</label>
+            <div class="color-control">
+              <input id="goal-custom-trackBorder" type="color" value="#03f5d8" data-goal-custom-control disabled>
+              <input id="goal-custom-trackBorder-hex" type="text" value="#03f5d8" spellcheck="false" aria-label="Track outline hex" data-goal-custom-control disabled>
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="goal-custom-progressStart">Progress start</label>
+            <div class="color-control">
+              <input id="goal-custom-progressStart" type="color" value="#03f5d8" data-goal-custom-control disabled>
+              <input id="goal-custom-progressStart-hex" type="text" value="#03f5d8" spellcheck="false" aria-label="Progress start hex" data-goal-custom-control disabled>
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="goal-custom-progressEnd">Progress end</label>
+            <div class="color-control">
+              <input id="goal-custom-progressEnd" type="color" value="#7affed" data-goal-custom-control disabled>
+              <input id="goal-custom-progressEnd-hex" type="text" value="#7affed" spellcheck="false" aria-label="Progress end hex" data-goal-custom-control disabled>
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="goal-custom-progressGlow">Progress glow</label>
+            <div class="color-control">
+              <input id="goal-custom-progressGlow" type="color" value="#03f5d8" data-goal-custom-control disabled>
+              <input id="goal-custom-progressGlow-hex" type="text" value="#03f5d8" spellcheck="false" aria-label="Progress glow hex" data-goal-custom-control disabled>
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="goal-custom-counterBackground">Counter background</label>
+            <div class="color-control">
+              <input id="goal-custom-counterBackground" type="color" value="#7affed" data-goal-custom-control disabled>
+              <input id="goal-custom-counterBackground-hex" type="text" value="#7affed" spellcheck="false" aria-label="Counter background hex" data-goal-custom-control disabled>
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="goal-custom-counterText">Counter text</label>
+            <div class="color-control">
+              <input id="goal-custom-counterText" type="color" value="#061013" data-goal-custom-control disabled>
+              <input id="goal-custom-counterText-hex" type="text" value="#061013" spellcheck="false" aria-label="Counter text hex" data-goal-custom-control disabled>
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="goal-custom-counterBorder">Counter outline</label>
+            <div class="color-control">
+              <input id="goal-custom-counterBorder" type="color" value="#ffffff" data-goal-custom-control disabled>
+              <input id="goal-custom-counterBorder-hex" type="text" value="#ffffff" spellcheck="false" aria-label="Counter outline hex" data-goal-custom-control disabled>
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="goal-custom-glow">Panel and text glow</label>
+            <div class="color-control">
+              <input id="goal-custom-glow" type="color" value="#c447ff" data-goal-custom-control disabled>
+              <input id="goal-custom-glow-hex" type="text" value="#c447ff" spellcheck="false" aria-label="Panel and text glow hex" data-goal-custom-control disabled>
+            </div>
+          </div>
+          <div class="config-field"><label for="goal-background-opacity">Panel opacity (%)</label><input id="goal-background-opacity" type="number" min="0" max="100" value="65" data-goal-custom-control disabled></div>
+          <div class="config-field"><label for="goal-glow-strength">Glow strength (%)</label><input id="goal-glow-strength" type="number" min="0" max="100" value="35" data-goal-custom-control disabled><span class="field-hint">Set to 0 for no coloured glow.</span></div>
+          <div class="config-field"><label><input id="goal-gloss" type="checkbox" checked data-goal-custom-control disabled> Glossy highlights</label><span class="field-hint">Turn off for a flat finish.</span></div>
         </div>
       </details>
 
-      <section class="config-section" data-config-panel="goal" aria-label="Goal bar preview" hidden>
-        <div class="section-header-row">
-          <h2 class="section-title">Goal Bar Preview</h2>
-        </div>
-        <div class="overlay-preview-frame overlay-preview-frame-goal">
-          <iframe id="goal-preview" title="Goal bar preview"></iframe>
-        </div>
-      </section>
-
-      <details class="config-section config-collapse" data-config-panel="top-likers" aria-label="Top likers settings" hidden>
+<details class="config-section config-collapse" data-config-panel="top-likers" aria-label="Top likers settings" hidden>
         <summary>
           <h2 class="section-title">Top Likers Settings</h2>
           <span class="collapse-indicator">Expand</span>
@@ -778,7 +1067,7 @@
               <option value="1">Show pictures</option>
               <option value="0">Hide pictures</option>
             </select>
-            <span class="field-hint">Uses TikTok profile pictures when TikFinity provides them</span>
+            <span class="field-hint">Uses TikTok profile pictures when your live-event connection provides them</span>
           </div>
           <div class="config-field">
             <label for="top-likers-names">Names</label>
@@ -806,9 +1095,24 @@
           </div>
           <div class="config-group-heading">Behaviour</div>
           <div class="config-field">
-            <label for="top-likers-like-milestone">Like Pulse Milestone</label>
+            <label for="top-likers-like-milestone">Like Milestone</label>
             <input id="top-likers-like-milestone" type="number" min="0" max="1000000000" step="100" placeholder="1000">
-            <span class="field-hint">Tile border pulse for every multiple reached. Use 0 to turn off.</span>
+            <span class="field-hint">Shows a temporary announcement for every multiple reached. Use 0 to turn off.</span>
+          </div>
+          <div class="config-group-heading">First place &amp; milestones</div>
+          <div class="config-field color-config-field"><label for="top-likers-first-accent">First-place highlight</label><div class="color-control"><input id="top-likers-first-accent" type="color" value="#ffd83d"><input id="top-likers-first-accent-hex" type="text" value="#ffd83d" aria-label="First-place highlight hex"></div></div><div class="config-field color-config-field"><label for="top-likers-first-text">First-place text</label><div class="color-control"><input id="top-likers-first-text" type="color" value="#ffffff"><input id="top-likers-first-text-hex" type="text" value="#ffffff" aria-label="First-place text hex"></div></div><div class="config-field color-config-field">
+            <label for="top-likers-milestone-card">Milestone card colour</label>
+            <div class="color-control">
+              <input id="top-likers-milestone-card" type="color">
+              <input id="top-likers-milestone-card-hex" type="text" spellcheck="false" placeholder="#7b2cff">
+            </div>
+          </div>
+          <div class="config-field color-config-field">
+            <label for="top-likers-milestone-text">Milestone text colour</label>
+            <div class="color-control">
+              <input id="top-likers-milestone-text" type="color">
+              <input id="top-likers-milestone-text-hex" type="text" spellcheck="false" placeholder="#ffffff">
+            </div>
           </div>
           <div class="config-field">
             <label for="top-likers-medal-hearts">Medal Hearts</label>
@@ -818,13 +1122,13 @@
             </select>
             <span class="field-hint">Controls 1st, 2nd, and 3rd place heart colours</span>
           </div>
-          <div class="config-field">
+          <div class="config-group-heading">Session</div><div class="config-field">
             <label for="top-likers-reset">Reset On Connect</label>
             <select id="top-likers-reset">
               <option value="1">Reset each connection</option>
               <option value="0">Keep saved list</option>
             </select>
-            <span class="field-hint">Useful when restarting TikFinity between streams</span>
+            <span class="field-hint">Useful when restarting your live-event connection between streams</span>
           </div>
           <div class="config-group-heading">Size</div>
           <div class="config-field">
@@ -949,16 +1253,7 @@
         </div>
       </details>
 
-      <section class="config-section" data-config-panel="top-likers" aria-label="Top likers preview" hidden>
-        <div class="section-header-row">
-          <h2 class="section-title">Top Likers Preview</h2>
-        </div>
-        <div class="overlay-preview-frame overlay-preview-frame-top-likers">
-          <iframe id="top-likers-preview" title="Top likers preview"></iframe>
-        </div>
-      </section>
-
-      <section class="config-section" data-config-panel="original" aria-label="Rewards">
+<section class="config-section" data-config-panel="original" aria-label="Rewards">
         <h2 class="section-title">Gift Carousel Rewards</h2>
         <div class="reward-list-controls">
           <div class="reward-count">Total: <span id="reward-total">0</span> | Enabled: <span id="reward-enabled">0</span></div>
@@ -972,9 +1267,9 @@
         <div class="reward-editor-header">
           <div class="reward-editor-title">
             <label class="config-checkbox">
-              <input data-field="enabled" type="checkbox">
+              <input data-field="enabled" type="checkbox" aria-label="Enable this reward">
             </label>
-            <input data-field="title" type="text" class="reward-title-input" placeholder="Reward name">
+            <input data-field="title" type="text" class="reward-title-input" placeholder="Reward name" aria-label="Reward title">
             <span class="reward-index">#<span class="reward-number">1</span></span>
           </div>
           <div class="config-row-actions">
@@ -993,7 +1288,7 @@
             </div>
             <div class="preview-area audio-preview">
               <button data-action="play-sound" type="button" class="btn-play">🔊 Play Sound</button>
-              <input data-field="volume" type="range" min="0" max="1" step="0.05" class="volume-slider">
+              <input data-field="volume" type="range" min="0" max="1" step="0.05" class="volume-slider" aria-label="Volume">
               <span class="volume-label" data-label="volume">50%</span>
             </div>
           </div>
@@ -1002,34 +1297,35 @@
             <div class="config-field-group reward-trigger-fields">
               <div class="config-field">
                 <label>Triggered By</label>
-                <select data-field="triggerType">
+                <select data-field="triggerType" aria-label="Trigger type">
                   <option value="gift">TikTok Gift</option>
                   <option value="follow">TikTok Follow</option>
                   <option value="likes">TikTok Likes</option>
+                  <option value="share">TikTok Share</option>
                 </select>
                 <span class="field-hint">Choose the TikTok event that activates this card</span>
               </div>
               <div class="config-field-group" data-likes-settings hidden>
                 <div class="config-field">
                   <label>Likes Required</label>
-                  <input data-field="likesRequired" type="number" min="1" step="1" value="50">
+                  <input data-field="likesRequired" type="number" min="1" step="1" value="50" aria-label="Likes required">
                   <span class="field-hint">Triggers again for every completed amount, e.g. every 50 likes</span>
                 </div>
                 <div class="config-field">
                   <label>Heart Colour</label>
-                  <input data-field="likesHeartColor" type="color" value="#ef233c">
+                  <input data-field="likesHeartColor" type="color" value="#ef233c" aria-label="Likes heart color">
                 </div>
                 <div class="config-field">
                   <label>Number Colour</label>
-                  <input data-field="likesNumberColor" type="color" value="#ffffff">
+                  <input data-field="likesNumberColor" type="color" value="#ffffff" aria-label="Likes number color">
                 </div>
                 <div class="config-field">
                   <label>Heart Size (%)</label>
-                  <input data-field="likesHeartSize" type="number" min="40" max="160" step="5" value="160">
+                  <input data-field="likesHeartSize" type="number" min="40" max="160" step="5" value="160" aria-label="Likes heart size">
                 </div>
                 <div class="config-field">
                   <label>Number Size</label>
-                  <input data-field="likesNumberSize" type="number" min="16" max="96" step="1" value="96">
+                  <input data-field="likesNumberSize" type="number" min="16" max="96" step="1" value="96" aria-label="Likes number size">
                 </div>
               </div>
             </div>
@@ -1037,7 +1333,7 @@
             <div class="config-field-group">
               <div class="config-field">
                 <label>Card Image</label>
-                <input data-gift-search type="search" placeholder="Search gift catalogue">
+                <input data-gift-search type="search" placeholder="Name, ID or coins (e.g. 100–500)" aria-label="Search gifts by name, ID or coin value">
                 <div data-gift-grid class="gift-catalog-grid" aria-label="Gift catalogue"></div>
                 <span class="field-hint">For TikTok Gift triggers, the selected gift also becomes the trigger</span>
               </div>
@@ -1049,7 +1345,7 @@
               <input data-field="image" type="hidden">
               <div class="config-field">
                 <label>Sound File Path</label>
-                <select data-field="sound"></select>
+                <select data-field="sound" aria-label="Sound file"></select>
                 <span class="field-hint">Reward sound to play when triggered</span>
               </div>
             </div>
@@ -1058,8 +1354,30 @@
       </article>
     </template>
 
-    <script src="./rewards-config.js?v=20260701-3"></script>
-    <script src="./reward-image-catalog.js?v=20260701-3"></script>
-    <script src="./rewards-admin.js?v=20260701-3"></script>
-  </body>
+    <script src="./rewards-config.js?v=20260811-3"></script>
+    
+    <script src="./overlay-cloud-config.js?v=20260718-1"></script>
+    <script src="./overlay-cloud.js?v=20261117-sidebar3"></script>
+    <link rel="stylesheet" href="./rows-editor.css?v=20261117-safety1">
+    <script src="./editor-workspace.js?v=20261118-studio3"></script>
+    <script src="./studio-components.js?v=20261117-medium1"></script>
+    <script src="./rows-editor.js?v=20261117-sidebar2"></script>
+    <script src="./graphics-core.js?v=20261118-studio3"></script>
+    <script src="./rewards-admin.js?v=20261118-studio3"></script>
+    <script src="./creator-gift-import.js?v=20261117-background-gifts"></script>
+    <script src="./studio-revisions.js?v=20261117-portrait2"></script>
+    <script src="./studio-recovery.js?v=20261117-portrait2"></script>
+    <script src="./overlay-cloud-admin.js?v=20261118-studio3"></script>
+    <script src="./studio-sounds.js?v=20261117-uxflow2"></script>
+    <script src="./studio-library.js?v=20261118-studio3"></script>
+    <script src="./studio-setup.js?v=20261118-studio3"></script>
+    <script src="./studio-preview-tools.js?v=20261118-studio3"></script>
+    <link rel="stylesheet" href="./studio-polish.css?v=20261117-previewfix2">
+    <script src="./studio-ux.js?v=20261118-studio3"></script>
+    <script src="./studio-editor-chrome.js?v=20261118-studio3"></script>
+    <link rel="stylesheet" href="./studio-ux.css?v=20261118-studio3">
+    <script src="./account-recovery.js?v=20261117-sidebar2"></script>
+    <script src="../../site-chrome.js?v=20261117-sidebar2"></script>
+  <script src="./studio-graphics.js?v=20261118-studio3"></script>
+<script src="./site-admin-link.js?v=20261118-studio3"></script></body>
 </html>

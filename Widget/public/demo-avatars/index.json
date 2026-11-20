@@ -1,0 +1,50 @@
+{
+  "purpose": "Fictional sample viewers only; not a replacement for real viewer pictures.",
+  "viewers": [
+    {
+      "id": "mia",
+      "name": "Mia",
+      "file": "mia.png"
+    },
+    {
+      "id": "jordan",
+      "name": "Jordan",
+      "file": "jordan.png"
+    },
+    {
+      "id": "alex",
+      "name": "Alex",
+      "file": "alex.png"
+    },
+    {
+      "id": "sam",
+      "name": "Sam",
+      "file": "sam.png"
+    },
+    {
+      "id": "nova",
+      "name": "Nova",
+      "file": "nova.png"
+    },
+    {
+      "id": "luna",
+      "name": "Luna",
+      "file": "luna.png"
+    },
+    {
+      "id": "kai",
+      "name": "Kai",
+      "file": "kai.png"
+    },
+    {
+      "id": "mira",
+      "name": "Mira",
+      "file": "mira.png"
+    },
+    {
+      "id": "zara",
+      "name": "Zara",
+      "file": "zara.png"
+    }
+  ]
+}

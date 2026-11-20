@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <script src="/site-theme.js?v=20261118-studio3"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Set up your stream overlays, connect TikFinity and find answers in King Gumption Studio.">
+    <meta name="theme-color" content="#090713">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data:; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests">
+    <link rel="canonical" href="https://kinggumption.com/help/">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <title>Setup & Help | King Gumption Studio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/homepage.css?v=20261117-sidebar2">
+    <link rel="stylesheet" href="/site-chrome.css?v=20260810-1">
+      <link rel="stylesheet" href="/site-theme.css?v=20261117-sidebar2">
+  <link rel="stylesheet" href="/Widget/public/studio-icon-motion.css?v=20261118-studio3">
+</head>
+  <body>
+    <a class="skip-link" href="#main">Skip to content</a>
+    <header class="site-header">
+      <a class="brand" href="/" aria-label="King Gumption Studio home">
+        <span class="brand-mark" aria-hidden="true">KG</span>
+        <span class="brand-copy"><strong>King Gumption</strong><small>Studio</small></span>
+      </a>
+      <nav aria-label="Main navigation"><a href="/">Home</a><a class="nav-cta" href="/studio/">Open studio</a></nav>
+    </header>
+
+    <main id="main" class="privacy-main"><section class="privacy-hero"><p class="eyebrow">Setup & help</p><h1>Get your overlay on stream.</h1><p>Start with one design. Add a canvas when you need several overlays together.</p></section>
+<section class="privacy-card"><h2>1. Create, test and save</h2><p>Open Studio and sign in. Choose an overlay, then use Add card to create a Gift, Follow, Likes or Share card. Set the action label and sound separately. Select a card in the stream preview or the card list to edit it. On a phone, Back to cards returns to the list. The Layout tab changes the arrangement; Style presets change colours and effects. Click Sample event or Test this card to see it respond. Save the design before using it on stream.</p><p>The Design library lets you search, duplicate or archive designs. Archive hides a design from normal selection without breaking existing Direct links or canvases. Version history can preview and restore earlier saves.</p><a href="/studio/">Open Studio</a></section>
+<section class="privacy-card" id="obs"><h2>2. Direct link or Canvas?</h2><p>A Direct link is one saved widget. Copy it into an Browser Source and use the displayed width and height. A Canvas combines several saved designs; use Canvas Designer to position them and copy the canvas link into one Browser Source.</p><p>Both links follow saved changes. Unpublished local drafts stay in your browser unless you choose Save or enable Live editing. If a second tab saves a newer version, Studio offers to load it, save your edits as a copy or deliberately replace it.</p><p>Keep link tokens private. Replacing a Direct link or canvas URL revokes the old URL; update it in your streaming software afterward. Open sample preview links show demonstration events and should not be used as your live source.</p></section>
+<section class="privacy-card" id="connection"><h2>3. Connect TikFinity</h2><p>Choose streaming software that supports a Browser Source: a webpage rendered inside your stream. For example, add a Browser Source in OBS Studio; other applications may use different control names. Use the Direct link or Canvas URL with the source dimensions shown in Studio.</p><ol><li>Run TikFinity on the same computer as your streaming software.</li><li>Connect TikFinity to the live and enable its Event API.</li><li>Load your saved widget or canvas URL in your streaming software. The live source connects to <code>ws://localhost:21213/</code>.</li><li>If the browser asks for local-network access, allow it only when you want to connect to TikFinity. Public browsing and editor sample previews never require this connection.</li></ol><p>If events do not arrive, check that the live is active, TikFinity is connected, its Event API is enabled and a firewall has not blocked the local connection. A cloud-hosted webpage cannot discover a live on another person’s computer through your localhost connection.</p></section>
+<section class="privacy-card" id="sound"><h2>No sound?</h2><p>Check that the card has a sound, its volume is above zero, overlay sounds are enabled and the preview is unmuted. Preview mute affects the editor only. Enable Browser Source audio and the mixer in your streaming software.</p><p>Use Choose or upload sound for MP3, WAV or OGG source files up to 8 MiB. Trim to 30 seconds or less. Studio uploads a 24 kHz mono WAV clip. Your account stores up to 10 MiB and 50 sounds, including archived sounds retained for existing designs/history. Archived sounds can be restored from the sound library. Account deletion removes their stored audio.</p><p>A raw file path from your computer is not an upload and is not portable to another browser or browser source. Upload only audio you have permission to use.</p></section>
+<section class="privacy-card" id="missing-gift"><h2>Missing gift or image?</h2><p>Search by name, TikTok gift ID, coin amount or a price range. Unknown prices are not treated as zero. Favourites and Recent can help find a gift again.</p><p>Gift lists vary by region and creator. The catalogue refreshes automatically from available sources, and connected live widgets can discover gift metadata. This does not guarantee every creator gift is available before it is sent. If updates fail, the last available list remains usable.</p><p>If a gift is missing, try its TikTok ID and check again after the catalogue refreshes. Existing cards keep their saved images. Keep your Direct link token and account password private.</p></section>
+<section class="privacy-card" id="preview"><h2>Preview and layout checks</h2><p>Previews automatically scale and centre your design. Sample events are enabled by default; switch them off to inspect a quiet state. Pause freezes animations without changing the design. Dark, Neutral and Light backgrounds are editing aids and do not change transparent browser-source output.</p><p>Rows show the selected number of cards visible at once. If there are extra cards, use Fit all, Scroll this row or Move extra cards. Canvas has numeric geometry, arrow-key nudging, alignment/distribution, an optional grid, safe-area guides and snap controls. Canvas changes are saved to the live output; Undo/Redo can recover recent layout changes.</p></section>
+<section class="privacy-card" id="account"><h2>Your account, drafts and links</h2><p>Local drafts recover unpublished edits on this browser and are separated by account. Save your design to keep a server copy. Opening this guide and returning to Studio in the same tab keeps your existing sign-in.</p><p>Keep your password in a password manager. If a Direct link has been replaced or deleted, open its saved design in Studio and copy the current link. Account settings lets you download your data and manage your account.</p><a href="/studio/">Return to Studio</a></section>
+<section class="privacy-card" id="legacy"><h2>Older supporter overlay</h2><p>The <a href="/Widget/public/index-support.html?preview=1">legacy supporter preview</a> remains available. Existing legacy URLs continue to work; its controls are separate from the five current Studio editors.</p></section>
+<section class="privacy-card"><h2>Useful diagnostics</h2><p>In Studio’s account menu, Copy diagnostics shows a reviewable summary of build, overlay type, catalogue availability and viewport. It omits passwords, account email, viewer identities, design contents and Direct link tokens.</p><p>Use the connection and preview checks above to troubleshoot before copying diagnostics. <a href="/studio/">Return to Studio</a> · <a href="/privacy/">Privacy notice</a></p></section><section class="privacy-card"><h2>Compact graphics and live controls</h2><p>Use compact styles for gameplay streams, and manage challenges, votes and quests from Live graphics. <a href="/help/graphics/">Read the full graphics and live guide</a>.</p></section></main>
+
+    <footer>
+      <a class="brand" href="/"><span class="brand-mark" aria-hidden="true">KG</span><span class="brand-copy"><strong>King Gumption</strong><small>Studio</small></span></a>
+      <p>Reactive TikTok LIVE overlays for your stream.</p>
+      <div><a href="/">Home</a> <a href="/studio/">Open studio</a></div>
+    </footer>
+    <script src="/site-chrome.js?v=20261117-sidebar2"></script>
+  </body>
+</html>
