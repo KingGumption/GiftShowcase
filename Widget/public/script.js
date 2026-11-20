@@ -15,7 +15,7 @@ const params = new URLSearchParams(window.location.search);
 const isThinGoalSource = document.body.classList.contains('thin-source');
 const goalConfig = loadGoalBarConfig();
 const goalType = isThinGoalSource ? goalConfig.type : 'likes';
-const tikfinityUrl = params.get('endpoint') || 'ws://localhost:21213/';
+const tikfinityUrl = params.get('endpoint') || window.creatorLiveEndpoint || 'ws://localhost:21213/';
 const likeGoalStep = Math.max(1, Number(params.get('step') || goalConfig.step || 5000));
 const initialGoalTarget = Math.max(1, Number(params.get('target') || goalConfig.target || goalConfig.step || 5000));
 const startingLikes = Math.max(0, Number(params.get('start') || goalConfig.start || 0));
@@ -53,7 +53,7 @@ render(state);
 if (!previewMode) setInterval(updateLikeHeat, 500);
 
 function connect() {
-  const ws = new WebSocket(tikfinityUrl);
+  const ws = (window.KGCreatorLive?.socket(tikfinityUrl) || new WebSocket(tikfinityUrl));
 
   ws.addEventListener('open', () => {
     initializeGoalConnection();

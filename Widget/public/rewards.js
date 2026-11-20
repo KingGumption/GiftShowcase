@@ -9,7 +9,7 @@ const status = document.querySelector('#status');
 const remoteRewardImageBase = 'https://pub-099cf604176d4f20bce0cd8bb2c4d3c6.r2.dev/';
 
 const params = new URLSearchParams(window.location.search);
-const tikfinityUrl = params.get('endpoint') || 'ws://localhost:21213/';
+const tikfinityUrl = params.get('endpoint') || window.creatorLiveEndpoint || 'ws://localhost:21213/';
 const testMode = params.get('test') === '1';
 const previewMode = params.get('preview') === '1';
 let muteMode = params.get('mute') === '1';
@@ -391,7 +391,7 @@ function hexToRgba(hex, alpha) {
 }
 
 function connect() {
-  const ws = new WebSocket(tikfinityUrl);
+  const ws = (window.KGCreatorLive?.socket(tikfinityUrl) || new WebSocket(tikfinityUrl));
 
   ws.addEventListener('open', () => {
     updateStatus('Connected to live activity', true);

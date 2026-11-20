@@ -218,7 +218,8 @@
     if (stopped || isSampleActivityEnabled()) return;
     if (tikfinitySocket && (tikfinitySocket.readyState === WebSocket.CONNECTING || tikfinitySocket.readyState === WebSocket.OPEN)) return;
     try {
-      tikfinitySocket = new WebSocket(tikfinityEndpoint);
+      const address = currentDock?.sharedLive && global.KGCreatorLive ? global.KGCreatorLive.url(dockToken) : tikfinityEndpoint;
+      tikfinitySocket = global.KGCreatorLive?.socket(address) || new WebSocket(address);
     } catch {
       scheduleTikfinityReconnect();
       return;

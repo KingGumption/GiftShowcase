@@ -42,7 +42,14 @@
   const savingSampleActivity = new Set();
 
   let liveSocket;
-  document.querySelector('#check-live-connection').addEventListener('click', () => {
+  document.querySelector('#check-live-connection').addEventListener('click', async () => {
+    try {
+      if ((await cloud.getServiceConfig()).sharedLiveEnabled) {
+        const connection = await cloud.request('/v1/tiktok');
+        document.querySelector('#live-connection-status').textContent = connection.phase === 'connected' ? 'TikTok LIVE connected — shared by your Direct URLs and Canvases' : (connection.message || 'TikTok LIVE: ' + connection.phase + '. Connect your username in the Overlay Editor.');
+        return;
+      }
+    } catch (error) { document.querySelector('#live-connection-status').textContent = error.message; return; }
     if (liveSocket) liveSocket.close();
     const status = document.querySelector('#live-connection-status');
     status.textContent = 'Connecting to TikFinity…';

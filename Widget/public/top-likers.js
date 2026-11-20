@@ -16,7 +16,7 @@ const topLikersRelayMode = topLikersParams.get('relay') === '1';
 const topLikersPreviewMode = topLikersParams.get('preview') === '1';
 
 const topLikersConfig = {
-  endpoint: topLikersParams.get('endpoint') || 'ws://localhost:21213/',
+  endpoint: topLikersParams.get('endpoint') || window.creatorLiveEndpoint || 'ws://localhost:21213/',
   limit: clampNumber(Number(topLikersParams.get('limit') || savedTopLikersConfig.limit || 3), 1, 10),
   showAvatar: readToggle(topLikersParams, ['avatar', 'avatars', 'profile', 'profiles'], savedTopLikersConfig.showAvatar !== false),
   showNames: readToggle(topLikersParams, ['names', 'name', 'handles'], savedTopLikersConfig.showNames !== false),
@@ -79,7 +79,7 @@ if (topLikersPreviewMode) {
 }
 
 function connectTopLikers() {
-  const ws = new WebSocket(topLikersConfig.endpoint);
+  const ws = (window.KGCreatorLive?.socket(topLikersConfig.endpoint) || new WebSocket(topLikersConfig.endpoint));
 
   ws.addEventListener('open', () => {
     if (topLikersConfig.resetOnConnect) {

@@ -4,7 +4,7 @@ import fs from 'node:fs';import path from 'node:path';import {createRequire} fro
 import {worker,env,database} from './studio-test-support.mjs';
 const project=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');const require=createRequire(path.join(process.env.STUDIO_TEST_MODULES||path.join(project,'Widget/cloudflare'),'package.json'));const {chromium}=require('playwright-core');const axe=fs.readFileSync(require.resolve('axe-core/axe.min.js'),'utf8');
 const {installGraphicHubs}=await import('./graphics-test-hub.mjs');installGraphicHubs(env);
-const dist=path.join(project,'Widget/cloudflare/dist'),origin='https://kinggumption.com',out=process.env.STUDIO_RELEASE_ARTIFACTS||path.join(os.tmpdir(),'king-gumption-release-check');
+const dist=path.join(project,'Widget/cloudflare/dist'),origin='https://studio.example.test',out=process.env.STUDIO_RELEASE_ARTIFACTS||path.join(os.tmpdir(),'king-gumption-release-check');
 fs.mkdirSync(out,{recursive:true});
 const mime={'.css':'text/css','.js':'text/javascript','.html':'text/html','.svg':'image/svg+xml','.png':'image/png'};
 const png=fs.readFileSync(path.join(project,'Widget/scripts/fixtures/gift-art.png'));
@@ -32,7 +32,7 @@ try{
  await page.setViewportSize({width:390,height:900});await page.goto(origin+'/studio/');assert(await page.locator('#cloud-auth-email').isVisible(),'Mobile sign-in remains reachable');await page.fill('#cloud-auth-email','unified-check@example.invalid');await page.fill('#cloud-auth-password','local-unified-browser-password');await page.click('#cloud-create-account');await page.click('#cloud-sign-in');await page.waitForSelector('#cloud-account-session',{state:'attached'});await page.waitForFunction(()=>document.body.classList.contains('cloud-authenticated'));await page.setViewportSize({width:1440,height:1000});
  const connection=page.locator('.studio-sidebar #studio-tiktok');
  await connection.locator('summary').click();
- await connection.locator('input').fill('demo_creator');
+ await connection.getByLabel('TikTok username').fill('demo_creator');
  await connection.getByRole('button',{name:'Connect',exact:true}).click();
  await connection.getByText('Connected to TikTok LIVE',{exact:true}).waitFor();
  await page.click('[data-config-tab="side-gifts"]');
@@ -47,7 +47,7 @@ try{
  await native('rows');const saved=await page.evaluate(async()=>{const v=(await overlayCloud.createVariant({name:'Saved baseline',overlayKind:'rows',config:rewardConfigEditor.getConfigForKind('rows')})).variant;await studioDesigns.refresh();studioDesigns.open(v.id);return v;});await page.waitForSelector('[data-edit="title"]');const baseline=await page.inputValue('[data-edit="title"]');await page.fill('[data-edit="title"]','Discard this edit');await page.click('[data-config-tab="side-gifts"]');await page.waitForSelector('[data-discard-cancel]');await page.click('[data-discard-cancel]');assert.equal(await page.inputValue('[data-edit="title"]'),'Discard this edit');await native('side-gifts');await native('rows');assert.equal(await page.inputValue('[data-edit="title"]'),baseline,'Switching away discards unsaved edits');
  assert(await page.evaluate(()=>!localStorage.getItem('reward-overlay-config:v1')&&!localStorage.getItem('kg-studio-drafts:v1:'+overlayCloud.session.user.id)),'Unsaved configuration is not persisted');
  await native('side-gifts');await page.locator('[data-editor-nav="side-gifts"] [data-editor-section-tab="layout"]').click();assert.equal(await page.locator('[data-editor-panel="side-gifts"][data-editor-section="style"] [data-compact-variant]').count(),0);
- await page.click('[data-compact-variant="sidecar"]');await page.waitForFunction(()=>document.querySelector('#side-gifts-preview').contentDocument?.querySelector('.variant-sidecar'));assert(await page.locator('[data-editor-panel="side-gifts"] [data-native-arrangement]').isHidden());await page.frameLocator('#side-gifts-preview').locator('img.gift').first().waitFor();await page.waitForFunction(()=>[...document.querySelector('#side-gifts-preview').contentDocument.querySelectorAll('img.gift')].every(i=>i.complete&&i.naturalWidth>0));assert((await page.frameLocator('#side-gifts-preview').locator('img.gift').first().getAttribute('src')).startsWith('https://pub-099cf604176d4f20bce0cd8bb2c4d3c6.r2.dev/'),'Legacy gift images resolve to R2');
+ await page.click('[data-compact-variant="sidecar"]');await page.waitForFunction(()=>document.querySelector('#side-gifts-preview').contentDocument?.querySelector('.variant-sidecar'));assert(await page.locator('[data-editor-panel="side-gifts"] [data-native-arrangement]').isHidden());await page.frameLocator('#side-gifts-preview').locator('img.gift').first().waitFor();await page.waitForFunction(()=>[...document.querySelector('#side-gifts-preview').contentDocument.querySelectorAll('img.gift')].every(i=>i.complete&&i.naturalWidth>0));assert(new URL(await page.frameLocator('#side-gifts-preview').locator('img.gift').first().getAttribute('src')).hostname.endsWith('.r2.dev'),'Legacy gift images resolve to R2');
  await page.locator('[data-editor-nav="side-gifts"] [data-editor-section-tab="style"]').click();await page.locator('[data-editor-panel="side-gifts"] [data-style-preset="Arcade"]').click();assert.equal(await page.evaluate(()=>KGGraphics.definition('side-gifts',rewardConfigEditor.getConfigForKind('side-gifts')).id),'sidecar');await page.waitForFunction(()=>document.querySelector('#side-gifts-preview').contentDocument?.querySelector('#graphic-root')?.style.getPropertyValue('--accent')==='#42f5cf');await page.locator('[data-editor-panel="side-gifts"] [data-style-preset="Default"]').click();assert.equal(await page.evaluate(()=>KGGraphics.definition('side-gifts',rewardConfigEditor.getConfigForKind('side-gifts')).id),'sidecar','Default style preserves layout');
  await page.screenshot({path:out+'/desktop-layout-style.png'});await page.locator('[data-editor-nav="side-gifts"] [data-editor-section-tab="layout"]').click();await page.locator('[data-editor-panel="side-gifts"] [data-presentation-field="slots"]').fill('2');await page.locator('[data-editor-panel="side-gifts"] [data-presentation-field="slots"]').dispatchEvent('change');await page.waitForFunction(()=>document.querySelector('#side-gifts-preview').contentDocument?.querySelectorAll('.rail .action').length===2);
  await page.evaluate(()=>studioDesigns.discard());await page.reload();await page.waitForFunction(()=>Boolean(window.studioDesigns));assert.equal(await page.evaluate(()=>Boolean(KGGraphics.definition('side-gifts',rewardConfigEditor.getConfigForKind('side-gifts')))),false,'Reload does not recover discarded layout edits');
@@ -99,7 +99,7 @@ try{
  }
  await page.click('.studio-mobile-menu-toggle');
  await connection.locator('summary').click();
- assert.equal(await connection.locator('input').inputValue(),'demo_creator');
+ assert.equal(await connection.getByLabel('TikTok username').inputValue(),'demo_creator');
  await connection.getByRole('button',{name:'Disconnect'}).click();
  await connection.getByText('Disconnected',{exact:true}).waitFor();
  await publicPage.close();

@@ -33,6 +33,14 @@
       {
         "name": "DOCK_HUBS",
         "class_name": "DockHub"
+      },
+      {
+        "name": "LIVE_ALERTS",
+        "class_name": "LiveAlerts"
+      },
+      {
+        "name": "CREATOR_LIVE",
+        "class_name": "CreatorLive"
       }
     ]
   },
@@ -42,12 +50,20 @@
       "new_sqlite_classes": [
         "DockHub"
       ]
-    }
+    },
+    {
+      "tag": "v2-creator-live",
+      "new_sqlite_classes": [
+        "CreatorLive"
+      ]
+    },
+    {"tag": "v3-live-alerts", "new_sqlite_classes": ["LiveAlerts"]}
   ],
+  "keep_vars": true,
   "vars": {
     "ALLOWED_ORIGINS": "https://kinggumption.com,https://www.kinggumption.com,http://localhost:8080,http://127.0.0.1:8080,http://localhost:8081,http://127.0.0.1:8081",
     "REGISTRATION_ENABLED": "true",
-    "ACCOUNT_EMAIL_ENABLED": "false",
+    "ACCOUNT_EMAIL_ENABLED": "true",
     "PRIVACY_URL": "https://kinggumption.com/privacy/",
     "TIKTOK_LIVE_URL": "https://www.tiktok.com/@kinggumption/live",
     "TWITCH_CHANNEL_LOGIN": "kinggumption",
@@ -59,7 +75,9 @@
     "REVISION_LIMIT": "50",
     "GIFT_CATALOGUE_REGION": "GB",
     "TIKFINITY_CATALOGUE_ENABLED": "true",
-    "INVITE_ONLY": "true"
+    "INVITE_ONLY": "true",
+    "LIVE_ALERT_ORIGIN": "https://kinggumption.com",
+    "SHARED_LIVE_ENABLED": "true"
   },
   "triggers": {
     "crons": [

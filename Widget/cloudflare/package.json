@@ -9,7 +9,15 @@
     "deploy": "node build-site.mjs && npx wrangler deploy"
   },
   "devDependencies": {
+    "axe-core": "4.14.1",
+    "miniflare": "4.20260730.0",
     "playwright-core": "1.65.1",
-    "axe-core": "4.14.1"
+    "wrangler": "4.164.0"
+  },
+  "overrides": {
+    "miniflare": {
+      "undici": "^7.30.1",
+      "sharp": "^0.35.5"
+    }
   }
 }

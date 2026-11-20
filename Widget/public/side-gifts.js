@@ -8,7 +8,7 @@ const sideGiftCatalog = normalizeSideGiftCatalog(window.rewardImageCatalog || []
 const configuredSideGifts = normalizeSideGifts(sideGiftConfigBundle.sideGifts?.gifts || []);
 const configuredRowsFallbackGifts = normalizeSideGifts(sideGiftRowsConfig.gifts || []);
 const sideGifts = Array.isArray(sideGiftConfigBundle.sideGifts?.gifts) ? configuredSideGifts : Array.isArray(sideGiftRowsConfig.gifts) ? configuredRowsFallbackGifts : sideGiftCatalog;
-const sideGiftEndpoint = sideGiftParams.get('endpoint') || 'ws://localhost:21213/';
+const sideGiftEndpoint = sideGiftParams.get('endpoint') || window.creatorLiveEndpoint || 'ws://localhost:21213/';
 const sideGiftTestMode = sideGiftParams.get('test') === '1';
 const sideGiftPreviewMode = sideGiftParams.get('preview') === '1';
 const sideGiftPreviewFit = sideGiftParams.get('previewFit') === '1';
@@ -123,7 +123,7 @@ function getSideForGift(gift, index) {
 }
 
 function connectSideGifts() {
-  const ws = new WebSocket(sideGiftEndpoint);
+  const ws = (window.KGCreatorLive?.socket(sideGiftEndpoint) || new WebSocket(sideGiftEndpoint));
 
   ws.addEventListener('message', event => {
     window.creatorGiftDiscovery?.observe(event.data);

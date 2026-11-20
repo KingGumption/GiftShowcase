@@ -1,5 +1,9 @@
 import {routeAdmin,invitationFor,digest as invitationDigest} from './studio-admin.mjs';
 import {mailReady,sendStudioMail} from './studio-mail.mjs';
+import {creatorHub,stopCreatorLive,revokeCreatorSource} from './creator-live.mjs';
+import {watchRegistry} from './live-alerts.mjs';
+export {LiveAlerts} from './live-alerts.mjs';
+export {CreatorLive} from './creator-live.mjs';
 import {graphicSize,graphicHubRequest,expireGraphic,clearGraphic} from './graphics-live.mjs';
 import {routeSounds,deleteAccountSounds,cleanupUserSounds} from './user-sounds.mjs';
 import {cleanupCreatorImages} from './creator-storage.mjs';
@@ -112,6 +116,37 @@ async function routeRequest(request, env, ctx) {
   const rawPath = url.pathname.replace(/\/+$/, '') || '/';
   const path = rawPath === '/api' ? '/' : rawPath.startsWith('/api/') ? rawPath.slice(4) : rawPath;
 
+  const start = path.match(/^\/v1\/live-start\/([a-z0-9_.]{2,24})\/([a-f0-9-]{36})$/);
+  if (start && request.method === 'POST' && env.LIVE_ALERTS && env.SHARED_LIVE_ENABLED === 'true') {
+    return watchRegistry(env, start[1]).fetch('https://registry/signal/' + start[2], {method:'POST'});
+  }
+
+  if(path==='/v1/tiktok'&&['GET','POST','PATCH','DELETE'].includes(request.method)){
+    const user=await requireUser(request,env);
+    if(env.SHARED_LIVE_ENABLED!=='true'||!env.CREATOR_LIVE)throw httpError(503,'Shared TikTok connections are not enabled yet.');
+    const hub=creatorHub(env,user.id);
+    if(request.method==='GET')return hub.fetch('https://creator-live/status');
+    if(request.method==='DELETE')return hub.fetch('https://creator-live/disable',{method:'POST'});
+    if(request.method==='PATCH'){
+      const {tikfinityBackup}=await readJson(request,1024);
+      if(typeof tikfinityBackup!=='boolean')throw httpError(400,'Choose a backup setting.');
+      return hub.fetch('https://creator-live/backup',{method:'POST',body:JSON.stringify({tikfinityBackup})});
+    }
+    await enforceAuthRateLimit(request,env,'tiktok-connect',user.id);
+    const input=await readJson(request,1024);
+    return hub.fetch('https://creator-live/configure',{method:'POST',body:JSON.stringify({username:input.username,userId:user.id})});
+  }
+  const sharedLive=path.match(/^\/v1\/public\/live\/([^/]+)$/);
+  if(sharedLive&&request.method==='GET'){
+    if(env.SHARED_LIVE_ENABLED!=='true'||!env.CREATOR_LIVE)throw httpError(503,'Shared TikTok connections are unavailable.');
+    if(request.headers.get('Upgrade')?.toLowerCase()!=='websocket')throw httpError(426,'WebSocket upgrade required');
+    const token=decodeURIComponent(sharedLive[1]),source=await getPublicDockRow(env,token);
+    if(!source||source.sample_activity)throw httpError(404,'Source unavailable');
+    const userId=source.user_id||source.directVariant?.user_id;
+    const target=new URL('https://creator-live/subscribe');target.searchParams.set('user',userId);target.searchParams.set('token',token);
+    return creatorHub(env,userId).fetch(new Request(target,{headers:request.headers}));
+  }
+
   const soundResponse=await routeSounds(request,env,path,{requireUser,readJson,randomToken,json,httpError,enforceAuthRateLimit});
   if(soundResponse)return soundResponse;
 
@@ -162,6 +197,7 @@ async function routeRequest(request, env, ctx) {
       registrationEnabled: readBoolean(env.REGISTRATION_ENABLED, false)&&!readBoolean(env.INVITE_ONLY,false),
       invitationRequestEnabled:readBoolean(env.INVITE_ONLY,false),
       accountRecoveryEnabled: accountMailEnabled(env),
+      sharedLiveEnabled:env.SHARED_LIVE_ENABLED==='true',
       privacyUrl: String(env.PRIVACY_URL || '')
     });
   }
@@ -236,7 +272,9 @@ async function routeRequest(request, env, ctx) {
     const user=await requireUser(request,env),variant=await getOwnedVariant(env,user.id,decodeURIComponent(rotateMatch[1]));const input=await readJson(request,4096);
     const auth=await getAccountAuthRow(env,user.id);if(!await verifyPassword(String(input.password||''),auth.password_salt,auth.password_hash,auth.password_iterations))throw httpError(401,'Password is incorrect');
     const publicToken=randomToken(24);
+    const previousLink=await env.DB.prepare('SELECT public_token FROM variant_links WHERE overlay_variant_id=?').bind(variant.id).first();
     await env.DB.prepare('INSERT INTO variant_links(overlay_variant_id,public_token) VALUES (?,?) ON CONFLICT(overlay_variant_id) DO UPDATE SET public_token=excluded.public_token').bind(variant.id,publicToken).run();
+    await revokeCreatorSource(env,user.id,previousLink?.public_token);
     await broadcastVariantDocks(env,variant.id,{type:'variant.updated',variantId:variant.id,revision:variant.revision});
     return json({publicToken,...defaultDockSize(variant.overlay_kind,JSON.parse(variant.config_json))});
   }
@@ -368,8 +406,16 @@ async function routeWebsiteRequest(request, env, url) {
   if (path.startsWith('/studio/')) {
     return fetchAsset(request, env, url, `/Widget/public/${path.slice('/studio/'.length)}`);
   }
-  if (path === '/privacy/') {
-    return fetchAsset(request, env, url, '/privacy.html');
+  if (path === '/privacy/' || path === '/privacy.html') {
+    const response = await fetchAsset(request, env, url, '/privacy.html');
+    const email = String(env.PUBLIC_PRIVACY_EMAIL || '').trim();
+    if (!response.ok || !/^[^\s@<>?&#]+@[^\s@<>?&#]+\.[^\s@<>?&#]+$/.test(email)) return response;
+    return new HTMLRewriter().on('#privacy-contact', {
+      element(link) {
+        link.setAttribute('href', 'mailto:' + email);
+        link.setInnerContent(email);
+      }
+    }).transform(response);
   }
 
   const widgetMatch = path.match(/^\/widget\/([^/]+)(\/config\.js)?\/?$/);
@@ -380,7 +426,7 @@ async function routeWebsiteRequest(request, env, url) {
     if (!variant) return widgetMatch[2]?new Response('/* Widget unavailable */',{status:404,headers:{'Content-Type':'text/javascript'}}):friendlyNotFound(request,env,url);
     if (widgetMatch[2]) {
       return new Response(
-        'window.directWidgetConfig=JSON.parse(' + JSON.stringify(variant.config_json) + ');window.graphicContext='+JSON.stringify({kind:variant.overlay_kind,token,design:variant.id})+';window.rewardOverlayConfig=window.directWidgetConfig;window.directWidgetRevision=' + Number(variant.revision) + ';',
+        'window.directWidgetConfig=JSON.parse(' + JSON.stringify(variant.config_json) + ');window.graphicContext='+JSON.stringify({kind:variant.overlay_kind,token,design:variant.id})+';window.creatorLiveShared='+(env.SHARED_LIVE_ENABLED==='true')+';window.rewardOverlayConfig=window.directWidgetConfig;window.directWidgetRevision=' + Number(variant.revision) + ';',
         { headers: { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'no-store' } }
       );
     }
@@ -390,6 +436,7 @@ async function routeWebsiteRequest(request, env, url) {
     const html = (await asset.text())
       .replace('<head>', '<head><base href="/Widget/public/">'+(graphicSize(variant.overlay_kind,JSON.parse(variant.config_json))?'<script src="/widget/'+encodeURIComponent(token)+'/config.js"></script>':''))
       .replace(/<script src="\.\/rewards-config\.js[^"]*"><\/script>/, '<script src="/widget/' + encodeURIComponent(token) + '/config.js"></script>')
+      .replace(/(<script src="\/widget\/[^\"]+\/config\.js"><\/script>)/,'$1<script src="/Widget/public/creator-live-client.js?v=20261120-backup"></script>')
       .replace('</body>', '<script src="/Widget/public/overlay-cloud-config.js"></script><script src="/Widget/public/overlay-cloud.js?v=20261117-medium1"></script><script src="/Widget/public/direct-widget.js"></script></body>');
     return new Response(html, { headers: { 'Content-Type': 'text/html; charset=utf-8', 'Cache-Control': 'no-store' } });
   }
@@ -665,12 +712,14 @@ async function exportAccountData(env, user) {
     env.DB.prepare('SELECT p.variant_id,p.archived FROM design_preferences p JOIN overlay_variants v ON v.id=p.variant_id WHERE v.user_id=?').bind(user.id).all()
   ]);
   const exportedAt = new Date().toISOString();
+  const tiktok=env.CREATOR_LIVE?await (await creatorHub(env,user.id).fetch('https://creator-live/status')).json():null;
   return json({
     exportVersion: 2,
     sounds:soundResult.results,
     designPreferences:preferenceResult.results,
     exportedAt,
     account: publicUser(user),
+    tiktok:tiktok?{username:tiktok.username,enabled:tiktok.enabled}:null,
     creatorGifts: creatorResult.results.map(row => ({id:row.gift_id,...JSON.parse(row.metadata_json),source:row.source,createdAt:row.created_at,updatedAt:row.updated_at})),
     overlayVariants: variantResult.results.map(row => ({ ...serializeVariant(row) })),
     overlayRevisions: revisionResult.results.map(row => ({
@@ -793,6 +842,7 @@ async function deleteAccount(request, env, user) {
 }
 
 async function deleteUserData(env,user){
+  await stopCreatorLive(env,user.id,true);
   await deleteAccountSounds(env,user.id);
   const docks = await env.DB.prepare('SELECT id FROM output_docks WHERE user_id = ?').bind(user.id).all();
   const designs = await env.DB.prepare('SELECT id FROM overlay_variants WHERE user_id = ?').bind(user.id).all();
@@ -874,7 +924,9 @@ async function deleteVariant(env, user, id) {
   if (dock) throw httpError(409, 'Remove this design from your canvases first');
   const legacyDock = await env.DB.prepare('SELECT id FROM docks WHERE overlay_variant_id = ? LIMIT 1').bind(id).first();
   if (legacyDock) throw httpError(409, 'This variant is linked to an obsolete output; apply migration 0004_remove_legacy_docks.sql first');
+  const previousLink=await env.DB.prepare('SELECT public_token FROM variant_links WHERE overlay_variant_id=?').bind(id).first();
   await env.DB.prepare('DELETE FROM overlay_variants WHERE id = ? AND user_id = ?').bind(id, user.id).run();
+  await revokeCreatorSource(env,user.id,previousLink?.public_token);
   await broadcastDock(env, 'design:' + id, { type: 'dock.deleted' });
   return json({ ok: true });
 }
@@ -973,18 +1025,20 @@ async function updateDock(request, env, user, id) {
 }
 
 async function deleteDock(env, user, id) {
-  await getOwnedDock(env, user.id, id);
+  const previous=await getOwnedDock(env, user.id, id);
   await broadcastDock(env, id, { type: 'dock.deleted', dockId: id });
   await env.DB.prepare('DELETE FROM output_docks WHERE id = ? AND user_id = ?').bind(id, user.id).run();
+  await revokeCreatorSource(env,user.id,previous.public_token);
   return json({ ok: true });
 }
 
 async function rotateDockToken(env, user, id) {
-  await getOwnedDock(env, user.id, id);
+  const previous=await getOwnedDock(env, user.id, id);
   const token = randomToken(24);
   const now = new Date().toISOString();
   await env.DB.prepare('UPDATE output_docks SET public_token = ?, updated_at = ? WHERE id = ? AND user_id = ?')
     .bind(token, now, id, user.id).run();
+  await revokeCreatorSource(env,user.id,previous.public_token);
   await broadcastDock(env, id, { type: 'dock.token.rotated', dockId: id });
   return json({ dock: await getSerializedOwnedDock(env, user.id, id) });
 }
@@ -1091,7 +1145,7 @@ async function getPublicDock(env, token) {
   if (!dock) throw httpError(404, 'Output not found');
   if (dock.directVariant) {
     const variant = dock.directVariant;
-    return json(serializePublicDock(dock, [{
+    return json(serializePublicDock({...dock,shared_live:env.SHARED_LIVE_ENABLED==='true'}, [{
       id: variant.id, dock_id: dock.id, overlay_variant_id: variant.id,
       overlay_kind: variant.overlay_kind, variant_name: variant.name,
       config_json: variant.config_json, variant_revision: variant.revision,
@@ -1104,7 +1158,7 @@ async function getPublicDock(env, token) {
     FROM dock_items i JOIN overlay_variants v ON v.id = i.overlay_variant_id
     WHERE i.dock_id = ? ORDER BY i.z_index, i.created_at
   `).bind(dock.id).all();
-  return json(serializePublicDock(dock, itemResult.results), 200, {
+  return json(serializePublicDock({...dock,shared_live:env.SHARED_LIVE_ENABLED==='true'}, itemResult.results), 200, {
     'Cache-Control': 'no-store, max-age=0'
   });
 }
@@ -1255,6 +1309,7 @@ function serializePublicDock(row, items) {
       width: Number(row.width),
       height: Number(row.height),
       sampleActivity: Boolean(row.sample_activity),
+      sharedLive:Boolean(row.shared_live),
       updatedAt: row.updated_at
     },
     items: items.map(item => ({
@@ -1487,7 +1542,7 @@ function getCorsHeaders(origin, configuredOrigins = '') {
   return {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Headers': 'Authorization, Content-Type',
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
     'Access-Control-Max-Age': '86400',
     'Vary': 'Origin'
   };
@@ -1585,4 +1640,4 @@ function httpError(status, message, headers = {}) {
   return error;
 }
 
-async function stopUserSources(env,userId){const sources=await env.DB.prepare('SELECT id FROM output_docks WHERE user_id=?').bind(userId).all(),designs=await env.DB.prepare('SELECT id FROM overlay_variants WHERE user_id=?').bind(userId).all();await Promise.all([...sources.results.map(d=>broadcastDock(env,d.id,{type:'dock.deleted'})),...designs.results.map(d=>broadcastDock(env,'design:'+d.id,{type:'dock.deleted'}))]);}
+async function stopUserSources(env,userId){await stopCreatorLive(env,userId);const sources=await env.DB.prepare('SELECT id FROM output_docks WHERE user_id=?').bind(userId).all(),designs=await env.DB.prepare('SELECT id FROM overlay_variants WHERE user_id=?').bind(userId).all();await Promise.all([...sources.results.map(d=>broadcastDock(env,d.id,{type:'dock.deleted'})),...designs.results.map(d=>broadcastDock(env,'design:'+d.id,{type:'dock.deleted'}))]);}

@@ -5,7 +5,7 @@ savedRowsConfig.animationsEnabled = savedRowsConfig.animationsEnabled !== false;
 savedRowsConfig.profileAnimationEnabled = savedRowsConfig.profileAnimationEnabled !== false;
 savedRowsConfig.profileNameEnabled = savedRowsConfig.profileAnimationEnabled && savedRowsConfig.profileNameEnabled !== false;
 const params = new URLSearchParams(window.location.search);
-const tikfinityUrl = params.get('endpoint') || 'ws://localhost:21213/';
+const tikfinityUrl = params.get('endpoint') || window.creatorLiveEndpoint || 'ws://localhost:21213/';
 const testMode = params.get('test') === '1';
 const previewMode = params.get('preview') === '1';
 let muteMode = params.get('mute') === '1';
@@ -425,7 +425,7 @@ function isHeartMeGift(gift) {
 }
 
 function connectRows() {
-  const ws = new WebSocket(tikfinityUrl);
+  const ws = (window.KGCreatorLive?.socket(tikfinityUrl) || new WebSocket(tikfinityUrl));
 
   ws.addEventListener('message', event => {
     window.creatorGiftDiscovery?.observe(event.data);

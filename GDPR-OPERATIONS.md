@@ -11,7 +11,7 @@ Public account registration is closed by default through `REGISTRATION_ENABLED=f
 ## Roles and contacts
 
 - Controller: **Dominic Williamson, individual operator of the King Gumption Studio personal project.**
-- Privacy contact: **redacted@example.invalid.**
+- Privacy contact: the contact listed on the public privacy notice.
 - Supervisory authority: UK Information Commissioner's Office (ICO).
 - Primary processor: Cloudflare (Workers and D1).
 - Static host: GitHub Pages.
@@ -88,7 +88,7 @@ If a suspected breach occurs:
 ## Owner checklist before public registration
 
 - [x] Individual controller confirmed as Dominic Williamson, operator of King Gumption Studio.
-- [x] Public privacy email added to `privacy.html`: redacted@example.invalid.
+- [x] The privacy notice provides a public contact method.
 - [ ] Privacy URL changed from localhost to the production URL.
 - [ ] Cloudflare DPA and subprocessors recorded.
 - [x] D1 configured with an EU storage jurisdiction; international transfers still require the Cloudflare DPA record.
@@ -97,3 +97,7 @@ If a suspected breach occurs:
 - [ ] Rights-request and incident-response owners assigned.
 - [ ] Account controls and scheduled cleanup tested in production.
 - [ ] `REGISTRATION_ENABLED=true` set only after all preceding items pass.
+
+## Shared TikTok LIVE relay
+
+The account’s selected public TikTok username and enabled preference are stored in its creator-scoped Cloudflare Durable Object. Account export includes both; account deletion erases them. Euler Stream processes the selected username and public LIVE events. The relay forwards only overlay-required identity, public avatar and engagement/gift fields, retains no raw event history, and keeps at most 5,000 recent event IDs in memory for two minutes. Compact session state retains its existing expiry. Suspended or deleted users cannot open sources; active relay sources are periodically revalidated.
