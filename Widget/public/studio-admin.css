@@ -3,3 +3,6 @@
 .admin-brand{flex-wrap:wrap}.admin-brand .kg-appearance-control{margin-left:auto}.admin-tabs button{display:flex;align-items:center;gap:7px}.admin-tabs svg{width:16px;height:16px;flex:none}
 
 @media(max-width:450px){.admin-tabs{display:grid;grid-template-columns:1fr 1fr}.admin-tabs button{justify-content:center}.admin-brand .kg-appearance-control{margin:0}}
+.operations-guide {max-width:82ch;overflow-wrap:anywhere}
+.operations-guide pre {overflow-x:auto;padding:1rem;background:var(--kg-raised);border-radius:8px}
+.operations-guide h2 {margin-top:2rem}
