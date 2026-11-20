@@ -110,5 +110,5 @@
   function select(index){selected=index;articles.forEach((article,i)=>article.hidden=i!==index);buttons.forEach((button,i)=>button.setAttribute('aria-pressed',String(i===index)));stages.forEach(stage=>{updateSample(stage);schedule(stage)})}
   buttons.forEach(button=>button.addEventListener('click',()=>select(Number(button.dataset.example))));
   document.addEventListener('visibilitychange',()=>stages.forEach(updateSample));
-  select(0);
+  select(Math.max(0,buttons.findIndex(button=>button.getAttribute('aria-pressed')==='true')));
 })();

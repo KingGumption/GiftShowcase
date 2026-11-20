@@ -21,7 +21,7 @@ try{
  let sharedUsername='',sharedEnabled=false;
  await context.route('**/v1/config',async route=>{
   const req=new Request(route.request().url()),response=await worker.fetch(req,env);
-  await route.fulfill({json:{...await response.json(),sharedLiveEnabled:true}});
+  await route.fulfill({json:{...await response.json(),sharedLiveEnabled:true,accountRecoveryEnabled:true}});
  });
  await context.route('**/v1/tiktok',async route=>{
   if(route.request().method()==='POST'){sharedUsername=route.request().postDataJSON().username;sharedEnabled=true;}
@@ -29,7 +29,34 @@ try{
   await route.fulfill({json:{configured:true,enabled:sharedEnabled,phase:sharedEnabled?'connected':'disconnected',username:sharedUsername}});
  });
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>{errors.push(e.stack||e.message);});page.on('dialog',d=>d.accept());
- await page.setViewportSize({width:390,height:900});await page.goto(origin+'/studio/');assert(await page.locator('#cloud-auth-email').isVisible(),'Mobile sign-in remains reachable');await page.fill('#cloud-auth-email','unified-check@example.invalid');await page.fill('#cloud-auth-password','local-unified-browser-password');await page.click('#cloud-create-account');await page.click('#cloud-sign-in');await page.waitForSelector('#cloud-account-session',{state:'attached'});await page.waitForFunction(()=>document.body.classList.contains('cloud-authenticated'));await page.setViewportSize({width:1440,height:1000});
+ await page.goto(origin+'/');
+ const example=page.frameLocator('[title="Crown Raid sample"]').locator('#graphic-root .boss');
+ await example.waitFor();
+ const initialHealth=await example.innerText();
+ await page.waitForFunction(initial=>document.querySelector('[title="Crown Raid sample"]').contentDocument.querySelector('.boss').innerText!==initial,initialHealth);
+ await page.goto(origin+'/request-invite/');
+ assert(await page.getByText(/We’ll email you when there’s a decision/).isVisible());
+ await page.goto(origin+'/studio/');
+ for (const width of [320,390]) {
+   await page.setViewportSize({width,height:844});
+   await page.locator('#cloud-request-reset').waitFor();
+   for (const selector of ['#cloud-auth-email','#cloud-auth-password','#cloud-sign-in','#cloud-request-reset','.studio-welcome p']) {
+     const inside=await page.locator(selector).evaluate(el=>{
+       const card=el.closest('.studio-sidebar').getBoundingClientRect(),rect=el.getBoundingClientRect();
+       return rect.width>0 && rect.left>=card.left && rect.right<=Math.min(card.right,innerWidth)+1;
+     });
+     assert(inside,selector+' clipped at '+width);
+   }
+   await page.locator('#cloud-auth-email').focus();
+   await page.keyboard.press('Tab');assert(await page.locator('#cloud-auth-password').evaluate(el=>el===document.activeElement));
+   await page.click('#cloud-request-reset');
+   await page.locator('.account-recovery-dialog button[type="submit"]').click();
+   assert(await page.locator('[data-recovery-email] input').evaluate(el=>!el.validity.valid));
+   const dialog=await page.locator('.account-recovery-dialog').boundingBox();assert(dialog.x>=0 && dialog.x+dialog.width<=width+1);
+   await page.click('[data-recovery-cancel]');
+   await page.screenshot({path:out+'/signed-out-'+width+'.png'});
+ }
+ await page.fill('#cloud-auth-email','unified-check@example.invalid');await page.fill('#cloud-auth-password','local-unified-browser-password');await page.click('#cloud-create-account');await page.click('#cloud-sign-in');await page.waitForSelector('#cloud-account-session',{state:'attached'});await page.waitForFunction(()=>document.body.classList.contains('cloud-authenticated'));await page.setViewportSize({width:1440,height:1000});
  const connection=page.locator('.studio-sidebar #studio-tiktok');
  await connection.locator('summary').click();
  await connection.getByLabel('TikTok username').fill('demo_creator');

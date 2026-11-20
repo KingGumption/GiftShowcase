@@ -5,9 +5,9 @@
   for(const [id,kind] of Object.entries(kinds)){
     const frame=document.getElementById(id),box=frame?.parentElement;if(!frame)continue;
     const controls=document.createElement('div');controls.className='studio-preview-tools';controls.setAttribute('aria-label',kind+' preview controls');
-    controls.innerHTML='<button type="button" data-sample-event>Sample event</button><button type="button" data-preview-pause aria-pressed="false">Pause</button><span data-preview-size></span>';
+    controls.innerHTML='<button type="button" data-sample-event>Trigger sample</button><button type="button" data-preview-pause aria-pressed="false">Pause</button><span data-preview-size></span>';
     let samples=document.getElementById((kind==='carousel'?'carousel':kind)+'-preview-test');
-    if(!samples){const label=document.createElement('label');label.className='preview-test-toggle';samples=document.createElement('input');samples.type='checkbox';samples.id=kind+'-preview-test';samples.checked=true;label.append(samples,document.createTextNode(' Sample events'));const heading=box.parentElement.querySelector('.section-header-row');heading.append(label);samples.onchange=()=>refreshOverlayPreviews();}
+    if(!samples){const label=document.createElement('label');label.className='preview-test-toggle';samples=document.createElement('input');samples.type='checkbox';samples.id=kind+'-preview-test';samples.checked=true;label.append(samples,document.createTextNode(' Auto-play samples'));const heading=box.parentElement.querySelector('.section-header-row');heading.append(label);samples.onchange=()=>refreshOverlayPreviews();}
     let mute=document.getElementById((kind==='carousel'?'carousel':kind)+'-preview-mute');
     if(kind==='side-gifts'&&!mute){const label=document.createElement('label');mute=document.createElement('input');mute.type='checkbox';mute.id='side-gifts-preview-mute';mute.checked=true;label.append(mute,document.createTextNode(' Mute'));controls.append(label);mute.onchange=()=>{frame.contentWindow?.studioSetPreviewMute?.(mute.checked);if(rowsSelectedGift&&activeConfigTab==='side-gifts')renderRowsInspector();};}
     box.after(controls);

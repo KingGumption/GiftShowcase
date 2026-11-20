@@ -23,3 +23,15 @@ html[data-kg-theme] .reward-config-app>#studio-extended-workspace {
 @media(max-width:820px){
  html[data-kg-theme] .reward-config-app>#studio-extended-workspace {width:calc(100% - 24px)}
 }
+
+@media(max-width:820px) {
+  html[data-kg-theme] .reward-config-source.cloud-auth-required:not(.cloud-authenticated) .studio-sidebar {
+    display:grid !important; grid-template-columns:minmax(0,1fr); height:auto; min-height:0;
+    width:min(460px,calc(100% - 24px)); padding:clamp(16px,5vw,28px); gap:20px;
+  }
+  html[data-kg-theme] .reward-config-source:not(.cloud-authenticated) .studio-account-panel,
+  html[data-kg-theme] .reward-config-source:not(.cloud-authenticated) .studio-sidebar-auth {
+    min-width:0; width:100%; max-width:100%; box-sizing:border-box;
+  }
+  .studio-sidebar-auth :is(input,button,label) { min-width:0; max-width:100%; box-sizing:border-box; }
+}

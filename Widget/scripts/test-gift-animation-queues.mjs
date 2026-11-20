@@ -36,6 +36,6 @@ assert.match(sideGifts, /queueTestSideGift\(repeatedGift,[\s\S]*?queueTestSideGi
 assert.match(carouselHtml, /rewards\.js\?v=[^"]+/, 'Carousel Browser Sources should fetch the queue-aware renderer');
 assert.match(rowsHtml, /rewards-rows\.js\?v=[^"]+/, 'Rows Browser Sources should fetch the queue-aware renderer');
 assert.match(sideGiftsHtml, /side-gifts\.js\?v=[^"]+/, 'Side Gifts Browser Sources should fetch the queue-aware renderer');
-assert.equal((designerHtml.match(/Sample events/g) || []).length, 3, 'Designer should label all three queue-aware preview toggles clearly');
+assert.equal((designerHtml.match(/Auto-play samples/g) || []).length, 3, 'Designer should label all three queue-aware preview toggles clearly');
 
 console.log('Gift animation queue checks passed.');

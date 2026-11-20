@@ -119,7 +119,8 @@
     }
   };
   let directLinkPending = false;
-  variantDialog.addEventListener("close", () => { directLinkPending = false; });
+  let afterCanvasSave = null;
+  variantDialog.addEventListener("close", () => { directLinkPending = false; afterCanvasSave = null; });
   directButton.onclick = async () => {
     let variant = getSelectedVariant();
     if (variant && dirtyOverlayKinds.has(activeOverlayKind)) {
@@ -225,6 +226,14 @@
     dialog.querySelector('[data-conflict-replace]').onclick=async()=>{if(!confirm('Replace the newest saved version with your local edits? The previous save remains in version history.'))return;await refreshVariants(id);loadedRevisions.set(id,getSelectedVariant().revision);recovery.rebase(id,getSelectedVariant().revision);dialog.close();await saveCurrentVariant(false);};dialog.showModal();
   }
   global.studioDesigns={
+    prepareCanvas(openPicker){
+      if(getSelectedVariant()) { openPicker(); return; }
+      openVariantDialog('create');
+      afterCanvasSave=openPicker;
+      variantDialogTitle.textContent='Save and add to canvas';
+      variantDialogDescription.textContent='Name this design, then choose a canvas.';
+      variantDialogConfirm.textContent='Save and continue';
+    },
     all:()=>variants.map(item=>({...item})),selected:getSelectedVariant,status:setCloudStatus,refresh:refreshVariants,
     open(id){if(global.studioGuardOverlayChange?.(()=>global.studioDesigns.open(id)))return;const selected=variants.find(item=>item.id===id);if(!selected)return;recovery.flush();editor.setActiveKind(selected.overlayKind);variantSelect.value=id;selectAndLoadVariant();},
     async duplicate(id){const selected=variants.find(item=>item.id===id);if(!selected)return;const result=await cloud.createVariant({name:(selected.name+' copy').slice(0,80),overlayKind:selected.overlayKind,config:selected.config});await refreshVariants();return result.variant;},
@@ -525,10 +534,12 @@
       if(variant)url.searchParams.set('design',variant.id);else url.searchParams.delete('design');
       if(url.href!==location.href)history.replaceState(history.state,'',url);
     }
+    const canvasAction=document.querySelector('[data-open-canvas-options]');
+    if(canvasAction)canvasAction.textContent=variant?'Add to canvas':'Save and add to canvas';
     const outputs = variant ? docks.filter(d => d.items?.some(i => i.variantId === variant.id)) : [];
     directButton.textContent=variant&&dirtyOverlayKinds.has(activeOverlayKind)?'Save & direct link':'Direct link';
     addToOutput.textContent=variant&&dirtyOverlayKinds.has(activeOverlayKind)?'Save & add to canvas':'Add to canvas';
-    placement.textContent = variant&&dirtyOverlayKinds.has(activeOverlayKind)?'Local draft · your stream is showing revision '+variant.revision+'. Save to publish your edits.' : !variant ? 'Save your design to get an Direct link or add it to a canvas.'
+    placement.textContent = variant&&dirtyOverlayKinds.has(activeOverlayKind)?'Local draft · your stream is showing revision '+variant.revision+'. Save to publish your edits.' : !variant ? 'Save your design to get a Direct link or add it to a canvas.'
       : outputs.length ? 'On canvas in ' + outputs.map(d => d.name).join(', ') + '. You can also use its direct Direct link.'
       : 'Ready for your stream. Copy a direct link or choose a canvas and add this design.';
   }
@@ -537,7 +548,7 @@
     renderPlacement();
     if (!outputSelect) return;
     const selectedId = outputSelect.value;
-    outputSelect.innerHTML = '<option value="">Choose an output</option>';
+    outputSelect.innerHTML = '<option value="">Choose a canvas</option>';
     docks.forEach(dock => {
       const option = document.createElement('option');
       option.value = dock.id;
@@ -560,7 +571,7 @@
     }
     const dock = docks.find(item => item.id === outputSelect.value);
     if (!dock) {
-      setCloudStatus('Choose an output first', true);
+      setCloudStatus('Choose a canvas first', true);
       return;
     }
     setBusy(true);
@@ -616,10 +627,13 @@
       ? await renameSelectedVariant(name)
       : await saveCurrentVariant(false, { forceCreate: true, nameOverride: name });
     if (result) {
+      const openCanvas = afterCanvasSave;
+      afterCanvasSave = null;
       const showLink = directLinkPending;
       directLinkPending = false;
       variantDialog.close();
       if (showLink) await directButton.onclick();
+      else if (openCanvas) openCanvas();
     }
   }
 

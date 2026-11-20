@@ -36,7 +36,20 @@ try{
  for(const type of ['combo','boss','vote','quest']){
   await live.goto(origin+'/Widget/public/index-live-graphics.html?embed=1&type='+type);await live.waitForFunction(()=>window.studioSessionReady && !document.querySelector('[data-toolbar-save]').disabled);
   if(type==='vote'){await live.evaluate(()=>{for(const [id,v]of [['graphic-a-gift','rose'],['graphic-b-gift','donut']]){document.getElementById(id).value=v;document.getElementById(id).dispatchEvent(new Event('input',{bubbles:true}));}});}
-  await live.click('[data-toolbar-save]');await live.fill('#cloud-variant-name','Live '+type);await live.click('#cloud-variant-dialog-confirm');await live.waitForFunction(()=>Boolean(studioDesigns.selected()));const id=await live.inputValue('#cloud-variant-select');assert(id);
+  if(type==='combo'){
+    await live.getByRole('button',{name:'Save and add to canvas',exact:true}).click();
+    await live.click('#cloud-variant-dialog-cancel');
+    assert.equal(await live.locator('dialog[open]').count(),0);
+    await live.getByRole('button',{name:'Save and add to canvas',exact:true}).click();
+  } else await live.click('[data-toolbar-save]');
+  await live.fill('#cloud-variant-name','Live '+type);await live.click('#cloud-variant-dialog-confirm');await live.waitForFunction(()=>Boolean(studioDesigns.selected()));const id=await live.inputValue('#cloud-variant-select');assert(id);
+  if(type==='combo'){
+    await live.locator('dialog[open] #cloud-output-select').waitFor();
+    assert.equal(await live.locator('#cloud-output-select option').first().textContent(),'Choose a canvas');
+    await live.selectOption('#cloud-output-select',{index:1});
+    await live.click('#cloud-add-to-output');
+    await live.waitForFunction(()=>document.querySelector('#cloud-config-status').textContent.startsWith('Added'));
+  }
   await live.reload();
   await live.waitForFunction(id=>window.studioSessionReady && studioDesigns.selected()?.id===id,id);
   assert.equal(await live.evaluate(()=>studioDesigns.selected().config.goalBar.graphic.variant),type);
