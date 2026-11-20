@@ -7,10 +7,10 @@ const {installGraphicHubs}=await import('./graphics-test-hub.mjs');installGraphi
 const dist=path.join(project,'Widget/cloudflare/dist'),origin='https://kinggumption.com',out=process.env.STUDIO_RELEASE_ARTIFACTS||path.join(os.tmpdir(),'king-gumption-release-check');
 fs.mkdirSync(out,{recursive:true});
 const mime={'.css':'text/css','.js':'text/javascript','.html':'text/html','.svg':'image/svg+xml','.png':'image/png'};
-const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+aF5kAAAAASUVORK5CYII=','base64');
+const png=fs.readFileSync(path.join(project,'Widget/scripts/fixtures/gift-art.png'));
 const soundObjects=new Map();env.GIFT_IMAGES={async put(key,body,options){soundObjects.set(key,{body,...options});},async delete(keys){for(const key of [].concat(keys))soundObjects.delete(key);},async list(){return {objects:[],truncated:false};},async get(key){return soundObjects.get(key)|| {body:png,size:png.length,httpMetadata:{contentType:'image/png'},customMetadata:{checkedAt:String(Date.now())}}},async head(){return {size:png.length}}};
 env.ASSETS={async fetch(request){const file=path.resolve(dist,new URL(request.url).pathname.replace(/^\//,'')||'index.html');return file.startsWith(dist+path.sep)&&fs.existsSync(file)&&fs.statSync(file).isFile()?new Response(fs.readFileSync(file),{headers:{'Content-Type':mime[path.extname(file)]||'application/octet-stream'}}):new Response(null,{status:404});}};
-const browser=await chromium.launch({executablePath:'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'});
+const browser=await chromium.launch({executablePath:process.env.STUDIO_BROWSER_EXECUTABLE||'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe'});
 try{
  const context=await browser.newContext({viewport:{width:1440,height:1000}});context.setDefaultTimeout(15000);
  await context.addInitScript(()=>{window.WebSocket=class extends EventTarget{static OPEN=1;readyState=1;constructor(url){super();window.__sockets??=[];window.__sockets.push(String(url));}close(){}send(){}};});

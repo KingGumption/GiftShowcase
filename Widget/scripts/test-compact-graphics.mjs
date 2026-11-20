@@ -20,3 +20,7 @@ test('owned commands, source membership, concurrent duplicate suppression, stale
  const rotated=await api('/variants/'+id+'/rotate-link','POST',{password:'long-graphics-check-password'},a);assert.equal(rotated.status,200);assert.equal((await api(path)).status,404);
  await api('/account','DELETE',{password:'long-graphics-check-password',confirmation:'DELETE'},a);assert.equal([...hubs.get('design:'+id).values.keys()].filter(k=>k.startsWith('graphics-')).length,0);
 });
+
+test('like cards retain native plural trigger names and thresholds; all matching cards can react',()=>{const c={rowsTheme:{graphic:{variant:'deck'}},rowsOverlay:{gifts:[{triggerType:'likes',likesRequired:50},{triggerType:'like',likesRequired:50},{triggerType:'share'}]}};let s=G.fresh('rows',c,1000);s=G.event(s,'rows',c,{id:'first',type:'like',amount:30},1100);assert.equal(s.active,null);s=G.event(s,'rows',c,{id:'second',type:'like',amount:20},1200);assert.equal(s.active.index,0);assert.equal(s.queue[0].index,1);s=G.event(s,'rows',c,{id:'share',type:'share'},1300);assert.equal(s.queue[1].index,2);});
+
+test('native sound levels and overlay percentage controls retain the same audible volume',()=>{assert.equal(G.volume(.85),.85);assert.equal(G.volume(85,true),.85);assert.equal(G.volume(1,true),.01);assert.equal(G.volume(1),1);assert.equal(G.fresh('carousel',{holdOnGiftMs:2500,carouselTheme:{graphic:{variant:'signal'}}}).options.hold,2.5);});

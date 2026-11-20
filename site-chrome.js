@@ -96,8 +96,8 @@
     const frame=stage.querySelector('iframe');
     if(!frame)return;
     const active=articles[selected]?.contains(stage)&&visible.has(stage)&&!document.hidden;
-    if(active){if(!frame.hasAttribute('src'))frame.style.visibility='hidden';frame.onload=()=>{frame.style.visibility='visible';};frame.src=frame.dataset.src;}
-    else if(frame.hasAttribute('src'))frame.removeAttribute('src');
+    if(active&&!frame.hasAttribute('src')){frame.style.visibility='hidden';frame.onload=()=>{frame.style.visibility='visible';};frame.src=frame.dataset.src;}
+    else if(!active&&frame.hasAttribute('src'))frame.removeAttribute('src');
   }
   function schedule(stage) {
     pending.add(stage);if(paintRaf)return;

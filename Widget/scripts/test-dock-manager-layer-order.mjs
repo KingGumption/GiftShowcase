@@ -82,7 +82,7 @@ assert.doesNotMatch(studioHtml, /id="cloud-load-variant"/, 'Version selection sh
 assert.match(studioHtml, /id="cloud-version-menu"/, 'Secondary version actions should stay in a compact overflow menu');
 assert.match(studioHtml, /id="cloud-variant-dialog"/, 'Version naming should only appear in a focused dialog');
 assert.match(cloudAdminSource, /variantSelect\.addEventListener\('change', selectAndLoadVariant\)/, 'Choosing a saved version should load it automatically');
-assert.match(cloudAdminSource, /unpublished edits will stay as a local draft/, 'Automatic version loading should protect unsaved edits');
+assert.match(cloudAdminSource, /studioRequestNavigation/, 'Automatic version loading should protect unsaved edits');
 assert.match(cloudAdminSource, /dirtyOverlayKinds\.delete\(activeOverlayKind\)/, 'Loading or saving a version should clear its dirty state');
 assert.match(source, /studio:activate-output/, 'The embedded designer should refresh its cloud data whenever its tab is activated');
 assert.match(managerHtml, /Appears in this canvas link; switch it off before going live/, 'The sample-data switch should make its live output effect clear');

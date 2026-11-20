@@ -41,7 +41,7 @@ function initializeEditorSections() {
     if(cards)cards.dataset.editorSection='cards';
     const nav=document.createElement('div');nav.className='editor-section-tabs';nav.dataset.editorNav=kind;nav.setAttribute('role','tablist');nav.setAttribute('aria-label','Editor sections');
     const sections=cards?['cards','settings','style']:['settings','style'];
-    nav.innerHTML=sections.map(key=>`<button type="button" role="tab" id="editor-tab-${kind}-${key}" data-editor-section-tab="${key}" aria-selected="false" aria-controls="editor-panel-${kind}-${key}"><span class="editor-tab-icon" aria-hidden="true">${rowsIcon(key)}</span>${key==='cards'?(kind==='rows'?'Cards & rows':'Cards'):key==='style'?'Style':'Settings'}</button>`).join('');
+    nav.innerHTML=sections.map(key=>`<button type="button" role="tab" id="editor-tab-${kind}-${key}" data-editor-section-tab="${key}" aria-selected="false" aria-controls="editor-panel-${kind}-${key}"><span class="editor-tab-icon" aria-hidden="true">${rowsIcon(key)}</span>${key==='cards'?'Cards':key==='style'?'Style':'Settings'}</button>`).join('');
     preview.after(nav);
     for(const panel of panels.filter(p=>p.matches('details.config-collapse'))){
       const style=/theme|appearance|styling/i.test(panel.getAttribute('aria-label')||'');
@@ -136,8 +136,8 @@ function setManagedPreviewActive(frame,active) {
   }catch{/* Only same-origin application previews are managed. */}
 }
 function syncEditorPreviewActivity() {
-  const outputActive=document.body.classList.contains('studio-output-active');
-  document.querySelectorAll('[data-config-panel] iframe[src]').forEach(frame=>setManagedPreviewActive(frame,!document.hidden&&!editorWindowResizing&&!outputActive&&!frame.closest('[hidden]')));
+  const outputActive=document.body.classList.contains('studio-output-active');const extendedActive=document.body.classList.contains('studio-extended-active');
+  document.querySelectorAll('[data-config-panel] iframe[src]').forEach(frame=>setManagedPreviewActive(frame,!document.hidden&&!editorWindowResizing&&!outputActive&&!extendedActive&&!frame.closest('[hidden]')));
   const output=document.querySelector('#studio-output-frame');
   try {
     const doc=output?.contentDocument,list=doc?.querySelector('#dock-manager-list');

@@ -11,5 +11,6 @@ try{
   await run([join(scripts,'release-browser.mjs')],cloudflare);
   await run([join(scripts,'release-graphics-browser.mjs')],cloudflare);
   await run([join(scripts,'release-admin-browser.mjs')],cloudflare);
+  await run([join(scripts,'release-unified-browser.mjs')],cloudflare);
   console.log('Local release gate passed. Deploy separately with Wrangler after retaining source/database backups.');
 }catch(error){console.error(error.message);process.exitCode=1;}

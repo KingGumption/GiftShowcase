@@ -1300,3 +1300,5 @@ footer > div {
 .home-requirements{font-size:13px!important;line-height:1.7;max-width:50ch;color:var(--kg-muted,#6b6475)}
 .home-faq{padding:42px 0;max-width:900px;margin:auto}.home-faq details{border-bottom:1px solid var(--kg-line,#d2ced8);padding:18px 0}.home-faq summary{cursor:pointer;font-weight:600;min-height:28px}.home-faq p{line-height:1.75;font-size:14px}
 @media(max-width:700px){.example-picker{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));overflow:visible!important;white-space:normal!important}.example-picker button{white-space:normal!important;text-align:left;min-height:44px}.example-picker button:last-child{grid-column:1/-1}}
+
+.example-picker button svg{width:19px;height:19px;flex:none}.example-picker{flex-wrap:wrap}@media(max-width:600px){.example-picker{flex-wrap:nowrap;overflow:auto;padding-bottom:8px}.example-picker button{white-space:nowrap;flex:none;min-height:44px}}

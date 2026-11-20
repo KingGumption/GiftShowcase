@@ -649,7 +649,7 @@ window.rewardConfigEditor = Object.freeze({
     draftConfig = normalizeConfig(config || {});
     ensureRowsGiftDefaults();
     ensureSideGiftDefaults();
-    localStorage.setItem(rewardStorageKey, JSON.stringify(draftConfig));
+
     applyThemeToDocument(getCarouselTheme());
     render();
     setState(stateText);
@@ -661,7 +661,7 @@ window.rewardConfigEditor = Object.freeze({
     });
     ensureRowsGiftDefaults();
     ensureSideGiftDefaults();
-    localStorage.setItem(rewardStorageKey, JSON.stringify(draftConfig));
+
     applyThemeToDocument(getCarouselTheme());
     render();
     setState(stateText);
@@ -725,12 +725,7 @@ function loadDraftConfig() {
     return normalizeConfig(urlConfig);
   }
 
-  try {
-    const saved = JSON.parse(localStorage.getItem(rewardStorageKey) || 'null');
-    return saved && Array.isArray(saved.rewards) ? normalizeConfig(saved) : normalizeConfig(baseConfig);
-  } catch {
-    return normalizeConfig(baseConfig);
-  }
+  return normalizeConfig(baseConfig);
 }
 
 function applyRowsDefaultsRevision() {
@@ -740,7 +735,7 @@ function applyRowsDefaultsRevision() {
     if (localStorage.getItem(rowsDefaultsRevisionKey) === rowsDefaultsRevision) return;
 
     draftConfig.rowsOverlay = getRevisedRowsDefaults(draftConfig.rowsOverlay);
-    localStorage.setItem(rewardStorageKey, JSON.stringify(draftConfig));
+
     localStorage.setItem(rowsDefaultsRevisionKey, rowsDefaultsRevision);
   } catch {
     draftConfig.rowsOverlay = getRevisedRowsDefaults(draftConfig.rowsOverlay);
@@ -2018,7 +2013,8 @@ function updateSideGiftStats() {
 }
 
 function setActiveTab(tabName) {
-  if (tabName === activeConfigTab && !document.body.classList.contains('studio-output-active')) return;
+  if (tabName === activeConfigTab && !document.body.classList.contains('studio-output-active')&&!document.body.classList.contains('studio-extended-active')) return;
+  if(window.studioGuardOverlayChange?.(()=>setActiveTab(tabName)))return;
   activeConfigTab = tabName;
   window.dispatchEvent(new CustomEvent('rewardconfig:tabchanged', { detail: { tabName } }));
 
@@ -2037,7 +2033,8 @@ function setActiveTab(tabName) {
   });
 
   setStudioWorkspace('editor');
-  renderPreservingScroll();
+  document.title=(activeButton?.dataset.studioTitle||'Overlay editor')+' | King Gumption Studio';
+  renderPreservingScroll();scrollTo({top:0,behavior:'instant'});
 }
 
 function setStudioWorkspace(workspace, options = {}) {

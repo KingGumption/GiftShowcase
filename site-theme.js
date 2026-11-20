@@ -59,7 +59,7 @@
     const compact = matchMedia('(max-width: 820px)');
     const placeControl = () => {
       const brand = document.querySelector('.studio-brand');
-      if (brand && compact.matches) brand.after(control);
+      if (brand && compact.matches) (document.querySelector('.studio-account-panel')||mount).append(control);
       else mount.append(control);
     };
     placeControl();
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (slot && types[button.dataset.configTab]) slot.replaceChildren(makeIcon(types[button.dataset.configTab]));
   });
   const examples = ['carousel', 'rows', 'sides', 'goal', 'podium'];
-  document.querySelectorAll('[data-example]').forEach(button => button.prepend(makeIcon(examples[Number(button.dataset.example)])));
+  document.querySelectorAll('[data-example]').forEach(button => {if(!button.querySelector('svg'))button.prepend(makeIcon(examples[Number(button.dataset.example)]));});
   document.querySelectorAll('[data-config-tab], [data-example]').forEach(button => {
     let timer;
     button.addEventListener('click', () => {

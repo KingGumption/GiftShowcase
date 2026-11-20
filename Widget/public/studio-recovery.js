@@ -15,14 +15,8 @@
     function baseline(kind=currentKind) {histories.set(entryKey(kind),{steps:[editor.getConfigForKind(kind)],at:0,last:0,field:null});updateButtons();}
     function updateButtons(){const h=histories.get(entryKey());undo.disabled=!h||h.at===0;redo.disabled=!h||h.at===h.steps.length-1;}
     function flush() {
-      clearTimeout(timer);
-      if(!pack||!key||restoring)return;
-      pack.kind=currentKind;pack.selections=Object.fromEntries(selections);
-      pack.entries[entryKey()]={baseRevision:pack.entries[entryKey()]?.baseRevision??revision(),config:editor.getConfigForKind(currentKind),dirty:dirty.has(currentKind),selection:editor.getSelection(currentKind),updatedAt:Date.now()};
-      // Keep the most recent 40 working copies, never let recovery grow without bound.
-      const entries=Object.entries(pack.entries).sort((a,b)=>b[1].updatedAt-a[1].updatedAt);
-      pack.entries=Object.fromEntries(entries.slice(0,40));
-      try{localStorage.setItem(key,JSON.stringify(pack));}catch{status('Local draft could not be stored. Save your design before leaving.',true);}
+      if(!key||restoring)return;
+      try{localStorage.setItem(key,JSON.stringify({kind:currentKind,selections:Object.fromEntries(selections)}));}catch{}
     }
     function changed() {
       if(restoring||!pack)return;
@@ -51,7 +45,7 @@
     });
     global.addEventListener('pagehide',flush);
     document.addEventListener('visibilitychange',()=>{if(document.hidden)flush();});
-    global.addEventListener('beforeunload',event=>{flush();if(dirty.size&&!global.studioAllowNavigation){event.preventDefault();event.returnValue='';}});
+    global.addEventListener('beforeunload',event=>{flush();if(global.studioHasUnsavedEdits?.()&&!global.studioAllowNavigation){event.preventDefault();event.returnValue='';}});
     global.studioHasUnsavedEdits=()=>dirty.size>0;
     return {
       changed,flush,
@@ -64,19 +58,14 @@
         selections=selectedIds;dirty=dirtyKinds;currentKind=kind;
         if(owner===nextOwner)return;
         try{const previousOwner=localStorage.getItem('kg-studio-working-owner');if(previousOwner&&previousOwner!==nextOwner)editor.resetLocal();localStorage.setItem('kg-studio-working-owner',nextOwner);}catch{}
-        owner=nextOwner;key='kg-studio-drafts:v1:'+owner;histories.clear();
-        try{pack=JSON.parse(localStorage.getItem(key)||'null');}catch{}
-        if(!pack||pack.version!==1)pack={version:1,entries:{},selections:{},kind};
-        let recovered=false;restoring=true;
-        try{
-          for(const [k,id] of Object.entries(pack.selections||{}))if(['carousel','rows','side-gifts','goal','top-likers'].includes(k)){
-            selections.set(k,id);const entry=pack.entries[k+':'+id];
-            if(entry?.config){const saved=latest(id);editor.loadConfigForKind(k,entry.dirty?entry.config:(saved?.config||entry.config));if(!entry.dirty&&saved)entry.baseRevision=saved.revision;if(entry.dirty){dirty.add(k);recovered=true;}}
-          }
-          if(['carousel','rows','side-gifts','goal','top-likers'].includes(pack.kind))editor.setActiveKind(pack.kind);
+        owner=nextOwner;key='kg-studio-selections:v2:'+owner;histories.clear();
+        try{localStorage.removeItem('kg-studio-drafts:v1:'+owner);localStorage.removeItem('kg-live-graphic-draft:'+owner);localStorage.removeItem('reward-overlay-config:v1');}catch{}
+        let prefs;try{prefs=JSON.parse(localStorage.getItem(key)||'null');}catch{}
+        pack={entries:{}};restoring=true;
+        try{for(const [k,id]of Object.entries(prefs?.selections||{})){const saved=latest(id);if(['carousel','rows','side-gifts','goal','top-likers'].includes(k)&&typeof id==='string'){selections.set(k,id);if(saved&&saved.overlayKind===k)editor.loadConfigForKind(k,saved.config,'Saved design loaded');}}
+          if(['carousel','rows','side-gifts','goal','top-likers'].includes(prefs?.kind))editor.setActiveKind(prefs.kind);
         }finally{restoring=false;}
-        currentKind=editor.getActiveOverlayKind();editor.selectCard(pack.entries[entryKey()]?.selection);baseline();
-        if(recovered){status('Recovered local edits. Save to publish them.');editor.setState('Recovered draft — unsaved changes');}
+        currentKind=editor.getActiveOverlayKind();baseline();
       },
       switchKind(kind){flush();currentKind=kind;if(!histories.has(entryKey()))baseline();updateButtons();},
       loaded(){if(pack?.entries[entryKey()])pack.entries[entryKey()].baseRevision=revision();baseline();flush();},
@@ -86,7 +75,7 @@
         if(previous&&!histories.has(kind+':'+id))histories.set(kind+':'+id,previous);
         pack.entries[kind+':'+id]={baseRevision:revision(),config:copy(config),dirty:dirty.has(kind),selection:editor.getSelection(currentKind),updatedAt:Date.now()};flush();updateButtons();
       },
-      recoverSelection(kind,id){const entry=pack?.entries[kind+':'+id];if(!entry?.config||!entry.dirty)return false;editor.loadConfigForKind(kind,entry.config,entry.dirty?'Recovered draft — unsaved changes':'Saved design loaded');if(entry.dirty)dirty.add(kind);else dirty.delete(kind);editor.selectCard(entry.selection);baseline(kind);return true;},
+      recoverSelection(){return false;},
       resetOwner(){clearTimeout(timer);owner='';key='';pack=null;histories.clear();dirty.clear();updateButtons();},
       get restoring(){return restoring;}
     };

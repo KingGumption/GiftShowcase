@@ -193,7 +193,7 @@
   restoreSession();
 
   function openEditorDeepLink(){
-    if(deepLinkHandled)return;deepLinkHandled=true;const id=new URLSearchParams(location.search).get('design');if(!id)return;
+    if(deepLinkHandled||new URLSearchParams(location.search).has('overlay'))return;deepLinkHandled=true;const id=new URLSearchParams(location.search).get('design');if(!id)return;
     const design=variants.find(item=>item.id===id);if(!design){setCloudStatus('This design is unavailable in your account.',true);return;}
     if(activeOverlayKind===design.overlayKind&&getSelectedVariant()?.id===id)return;
     editor.setActiveKind(design.overlayKind);variantSelect.value=id;selectAndLoadVariant();
@@ -201,27 +201,28 @@
   function openSaveConflict(id){
     const dialog=studioDialog('A newer version exists','<p>Your local edits are safe. Another tab or device saved this design after you opened it.</p><div class="studio-dialog-actions"><button type="button" data-conflict-copy>Save my edits as a new design</button><button type="button" data-conflict-reload>Load the newest saved version</button><button type="button" data-conflict-replace>Replace the newest version</button></div><p role="status" data-conflict-status></p>');
     dialog.querySelector('[data-conflict-copy]').onclick=()=>{dialog.close();openVariantDialog('create');};
-    dialog.querySelector('[data-conflict-reload]').onclick=async()=>{if(!confirm('Load the newest saved version? Your current draft will be replaced.'))return;await refreshVariants(id);loadSelectedVariant();dialog.close();};
+    dialog.querySelector('[data-conflict-reload]').onclick=async()=>{if(!confirm('Load the newest saved version? Your unsaved changes will be replaced.'))return;await refreshVariants(id);loadSelectedVariant();dialog.close();};
     dialog.querySelector('[data-conflict-replace]').onclick=async()=>{if(!confirm('Replace the newest saved version with your local edits? The previous save remains in version history.'))return;await refreshVariants(id);loadedRevisions.set(id,getSelectedVariant().revision);recovery.rebase(id,getSelectedVariant().revision);dialog.close();await saveCurrentVariant(false);};dialog.showModal();
   }
   global.studioDesigns={
     all:()=>variants.map(item=>({...item})),selected:getSelectedVariant,status:setCloudStatus,refresh:refreshVariants,
-    open(id){const selected=variants.find(item=>item.id===id);if(!selected)return;recovery.flush();editor.setActiveKind(selected.overlayKind);variantSelect.value=id;selectAndLoadVariant();},
+    open(id){if(global.studioGuardOverlayChange?.(()=>global.studioDesigns.open(id)))return;const selected=variants.find(item=>item.id===id);if(!selected)return;recovery.flush();editor.setActiveKind(selected.overlayKind);variantSelect.value=id;selectAndLoadVariant();},
     async duplicate(id){const selected=variants.find(item=>item.id===id);if(!selected)return;const result=await cloud.createVariant({name:(selected.name+' copy').slice(0,80),overlayKind:selected.overlayKind,config:selected.config});await refreshVariants();return result.variant;},
     async archive(id,archived){await cloud.request('/v1/variants/'+encodeURIComponent(id)+'/archive',{method:'POST',body:{archived}});await refreshVariants();},
     async rename(id,name){const selected=variants.find(item=>item.id===id);const result=await cloud.updateVariant(id,{name,config:selected.config,overlayKind:selected.overlayKind,expectedRevision:selected.revision});loadedRevisions.set(id,result.variant.revision);recovery.rebase(id,result.variant.revision);await refreshVariants();},
-    fresh(kind=activeOverlayKind,options={}){if(!options.confirmed&&recovery.hasUntitled(kind)&&!confirm('Start a fresh design? This replaces the existing unpublished new-design draft for this overlay. Cancel and save that draft first to keep it. Saved designs and their drafts are unaffected.'))return;if(!options.confirmed&&dirtyOverlayKinds.has(activeOverlayKind)&&getSelectedVariant()&&!confirm('Start a new design? Your edits to the saved design remain in its local draft.'))return;recovery.flush();editor.setActiveKind(kind);selectedVariantIds.set(kind,'');variantSelect.value='';editor.loadConfigForKind(kind,editor.getDefaults(kind),'New design — unsaved changes');dirtyOverlayKinds.add(kind);recovery.loaded();renderVariants('');global.dispatchEvent(new CustomEvent('rewardconfig:changed'));},
+    fresh(kind=activeOverlayKind,options={}){if(!options.confirmed&&global.studioGuardOverlayChange?.(()=>global.studioDesigns.fresh(kind,{confirmed:true})))return;global.studioDesigns.discard();editor.setActiveKind(kind);selectedVariantIds.set(kind,'');variantSelect.value='';editor.loadConfigForKind(kind,editor.getDefaults(kind),'New design');dirtyOverlayKinds.delete(kind);recovery.loaded();renderVariants('');renderPlacement();},
     async revert(){
       const current=getSelectedVariant(),kind=activeOverlayKind;if(!current)throw Error('Save this overlay design first.');
       if(savingLive||saveVariant.disabled)throw Error('A save is finishing. Try again once it completes.');
       clearTimeout(liveSaveTimer);liveSavePending=false;
       const result=await cloud.listVariants(),latest=result.variants?.find(item=>item.id===current.id);
-      if(!latest)throw Error('The saved design is unavailable. Your draft has been kept.');
-      if(kind!==activeOverlayKind||getSelectedVariant()?.id!==current.id)throw Error('The selected design changed. Your drafts have been kept.');
+      if(!latest)throw Error('The saved design is unavailable. Your unsaved changes are still open.');
+      if(kind!==activeOverlayKind||getSelectedVariant()?.id!==current.id)throw Error('The selected design changed. Your unsaved changes are still open.');
       variants=result.variants;renderVariants(current.id);loadSelectedVariant();
       setCloudStatus('Reverted to saved revision '+latest.revision+'. Published designs and Direct links are unchanged.');
       global.dispatchEvent(new CustomEvent('studio:designloaded'));return latest;
     },
+    discard(){clearTimeout(liveSaveTimer);liveSavePending=false;const selected=getSelectedVariant(),kind=activeOverlayKind;dirtyOverlayKinds.delete(kind);editor.loadConfigForKind(kind,selected?.config||editor.getDefaults(kind),'Changes discarded');recovery.loaded();renderPlacement();global.dispatchEvent(new CustomEvent('studio:designloaded'));},
     save:saveSelectedVariant,
     async rotate(){const selected=getSelectedVariant();if(!selected)return setCloudStatus('Save or choose a design first.',true);if(!confirm('Replace this design’s Direct link? The old link will stop working in your streaming software. Canvas links are unaffected.'))return;const password=await requestAccountPassword();if(!password)return;await cloud.request('/v1/variants/'+encodeURIComponent(selected.id)+'/rotate-link',{method:'POST',body:{password}});setCloudStatus('Direct link replaced. Copy the new link into your streaming software.');},
     state:()=>({kind:activeOverlayKind,busy:cloudBusy,dirty:dirtyOverlayKinds.has(activeOverlayKind),live:Boolean(liveUpdates.checked),placement:placement.textContent})
@@ -274,10 +275,10 @@
       else setCloudStatus('Recovered local edits. Save to publish them.');
     } catch (error) {
       if(!cloud.signedIn||error.status===401){
-        renderSession(null);setAuthStatus('Your session has expired. Sign in again. Your local drafts are kept.',true);
+        renderSession(null);setAuthStatus('Your session has expired. Sign in again. Your unsaved changes have not been saved.',true);
       }else{
         renderSession(cloud.session);
-        setCloudStatus('Cannot reach your saved designs. Your sign-in and local drafts are kept.',true);
+        setCloudStatus('Cannot reach your saved designs. Your sign-in is kept. Unsaved edits remain open.',true);
         retrySession.disabled=false;
         retrySession.hidden=false;
       }
@@ -315,8 +316,8 @@
     }
   }
 
-  async function logout() {
-    if(dirtyOverlayKinds.size && !confirm('Your unpublished edits will stay as local drafts on this browser. Sign out?'))return;
+  async function logout(confirmed=false) {
+    if(confirmed!==true&&global.studioHasUnsavedEdits?.()){global.studioRequestNavigation(()=>logout(true));return;}
     recovery.flush();
     setBusy(true);
     try {
@@ -595,18 +596,15 @@
     }
   }
 
-  function selectAndLoadVariant() {
+  function selectAndLoadVariant(confirmed=false) {
     const previousId = selectedVariantIds.get(activeOverlayKind) || '';
     const nextId = variantSelect.value;
     const nextVariant = getSelectedVariant();
     recovery.flush();
     if (nextId !== previousId && dirtyOverlayKinds.has(activeOverlayKind)) {
-      const confirmed = confirm('Switch designs? Your unpublished edits will stay as a local draft on this browser.');
-      if (!confirmed) {
-        variantSelect.value = previousId;
-        return;
-      }
+      if(confirmed!==true){variantSelect.value=previousId;global.studioRequestNavigation(()=>{variantSelect.value=nextId;selectAndLoadVariant(true);});return;}
     }
+
     selectedVariantIds.set(activeOverlayKind, nextId);
     versionMenu.open = false;
     if (nextVariant) {
