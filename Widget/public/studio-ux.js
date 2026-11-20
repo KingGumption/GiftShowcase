@@ -46,7 +46,7 @@
       tile.tabIndex=seen.has(index)?-1:0;seen.add(index);
     }
     function select(event){const tile=event.target.closest('[data-studio-card-index]');if(!tile)return;if(event.type==='keydown'&&!['Enter',' '].includes(event.key))return;event.preventDefault();event.stopPropagation();if(editor.getActiveOverlayKind()!==kind)return;
-      const nav=document.querySelector('[data-editor-nav="'+(kind==='carousel'?'original':kind)+'"] [data-editor-section-tab="cards"]');nav?.click();editor.selectCard(Number(tile.dataset.studioCardIndex));enhanceInspector();paintSelection();focusCard();if(!mobile.matches)requestAnimationFrame(()=>document.querySelector('.rows-action.is-selected:not([hidden])')?.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'}));
+      const nav=document.querySelector('[data-editor-nav="'+(kind==='carousel'?'original':kind)+'"] [data-editor-section-tab="cards"]');nav?.click();editor.selectCard(Number(tile.dataset.studioCardIndex));enhanceInspector();paintSelection();focusCard();if(!mobile.matches)requestAnimationFrame(()=>cardEditorList().querySelector('.rows-action.is-selected')?.scrollIntoView({block:'center',behavior:matchMedia('(prefers-reduced-motion:reduce)').matches?'instant':'smooth'}));
     }
     doc.addEventListener('click',select);doc.addEventListener('keydown',select);queueSelection();
   }

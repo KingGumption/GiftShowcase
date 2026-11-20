@@ -55,7 +55,7 @@
       group.append(button);
     }
     control.append(text,group);
-    const mount = document.querySelector('.studio-account-panel') || document.querySelector('.site-header nav') || document.querySelector('.obs-dock-manager-header') || document.querySelector('.admin-brand') || document.body;
+    const mount = document.querySelector('.studio-account-panel') || document.querySelector('.site-header nav') || document.querySelector('.obs-dock-manager-header') || document.querySelector('.admin-brand') || document.querySelector('.live-header') || document.body;
     const compact = matchMedia('(max-width: 820px)');
     const placeControl = () => {
       const brand = document.querySelector('.studio-brand');

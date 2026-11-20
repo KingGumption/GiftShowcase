@@ -44,7 +44,10 @@ try{
       await page.waitForFunction(id=>Boolean(document.getElementById(id).contentDocument?.querySelector('[data-studio-card-index]')),previewId);
       const tile=page.frameLocator('#'+previewId).locator('[data-studio-card-index]').first(),index=Number(await tile.getAttribute('data-studio-card-index'));
       const beforeSelection=await page.evaluate(()=>JSON.stringify(rewardConfigEditor.getConfigForKind(rewardConfigEditor.getActiveOverlayKind())));
+      await page.evaluate(()=>{window.__previewScroll=null;window.__scrollOriginal=Element.prototype.scrollIntoView;Element.prototype.scrollIntoView=function(options){window.__previewScroll={selected:this.classList.contains('is-selected'),active:cardEditorList().contains(this)};return window.__scrollOriginal.call(this,options);};});
       await tile.dispatchEvent('click');assert.equal(await page.evaluate(()=>rewardConfigEditor.getSelection()),index);
+      await page.waitForFunction(()=>window.__previewScroll?.selected&&window.__previewScroll?.active);await page.evaluate(()=>Element.prototype.scrollIntoView=window.__scrollOriginal);
+
       assert.equal(await page.evaluate(()=>JSON.stringify(rewardConfigEditor.getConfigForKind(rewardConfigEditor.getActiveOverlayKind()))),beforeSelection);
     }
 
