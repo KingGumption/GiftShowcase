@@ -1,14 +1,35 @@
 (function(g){'use strict';
-const body=document.body,app=document.querySelector('.reward-config-app'),sidebar=document.querySelector('.studio-sidebar'),nav=document.querySelector('.studio-sidebar-content'),footer=document.querySelector('.studio-sidebar-footer'),section=document.createElement('section'),frame=document.createElement('iframe');let current=null;
-section.id='studio-extended-workspace';section.hidden=true;section.setAttribute('aria-label','Overlay editor');frame.id='studio-overlay-frame';frame.title='Overlay editor';section.append(frame);app.append(section);
-const nativeDirty=g.studioHasUnsavedEdits;g.studioActiveOverlayEditor=()=>current?frame.contentWindow:null;g.studioHasUnsavedEdits=()=>Boolean(nativeDirty?.()||current&&frame.contentWindow?.studioOverlayDirty?.());
+const body=document.body,sidebar=document.querySelector('.studio-sidebar'),nav=document.querySelector('.studio-sidebar-content');
 const toggle=document.createElement('button');toggle.type='button';toggle.className='studio-mobile-menu-toggle';toggle.setAttribute('aria-expanded','false');toggle.setAttribute('aria-controls','studio-navigation');toggle.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg><span>Menu</span>';sidebar.prepend(toggle);nav.id='studio-navigation';
 function menu(open){body.classList.toggle('studio-mobile-menu-open',open);toggle.setAttribute('aria-expanded',String(open));toggle.querySelector('span').textContent=open?'Close':'Menu';}
 toggle.onclick=()=>menu(!body.classList.contains('studio-mobile-menu-open'));matchMedia('(max-width:820px)').addEventListener('change',e=>{if(!e.matches)menu(false);});g.addEventListener('keydown',e=>{if(e.key==='Escape'&&body.classList.contains('studio-mobile-menu-open')){menu(false);toggle.focus();}});
-function close(){current=null;body.classList.remove('studio-extended-active');section.hidden=true;frame.removeAttribute('src');document.querySelectorAll('[data-graphic-menu]').forEach(a=>{a.classList.remove('is-active');a.removeAttribute('aria-current');});const url=new URL(location.href);url.searchParams.delete('overlay');url.searchParams.delete('design');history.replaceState(null,'',url);menu(false);g.syncEditorPreviewActivity?.();}
-function open(type,id){restored=true;if(!KGGraphics.byId[type]?.live)return;setStudioWorkspace('editor',{updateUrl:false});current=type;document.title=KGGraphics.byId[type].name+' | King Gumption Studio';section.hidden=false;body.classList.add('studio-extended-active');document.querySelectorAll('[data-config-tab]').forEach(b=>{b.classList.remove('is-active');b.removeAttribute('aria-current');});document.querySelectorAll('[data-graphic-menu]').forEach(a=>{a.classList.toggle('is-active',a.dataset.graphicMenu===type);if(a.dataset.graphicMenu===type)a.setAttribute('aria-current','page');else a.removeAttribute('aria-current');});const src=new URL('/Widget/public/index-live-graphics.html',location.origin);src.searchParams.set('embed','1');src.searchParams.set('type',type);if(id)src.searchParams.set('design',id);frame.src=src.href;const url=new URL('/studio/',location.origin);url.searchParams.set('overlay',type);if(id)url.searchParams.set('design',id);history.replaceState(null,'',url);menu(false);g.syncEditorPreviewActivity?.();scrollTo({top:0,behavior:'instant'});}
-document.addEventListener('click',e=>{const graphic=e.target.closest('[data-graphic-menu]');if(graphic){e.preventDefault();e.stopPropagation();menu(false);g.studioRequestNavigation(()=>open(graphic.dataset.graphicMenu));return;}const canvas=e.target.closest('#studio-output-tab');if(canvas){e.preventDefault();e.stopImmediatePropagation();g.studioRequestNavigation(()=>{if(current)close();setStudioWorkspace('outputs');});}else if(e.target.closest('[data-config-tab]'))menu(false);},true);
-g.addEventListener('rewardconfig:tabchanged',()=>{if(current)close();menu(false);});g.addEventListener('message',e=>{if(e.source!==frame.contentWindow||e.origin!==location.origin)return;if(e.data?.type==='studio:overlay-selection'){const url=new URL(location.href);if(e.data.designId)url.searchParams.set('design',String(e.data.designId));else url.searchParams.delete('design');history.replaceState(null,'',url);return;}if(e.data?.type!=='studio:overlay-height')return;frame.style.height=Math.max(420,Math.min(10000,Number(e.data.height)||800))+'px';});
-let restored=false;function restore(){if(!body.classList.contains('cloud-authenticated')){if(current)close();menu(false);return;}if(restored)return;const p=new URLSearchParams(location.search),type=p.get('overlay');if(KGGraphics.byId[type]?.live){restored=true;open(type,p.get('design'));}}
-new MutationObserver(restore).observe(body,{attributes:true,attributeFilter:['class']});restore();
+
+function navigate(url){
+  g.studioRequestNavigation(()=>{g.studioAllowNavigation=true;location.assign(url);});
+}
+document.addEventListener('click',event=>{
+  const graphic=event.target.closest('[data-graphic-menu]');
+  const native=event.target.closest('[data-config-tab]');
+  const canvas=event.target.closest('#studio-output-tab');
+  if(graphic || (sessionOverlay && (native || canvas))){
+    if(event.ctrlKey||event.metaKey||event.shiftKey||event.altKey)return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    const url=new URL('/studio/',location.origin);
+    if(graphic)url.searchParams.set('overlay',graphic.dataset.graphicMenu);
+    else if(canvas)url.searchParams.set('workspace','outputs');
+    else url.searchParams.set('kind',native.dataset.configTab==='original'?'carousel':native.dataset.configTab);
+    navigate(url);
+  } else if(native || canvas) menu(false);
+},true);
+function showSessionHeading(){
+  const button=document.querySelector('[data-graphic-menu="'+sessionOverlay.id+'"]');
+  const goal=document.querySelector('[data-config-tab="goal"]');
+  goal.classList.remove('is-active');goal.removeAttribute('aria-current');
+  button.classList.add('is-active');button.setAttribute('aria-current','page');
+  document.querySelector('#studio-current-title').textContent=sessionOverlay.name;
+  document.title=sessionOverlay.name+' | King Gumption Studio';
+}
+g.addEventListener('studio:session-ready',showSessionHeading);
+if(g.studioSessionReady)showSessionHeading();
 })(window);

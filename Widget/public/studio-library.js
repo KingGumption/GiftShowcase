@@ -1,7 +1,7 @@
 (function(global){
   'use strict';
   const designs=global.studioDesigns;if(!designs)return;
-  const labels={carousel:'Gift Carousel',rows:'Reward Rows','side-gifts':'Side Gifts',goal:'Goal Bar','top-likers':'Top Likers'};
+  const labels={carousel:'Gift Carousel',rows:'Reward Rows','side-gifts':'Side Gifts',goal:sessionOverlay?.name||'Goal Bar','top-likers':'Top Likers'};
   const toolbar=document.createElement('div');toolbar.className='studio-sticky-toolbar';toolbar.setAttribute('aria-label','Current design actions');
   toolbar.innerHTML='<div><small data-save-summary></small></div><button type="button" id="studio-design-library" data-toolbar-library>Designs</button><button type="button" data-toolbar-save class="btn-primary">Save</button><button type="button" data-toolbar-test>Test</button><button type="button" data-toolbar-link>Direct link</button>';
   document.querySelector('.reward-config-header').after(toolbar);
@@ -28,7 +28,7 @@
     function draw(){
       const focusedDesign=document.activeElement?.closest('.studio-design-card')?.dataset.designId;
       const query=dialog.querySelector('[data-library-search]').value.toLowerCase(),archive=dialog.querySelector('[data-show-archive]').checked;
-      const items=designs.all().filter(item=>item.overlayKind===designs.state().kind&&!global.KGGraphics?.definition(item.overlayKind,item.config)?.live&&(archive||!item.archived)&&(item.name+' '+labels[item.overlayKind]).toLowerCase().includes(query)).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
+      const items=designs.all().filter(item=>item.overlayKind===designs.state().kind&&matchesStudioDesign(item)&&(archive||!item.archived)&&(item.name+' '+labels[item.overlayKind]).toLowerCase().includes(query)).sort((a,b)=>b.updatedAt.localeCompare(a.updatedAt));
       status.textContent=items.length+' designs';list.replaceChildren();
       for(const design of items){
         const card=document.createElement('article');card.className='studio-design-card';card.dataset.designId=design.id;const thumb=document.createElement('div');thumb.className='studio-design-thumb';
@@ -45,7 +45,7 @@
               if(label==='Duplicate'){await designs.duplicate(design.id);await designs.refresh();draw();}
               else if(label==='Rename'){const name=prompt('Design name',design.name);if(name?.trim())await designs.rename(design.id,name.trim());draw();}
               else if(label==='Archive'||label==='Unarchive'){await designs.archive(design.id,!design.archived);draw();}
-              else{const url=new URL('/studio/',location.origin);url.searchParams.set('design',design.id);url.searchParams.set('kind',design.overlayKind);await navigator.clipboard.writeText(url.href);status.textContent='Editor link copied. Sign-in is required to open it.';}
+              else{const url=new URL('/studio/',location.origin);url.searchParams.set('design',design.id);if(sessionOverlay)url.searchParams.set('overlay',sessionOverlay.id);else url.searchParams.set('kind',design.overlayKind);await navigator.clipboard.writeText(url.href);status.textContent='Editor link copied. Sign-in is required to open it.';}
             }catch(error){status.textContent=error.message;}finally{button.disabled=false;}
           };if(label==='Open'){button.className='btn-primary';primary.append(button);}else actions.append(button);
         }

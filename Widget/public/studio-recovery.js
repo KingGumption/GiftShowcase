@@ -58,7 +58,7 @@
         selections=selectedIds;dirty=dirtyKinds;currentKind=kind;
         if(owner===nextOwner)return;
         try{const previousOwner=localStorage.getItem('kg-studio-working-owner');if(previousOwner&&previousOwner!==nextOwner)editor.resetLocal();localStorage.setItem('kg-studio-working-owner',nextOwner);}catch{}
-        owner=nextOwner;key='kg-studio-selections:v2:'+owner;histories.clear();
+        owner=nextOwner;key='kg-studio-selections:v2:'+owner+(sessionOverlay?':'+sessionOverlay.id:'');histories.clear();
         try{localStorage.removeItem('kg-studio-drafts:v1:'+owner);localStorage.removeItem('kg-live-graphic-draft:'+owner);localStorage.removeItem('reward-overlay-config:v1');}catch{}
         let prefs;try{prefs=JSON.parse(localStorage.getItem(key)||'null');}catch{}
         pack={entries:{}};restoring=true;

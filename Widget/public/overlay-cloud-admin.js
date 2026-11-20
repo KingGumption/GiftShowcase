@@ -43,7 +43,7 @@
     carousel: 'Gift Carousel',
     rows: 'Rows Overlay',
     'side-gifts': 'Side Gifts',
-    goal: 'Goal Bar',
+    goal: sessionOverlay?.name || 'Goal Bar',
     'top-likers': 'Top Likers'
   };
   const overlayKinds = Object.keys(overlayLabels);
@@ -193,8 +193,28 @@
   restoreSession();
 
   function openEditorDeepLink(){
-    if(deepLinkHandled||new URLSearchParams(location.search).has('overlay'))return;deepLinkHandled=true;const id=new URLSearchParams(location.search).get('design');if(!id)return;
+    if(deepLinkHandled)return;
+    deepLinkHandled=true;
+    const params=new URLSearchParams(location.search);
+    if(sessionOverlay){
+      const saved=variants.find(v=>v.id===(params.get('design')||selectedVariantIds.get('goal'))&&matchesStudioDesign(v));
+      editor.setActiveKind('goal');
+      if(saved) global.studioDesigns.open(saved.id);
+      else global.studioDesigns.fresh('goal',{confirmed:true});
+      global.studioSessionReady=true;
+      global.dispatchEvent(new Event('studio:session-ready'));
+      return;
+    }
+    if(Object.hasOwn(overlayLabels,params.get('kind'))) editor.setActiveKind(params.get('kind'));
+    const id=new URLSearchParams(location.search).get('design');if(!id)return;
     const design=variants.find(item=>item.id===id);if(!design){setCloudStatus('This design is unavailable in your account.',true);return;}
+    const definition=global.KGGraphics?.definition(design.overlayKind,design.config);
+    if(definition?.live){
+      const url=new URL(location.href);
+      url.searchParams.set('overlay',definition.id);
+      location.replace(url);
+      return;
+    }
     if(activeOverlayKind===design.overlayKind&&getSelectedVariant()?.id===id)return;
     editor.setActiveKind(design.overlayKind);variantSelect.value=id;selectAndLoadVariant();
   }
@@ -322,6 +342,7 @@
     setBusy(true);
     try {
       await cloud.logout();
+      deepLinkHandled=false;global.studioSessionReady=false;
       recovery.resetOwner();selectedVariantIds.clear();editor.resetLocal();
       variants = [];
       docks = [];
@@ -433,7 +454,8 @@
       document.head.append(script);
     }
     const signedIn = Boolean(session?.token && session?.user);
-    if(signedIn && sessionOwner && sessionOwner!==session.user.id){recovery.resetOwner();selectedVariantIds.clear();editor.resetLocal();}
+    if(signedIn && sessionOwner && sessionOwner!==session.user.id){deepLinkHandled=false;global.studioSessionReady=false;
+      recovery.resetOwner();selectedVariantIds.clear();editor.resetLocal();}
     if(signedIn)sessionOwner=session.user.id;
     document.body.classList.toggle('cloud-authenticated', signedIn);
     authForm.hidden = signedIn;
@@ -463,7 +485,7 @@
 
   function renderVariants(selectedId = '') {
     variantSelect.innerHTML = '<option value="">New design</option>';
-    variants.filter(variant => variant.overlayKind === activeOverlayKind&&!global.KGGraphics?.definition(variant.overlayKind,variant.config)?.live&&(!variant.archived||variant.id===selectedId)).forEach(variant => {
+    variants.filter(variant => variant.overlayKind === activeOverlayKind&&matchesStudioDesign(variant)&&(!variant.archived||variant.id===selectedId)).forEach(variant => {
       const option = document.createElement('option');
       option.value = variant.id;
       option.textContent = `${variant.name}`;
@@ -498,6 +520,11 @@
 
   function renderPlacement() {
     const variant = getSelectedVariant();
+    if(sessionOverlay && global.studioSessionReady){
+      const url=new URL(location.href);
+      if(variant)url.searchParams.set('design',variant.id);else url.searchParams.delete('design');
+      if(url.href!==location.href)history.replaceState(history.state,'',url);
+    }
     const outputs = variant ? docks.filter(d => d.items?.some(i => i.variantId === variant.id)) : [];
     directButton.textContent=variant&&dirtyOverlayKinds.has(activeOverlayKind)?'Save & direct link':'Direct link';
     addToOutput.textContent=variant&&dirtyOverlayKinds.has(activeOverlayKind)?'Save & add to canvas':'Add to canvas';
@@ -631,6 +658,12 @@
     const saveKind=activeOverlayKind;
     const generation=editGenerations.get(saveKind)||0;
     const saveConfig=editor.getConfigForKind(saveKind);
+    if(sessionOverlay && saveKind==='goal'){
+      const rules=saveConfig.goalBar.graphic;
+      if(rules?.variant!==sessionOverlay.id || (rules.variant==='vote' && (!rules.aGift || !rules.bGift || rules.aGift===rules.bGift))){
+        setCloudStatus('Choose two different gifts for voting before saving.',true);return null;
+      }
+    }
     savingLive = true;
     if (!isLiveSave) setBusy(true);
     try {
