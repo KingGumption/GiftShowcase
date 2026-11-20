@@ -169,7 +169,7 @@ async function routeRequest(request, env, ctx) {
   const discovery=path.match(/^\/v1\/public\/docks\/([^/]+)\/gifts$/);
   if (discovery && request.method === 'POST') {
     const dock=await getPublicDockRow(env,decodeURIComponent(discovery[1]));
-    if(!dock) throw httpError(404,'Output not found');
+    if(!dock) throw httpError(404,'Canvas not found');
     return json(await saveCreatorGifts(env,dock.user_id||dock.directVariant?.user_id,await readJson(request),false));
   }
   const creatorImage=path.match(/^\/v1\/gifts\/creator-images\/([a-f0-9]{32})\.webp$/);
@@ -648,8 +648,8 @@ async function register(request, env) {
       INSERT INTO users (id, email, password_salt, password_hash, password_iterations, created_at, updated_at)
       SELECT ?, ?, ?, ?, ?, ?, ? WHERE ${invited?'EXISTS (SELECT 1 FROM invitations WHERE token_hash=? AND claim=?)':'1=1'}
     `).bind(user.id, email, salt, passwordHash, passwordIterations, now, now,...(invited?[invited.token_hash,inviteClaim]:[])),
-    starterDockStatement(env, user.id, 'Vertical Output', 'vertical', 1080, 1920, now),
-    starterDockStatement(env, user.id, 'Horizontal Output', 'horizontal', 1920, 1080, now),
+    starterDockStatement(env, user.id, 'Vertical Canvas', 'vertical', 1080, 1920, now),
+    starterDockStatement(env, user.id, 'Horizontal Canvas', 'horizontal', 1920, 1080, now),
     ...(invited?[env.DB.prepare('UPDATE invitations SET used_at=?,user_id=? WHERE token_hash=? AND claim=?').bind(now,user.id,invited.token_hash,inviteClaim)]:[])
   ]);}catch(error){if(invited)throw httpError(409,'This invitation was used or expired. Try signing in or request a new invitation.');throw error;}
   if(invited)try{await sendStudioMail(env,email,'welcome');}catch{console.warn('Welcome email log unavailable');}
@@ -1060,7 +1060,7 @@ async function restoreDockLayout(request,env,user,id) {
   for(const item of input.items){
     if(!/^[a-f0-9-]{32,36}$/.test(item.id)||ids.has(item.id))throw httpError(400,'Invalid layer identity');ids.add(item.id);
     const other=await env.DB.prepare('SELECT dock_id FROM dock_items WHERE id=?').bind(item.id).first();
-    if(other&&other.dock_id!==id)throw httpError(409,'Layer belongs to another output');
+    if(other&&other.dock_id!==id)throw httpError(409,'Layer belongs to another Canvas');
     const variant=await getOwnedVariant(env,user.id,item.variantId);
     const value=normalizeDockItemInput(item,targetDock,{},JSON.parse(variant.config_json));ensureVariantKind(variant,value.overlayKind);
     items.push({id:item.id,variantId:variant.id,...value});
@@ -1142,7 +1142,7 @@ async function deleteDockItem(env, user, dockId, itemId) {
 
 async function getPublicDock(env, token) {
   const dock = await getPublicDockRow(env, token);
-  if (!dock) throw httpError(404, 'Output not found');
+  if (!dock) throw httpError(404, 'Canvas not found');
   if (dock.directVariant) {
     const variant = dock.directVariant;
     return json(serializePublicDock({...dock,shared_live:env.SHARED_LIVE_ENABLED==='true'}, [{
@@ -1191,7 +1191,7 @@ async function getOwnedVariant(env, userId, id) {
 
 async function getOwnedDock(env, userId, id) {
   const row = await env.DB.prepare('SELECT * FROM output_docks WHERE id = ? AND user_id = ?').bind(id, userId).first();
-  if (!row) throw httpError(404, 'Output not found');
+  if (!row) throw httpError(404, 'Canvas not found');
   return row;
 }
 
@@ -1327,7 +1327,7 @@ function serializePublicDock(row, items) {
 
 function normalizeDockInput(input) {
   return {
-    name: validateName(input.name, 'Output name'),
+    name: validateName(input.name, 'Canvas name'),
     width: clampInteger(input.width, 160, 7680, 1920),
     height: clampInteger(input.height, 160, 7680, 1080),
     sampleActivity: input.sampleActivity === true || input.sampleActivity === 1

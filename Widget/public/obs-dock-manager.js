@@ -41,23 +41,51 @@
   const selectedLayers=new Map(),canvasViews=new Map(),renderedDockSignatures=new WeakMap();
   const savingSampleActivity = new Set();
 
-  let liveSocket;
-  document.querySelector('#check-live-connection').addEventListener('click', async () => {
+  const sharedStatus = document.querySelector('#shared-live-status');
+  const manageConnection = document.querySelector('#manage-live-connection');
+  let studioStatus;
+  if (isStudioEmbed && global.parent !== global) {
+    try { studioStatus = global.parent.document.querySelector('#studio-tiktok-status'); }
+    catch { /* A standalone Canvas can also be framed by a different origin. */ }
+  }
+  if (studioStatus) {
+    const sync = () => { sharedStatus.textContent = studioStatus.textContent || 'Checking your shared connection…'; };
+    new MutationObserver(sync).observe(studioStatus, {childList:true,subtree:true,characterData:true});
+    sync();
+    manageConnection.onclick = event => {
+      event.preventDefault();
+      global.parent.dispatchEvent(new Event('studio:manage-live'));
+    };
+  }
+  async function refreshSharedStatus() {
+    if (studioStatus) return;
     try {
-      if ((await cloud.getServiceConfig()).sharedLiveEnabled) {
-        const connection = await cloud.request('/v1/tiktok');
-        document.querySelector('#live-connection-status').textContent = connection.phase === 'connected' ? 'TikTok LIVE connected — shared by your Direct URLs and Canvases' : (connection.message || 'TikTok LIVE: ' + connection.phase + '. Connect your username in the Overlay Editor.');
+      const config = await cloud.getServiceConfig();
+      if (!config.sharedLiveEnabled) {
+        sharedStatus.textContent = 'Shared TikTok LIVE connections are unavailable.';
         return;
       }
-    } catch (error) { document.querySelector('#live-connection-status').textContent = error.message; return; }
-    if (liveSocket) liveSocket.close();
+      const state = await cloud.request('/v1/tiktok');
+      sharedStatus.textContent = state.message || ('TikTok LIVE · ' + state.phase);
+    } catch (error) { sharedStatus.textContent = error.message; }
+  }
+  let liveSocket;
+  document.querySelector('#check-live-connection').addEventListener('click', () => {
     const status = document.querySelector('#live-connection-status');
-    status.textContent = 'Connecting to TikFinity…';
-    liveSocket = new WebSocket('ws://localhost:21213/');
-    liveSocket.addEventListener('open', () => { status.textContent = 'TikFinity connected — waiting for live activity'; });
-    liveSocket.addEventListener('message', () => { status.textContent = 'TikFinity connected — last event ' + new Date().toLocaleTimeString(); });
-    liveSocket.addEventListener('error', () => { status.textContent = 'TikFinity unavailable. Enable the Event API on this computer and retry.'; });
-    liveSocket.addEventListener('close', () => { status.textContent = 'TikFinity disconnected. Check the Event API and retry.'; });
+    liveSocket?.close();
+    status.textContent = 'Checking TikFinity Desktop…';
+    try {
+      const socket = new WebSocket('ws://localhost:21213/');
+      liveSocket = socket;
+      const finish = message => {
+        if (socket !== liveSocket) return;
+        liveSocket = null;
+        status.textContent = message;
+        socket.close();
+      };
+      socket.onopen = () => finish('TikFinity Desktop is reachable on this computer.');
+      socket.onerror = socket.onclose = () => finish('TikFinity unavailable. Check the local Event API and retry.');
+    } catch { status.textContent = 'This browser could not reach the local TikFinity Event API.'; }
   });
   global.addEventListener('beforeunload', () => liveSocket?.close());
 
@@ -80,7 +108,7 @@
     try{
       const result=await cloud.restoreDockLayout(dock.id,{...target,expectedItems:dock.items,expectedWidth:dock.width,expectedHeight:dock.height});
       h.at+=direction;Object.assign(dock,result.dock);renderComposer(card,dock);
-      setStatus((direction<0?'Undid':'Redid')+' canvas change · output URL unchanged');
+      setStatus((direction<0?'Undid':'Redid')+' Canvas change · Canvas URL unchanged');
     }catch(error){setStatus(error.message,true);}finally{setBusy(false);}
   }
 
@@ -98,7 +126,7 @@
     register.textContent = authMode === 'register' ? 'Already have an account? Sign in' : 'Create an account';
     password.minLength=authMode==='register'?15:10;
     password.autocomplete = authMode === 'register' ? 'new-password' : 'current-password';
-    auth.querySelector('h2').textContent = authMode === 'register' ? 'Create your Studio account' : 'Sign in to manage your outputs';
+    auth.querySelector('h2').textContent = authMode === 'register' ? 'Create your Studio account' : 'Sign in to manage your Canvases';
     email.focus();
   });
   signOut.addEventListener('click', logout);
@@ -160,7 +188,7 @@
       }
       renderSession(result.session);
       await loadManagerData();
-      setStatus(mode === 'register' ? 'Account created with vertical and horizontal outputs' : 'Signed in');
+      setStatus(mode === 'register' ? 'Account created with vertical and horizontal Canvases' : 'Signed in');
     } catch (error) {
       setStatus(error.message, true);
     } finally {
@@ -194,6 +222,7 @@
   }
 
   async function loadManagerData() {
+    void refreshSharedStatus();
     setBusy(true);
     try {
       const [variantResult, dockResult] = await Promise.all([cloud.listVariants(), cloud.listDocks()]);
@@ -202,7 +231,7 @@
       docks = (dockResult.docks || []).map(next=>Object.assign(previousDocks.get(next.id)||{},next));
       canvasHistories.clear();docks.forEach(rememberCanvas);
       renderDocks();
-      setStatus(`Loaded ${docks.length} output${docks.length === 1 ? '' : 's'} with ${docks.reduce((sum, dock) => sum + dock.items.length, 0)} overlay layer${docks.reduce((sum, dock) => sum + dock.items.length, 0) === 1 ? '' : 's'}`);
+      setStatus(`Loaded ${docks.length} Canvas${docks.length === 1 ? '' : 'es'} with ${docks.reduce((sum, dock) => sum + dock.items.length, 0)} overlay layer${docks.reduce((sum, dock) => sum + dock.items.length, 0) === 1 ? '' : 's'}`);
     } catch (error) {
       setStatus(error.message, true);
     } finally {
@@ -628,7 +657,7 @@
     if (typeof copyDialog.showModal === 'function') {
       copyDialog.showModal();
     } else {
-      alert(`Link copied. Set your Browser or Link source to ${dock.width} × ${dock.height}. The width and height must match this output.`);
+      alert(`Link copied. Set your Browser or Link source to ${dock.width} × ${dock.height}. The width and height must match this Canvas.`);
     }
   }
 

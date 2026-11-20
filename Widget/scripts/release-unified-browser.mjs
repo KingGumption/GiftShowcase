@@ -34,6 +34,13 @@ try{
  await example.waitFor();
  const initialHealth=await example.innerText();
  await page.waitForFunction(initial=>document.querySelector('[title="Crown Raid sample"]').contentDocument.querySelector('.boss').innerText!==initial,initialHealth);
+ await page.goto(origin+'/privacy/');
+ assert(!/Launch status/i.test(await page.locator('main').innerText()));
+ await page.goto(origin+'/help/');
+ assert.match(await page.locator('main').innerText(),/Trigger sample/);
+ assert.match(await page.locator('main').innerText(),/Auto-play samples/);
+ await page.goto(origin+'/help/graphics/');
+ assert.match(await page.locator('main').innerText(),/optional TikFinity backup/);
  await page.goto(origin+'/request-invite/');
  assert(await page.getByText(/We’ll email you when there’s a decision/).isVisible());
  await page.goto(origin+'/studio/');
@@ -69,6 +76,27 @@ try{
  await page.screenshot({path:out+'/side-gifts-sidebar.png'});
  await connection.locator('summary').click();
  assert.equal(await page.locator('#studio-tiktok').count(),1);
+ for(const width of [1440,320]){
+   await page.setViewportSize({width,height:900});
+   const browse=page.getByRole('button',{name:'Browse designs'});
+   await browse.click();
+   await page.locator('dialog[open]').waitFor();
+   await page.keyboard.press('Escape');
+   if(width===320)await page.locator('.studio-mobile-menu-toggle').click();
+   await page.click('#studio-output-tab');
+   const canvas=page.frameLocator('#studio-output-frame');
+   await canvas.getByRole('heading',{name:'Choose a Canvas'}).waitFor();
+   await canvas.getByText('Connected to TikTok LIVE',{exact:true}).waitFor();
+   await canvas.getByText('Vertical Canvas',{exact:true}).first().waitFor();
+   assert(await canvas.getByRole('button',{name:'Check TikFinity Desktop'}).isHidden());
+   await canvas.getByText('Troubleshoot backup',{exact:true}).click();
+   assert(await canvas.getByRole('button',{name:'Check TikFinity Desktop'}).isVisible());
+   await canvas.getByText('Troubleshoot backup',{exact:true}).click();
+   await canvas.locator('#manage-live-connection').click();
+   assert(await page.locator('#studio-tiktok-username').evaluate(el=>el===document.activeElement));
+   await page.click('[data-config-tab="side-gifts"]');
+ }
+ await page.setViewportSize({width:1440,height:1000});
  async function discard(){if(await page.locator('dialog[open] [data-discard-confirm]').count()){await page.click('dialog[open] [data-discard-confirm]');await page.waitForTimeout(50);}}
  async function native(tab){await page.click('[data-config-tab="'+tab+'"]');await discard();}
  await native('rows');const saved=await page.evaluate(async()=>{const v=(await overlayCloud.createVariant({name:'Saved baseline',overlayKind:'rows',config:rewardConfigEditor.getConfigForKind('rows')})).variant;await studioDesigns.refresh();studioDesigns.open(v.id);return v;});await page.waitForSelector('[data-edit="title"]');const baseline=await page.inputValue('[data-edit="title"]');await page.fill('[data-edit="title"]','Discard this edit');await page.click('[data-config-tab="side-gifts"]');await page.waitForSelector('[data-discard-cancel]');await page.click('[data-discard-cancel]');assert.equal(await page.inputValue('[data-edit="title"]'),'Discard this edit');await native('side-gifts');await native('rows');assert.equal(await page.inputValue('[data-edit="title"]'),baseline,'Switching away discards unsaved edits');

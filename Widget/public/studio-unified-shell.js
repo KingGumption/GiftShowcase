@@ -4,6 +4,20 @@ const toggle=document.createElement('button');toggle.type='button';toggle.classN
 function menu(open){body.classList.toggle('studio-mobile-menu-open',open);toggle.setAttribute('aria-expanded',String(open));toggle.querySelector('span').textContent=open?'Close':'Menu';}
 toggle.onclick=()=>menu(!body.classList.contains('studio-mobile-menu-open'));matchMedia('(max-width:820px)').addEventListener('change',e=>{if(!e.matches)menu(false);});g.addEventListener('keydown',e=>{if(e.key==='Escape'&&body.classList.contains('studio-mobile-menu-open')){menu(false);toggle.focus();}});
 
+function openLiveControls(){
+  if(matchMedia('(max-width:820px)').matches)menu(true);
+  document.querySelector('#studio-tiktok details').open=true;
+  document.querySelector('#studio-tiktok-username').focus();
+}
+g.addEventListener('studio:manage-live',openLiveControls);
+if(location.hash==='#studio-tiktok'){
+  const panel=document.querySelector('#studio-tiktok');
+  if(!panel.hidden)openLiveControls();
+  else {
+    const observer=new MutationObserver(()=>{if(!panel.hidden){observer.disconnect();openLiveControls();}});
+    observer.observe(panel,{attributes:true,attributeFilter:['hidden']});
+  }
+}
 function navigate(url){
   g.studioRequestNavigation(()=>{g.studioAllowNavigation=true;location.assign(url);});
 }

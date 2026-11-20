@@ -29,7 +29,7 @@
   left.prepend(picker);
   const library=toolbar.querySelector('[data-toolbar-library]');
   library.textContent='Browse designs';
-  popover.prepend(library);
+  picker.after(library);
   library.addEventListener('click',()=>{menu.open=false;});
   new MutationObserver(()=>{if(activePortal?.mode==='canvas'&&/^Added .+ to .+; arrange/.test(status.textContent))activePortal.dialog.close();}).observe(status,{childList:true});
   function syncPublishing(){const busy=designs.state().busy;toolbar.querySelectorAll('[data-toolbar-save],[data-toolbar-link],[data-toolbar-library],#studio-new-design,[data-open-canvas-options]').forEach(button=>button.disabled=busy);}

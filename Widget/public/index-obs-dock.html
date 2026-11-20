@@ -76,10 +76,19 @@
 
         <section class="dock-manager-panel dock-library-panel">
           <div class="dock-list-heading">
-            <div><span class="dock-panel-kicker">Canvases</span><h2>Choose an canvas</h2><p>Edit its layout, then copy its link into your streaming app.</p></div>
+            <div><span class="dock-panel-kicker">Canvases</span><h2>Choose a Canvas</h2><p>Edit its layout, then copy its link into your streaming app.</p></div>
             <button id="dock-manager-refresh" type="button" class="btn-secondary">↻ Refresh</button>
           </div>
-          <div class="live-connection-check"><button id="check-live-connection" type="button">Check TikFinity connection</button><p id="live-connection-status" role="status">Check from the computer running your streaming software and TikFinity.</p></div><div id="dock-manager-list" class="dock-manager-list"></div>
+          <section class="live-connection-check" aria-label="TikTok LIVE connection">
+            <strong>TikTok LIVE</strong>
+            <p id="shared-live-status" role="status">Checking your shared connection…</p>
+            <a id="manage-live-connection" href="/studio/#studio-tiktok" target="_top">Manage TikTok LIVE connection</a>
+            <details><summary>Troubleshoot backup</summary>
+              <p>Run TikFinity Desktop on this computer and connect it to the same TikTok username.</p>
+              <button id="check-live-connection" type="button">Check TikFinity Desktop</button>
+              <p id="live-connection-status" role="status"></p>
+            </details>
+          </section><div id="dock-manager-list" class="dock-manager-list"></div>
         </section>
 
         <details class="dock-manager-panel dock-create-disclosure">
@@ -88,7 +97,7 @@
             <span class="dock-disclosure-label">New canvas</span>
           </summary>
           <form id="dock-create-form" class="dock-create-form dock-output-create-form">
-            <label class="dock-field dock-output-name"><span>Canvas name</span><input id="dock-create-name" type="text" maxlength="80" placeholder="e.g. Gameplay Output" required></label>
+            <label class="dock-field dock-output-name"><span>Canvas name</span><input id="dock-create-name" type="text" maxlength="80" placeholder="e.g. Gameplay Canvas" required></label>
             <label class="dock-field dock-output-preset"><span>Format</span><select id="dock-create-preset"><option value="horizontal">Horizontal 16:9</option><option value="vertical">Vertical 9:16</option><option value="square">Square</option><option value="custom">Custom</option></select></label>
             <div class="dock-dimensions dock-output-dimensions" role="group" aria-label="Browser Source dimensions">
               <label class="dock-field"><span>Width</span><input id="dock-create-width" type="number" min="160" max="7680" value="1920"></label>
@@ -166,7 +175,7 @@
     <script src="./overlay-cloud-config.js?v=20260718-1"></script>
     <script src="./overlay-cloud.js?v=20261117-medium1"></script>
     <script src="./graphics-core.js?v=20261118-unified4"></script>
-    <script src="./obs-dock-manager.js?v=20261118-studio3"></script>
+    <script src="./obs-dock-manager.js?v=20261120-review"></script>
     <script src="../../site-chrome.js?v=20261118-unified4"></script>
   </body>
 </html>
