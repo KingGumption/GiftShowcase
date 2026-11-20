@@ -2,7 +2,11 @@
   'use strict';
   const designs=global.studioDesigns,toolbar=document.querySelector('.studio-sticky-toolbar');if(!designs||!toolbar)return;
   const left=toolbar.querySelector('div'),type=document.getElementById('studio-current-title'),header=document.querySelector('.reward-config-header');
-  if(type){type.classList.add('studio-overlay-type');left.prepend(type);}if(header)header.hidden=true;
+  if(type&&header){
+    header.classList.add('studio-overlay-heading');
+    header.replaceChildren(type);
+    header.hidden=false;
+  }
   toolbar.querySelector('[data-toolbar-test]')?.remove();
   const menu=document.getElementById('cloud-version-menu'),popover=menu.querySelector('.cloud-version-menu-popover'),summary=menu.querySelector('summary');summary.textContent='Options';summary.title='Design and editor options';summary.setAttribute('aria-label','Design and editor options');
   document.querySelectorAll('.studio-recovery-tools button').forEach((button,i)=>{button.setAttribute('aria-label',i?'Redo':'Undo');button.title=i?'Redo (Ctrl+Shift+Z)':'Undo (Ctrl+Z)';button.innerHTML='<span aria-hidden="true">'+(i?'↷':'↶')+'</span>';});
@@ -21,6 +25,12 @@
   }
   const canvasButton=document.createElement('button');canvasButton.type='button';canvasButton.dataset.openCanvasOptions='';canvasButton.textContent='Add to canvas';canvasButton.onclick=()=>openOptions('canvas');
   const advancedButton=document.createElement('button');advancedButton.type='button';advancedButton.dataset.openEditorOptions='';advancedButton.textContent='Editor options';advancedButton.onclick=()=>openOptions('advanced');popover.prepend(advancedButton);const saveButton=toolbar.querySelector('[data-toolbar-save]');saveButton.after(canvasButton);canvasButton.className='studio-action-canvas';const directButton=toolbar.querySelector('[data-toolbar-link]');directButton.className='studio-action-direct';directButton.insertAdjacentHTML('afterbegin','<span aria-hidden="true">↗</span> ');const freshButton=document.getElementById('studio-new-design');freshButton.className='studio-action-new';freshButton.textContent='+ New design';toolbar.querySelector('[data-toolbar-library]').after(freshButton);global.studioStartNewDesign=(kind=designs.state().kind)=>{if(!global.studioGuardOverlayChange?.(()=>designs.fresh(kind,{confirmed:true})))designs.fresh(kind,{confirmed:true});};freshButton.onclick=()=>global.studioStartNewDesign();
+  const picker=document.querySelector('label[for="cloud-variant-select"]');
+  left.prepend(picker);
+  const library=toolbar.querySelector('[data-toolbar-library]');
+  library.textContent='Browse designs';
+  popover.prepend(library);
+  library.addEventListener('click',()=>{menu.open=false;});
   new MutationObserver(()=>{if(activePortal?.mode==='canvas'&&/^Added .+ to .+; arrange/.test(status.textContent))activePortal.dialog.close();}).observe(status,{childList:true});
   function syncPublishing(){const busy=designs.state().busy;toolbar.querySelectorAll('[data-toolbar-save],[data-toolbar-link],[data-toolbar-library],#studio-new-design,[data-open-canvas-options]').forEach(button=>button.disabled=busy);}
   global.addEventListener('studio:busy',syncPublishing);syncPublishing();

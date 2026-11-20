@@ -17,8 +17,31 @@ try{
  await context.route('**/*',async route=>{const request=route.request(),url=new URL(request.url());if(url.hostname.endsWith('.r2.dev'))return route.fulfill({contentType:'image/png',body:png});if(url.origin!==origin)return route.abort();const response=await worker.fetch(new Request(request.url(),{method:request.method(),headers:request.headers(),body:request.postDataBuffer()||undefined}),env);await route.fulfill({status:response.status,headers:Object.fromEntries(response.headers),body:Buffer.from(await response.arrayBuffer())});});
 
 
+ // The shared connection service is deployed independently of the local Worker fixture.
+ let sharedUsername='',sharedEnabled=false;
+ await context.route('**/v1/config',async route=>{
+  const req=new Request(route.request().url()),response=await worker.fetch(req,env);
+  await route.fulfill({json:{...await response.json(),sharedLiveEnabled:true}});
+ });
+ await context.route('**/v1/tiktok',async route=>{
+  if(route.request().method()==='POST'){sharedUsername=route.request().postDataJSON().username;sharedEnabled=true;}
+  if(route.request().method()==='DELETE')sharedEnabled=false;
+  await route.fulfill({json:{configured:true,enabled:sharedEnabled,phase:sharedEnabled?'connected':'disconnected',username:sharedUsername}});
+ });
  const page=await context.newPage(),errors=[];page.on('pageerror',e=>{errors.push(e.stack||e.message);});page.on('dialog',d=>d.accept());
  await page.setViewportSize({width:390,height:900});await page.goto(origin+'/studio/');assert(await page.locator('#cloud-auth-email').isVisible(),'Mobile sign-in remains reachable');await page.fill('#cloud-auth-email','unified-check@example.invalid');await page.fill('#cloud-auth-password','local-unified-browser-password');await page.click('#cloud-create-account');await page.click('#cloud-sign-in');await page.waitForSelector('#cloud-account-session',{state:'attached'});await page.waitForFunction(()=>document.body.classList.contains('cloud-authenticated'));await page.setViewportSize({width:1440,height:1000});
+ const connection=page.locator('.studio-sidebar #studio-tiktok');
+ await connection.locator('summary').click();
+ await connection.locator('input').fill('demo_creator');
+ await connection.getByRole('button',{name:'Connect',exact:true}).click();
+ await connection.getByText('Connected to TikTok LIVE',{exact:true}).waitFor();
+ await page.click('[data-config-tab="side-gifts"]');
+ await page.waitForFunction(()=>document.querySelector('#studio-current-title').textContent==='Side Gifts');
+ assert(await page.locator('#cloud-variant-select').isVisible());
+ await page.waitForFunction(()=>[...document.querySelector('#side-gifts-preview').contentDocument.querySelectorAll('img')].some(image=>image.complete&&image.naturalWidth>0));
+ await page.screenshot({path:out+'/side-gifts-sidebar.png'});
+ await connection.locator('summary').click();
+ assert.equal(await page.locator('#studio-tiktok').count(),1);
  async function discard(){if(await page.locator('dialog[open] [data-discard-confirm]').count()){await page.click('dialog[open] [data-discard-confirm]');await page.waitForTimeout(50);}}
  async function native(tab){await page.click('[data-config-tab="'+tab+'"]');await discard();}
  await native('rows');const saved=await page.evaluate(async()=>{const v=(await overlayCloud.createVariant({name:'Saved baseline',overlayKind:'rows',config:rewardConfigEditor.getConfigForKind('rows')})).variant;await studioDesigns.refresh();studioDesigns.open(v.id);return v;});await page.waitForSelector('[data-edit="title"]');const baseline=await page.inputValue('[data-edit="title"]');await page.fill('[data-edit="title"]','Discard this edit');await page.click('[data-config-tab="side-gifts"]');await page.waitForSelector('[data-discard-cancel]');await page.click('[data-discard-cancel]');assert.equal(await page.inputValue('[data-edit="title"]'),'Discard this edit');await native('side-gifts');await native('rows');assert.equal(await page.inputValue('[data-edit="title"]'),baseline,'Switching away discards unsaved edits');
@@ -74,6 +97,11 @@ try{
    assert(await publicPage.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),route+' overflows at '+width);
   }
  }
+ await page.click('.studio-mobile-menu-toggle');
+ await connection.locator('summary').click();
+ assert.equal(await connection.locator('input').inputValue(),'demo_creator');
+ await connection.getByRole('button',{name:'Disconnect'}).click();
+ await connection.getByText('Disconnected',{exact:true}).waitFor();
  await publicPage.close();
  assert.deepEqual(errors,[]);console.log('Unified Studio: saved-only reload, discard/cancel across native and embedded overlays, layout/style independence, real gift URL resolution, contextual controls, mobile navigation/geometry and accessibility passed.');
 }finally{await browser.close();}

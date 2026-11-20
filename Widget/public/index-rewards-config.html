@@ -14,7 +14,8 @@
     <link rel="stylesheet" href="../../site-chrome.css?v=20260810-1">
       <link rel="stylesheet" href="/site-theme.css?v=20261117-sidebar3">
   <link rel="stylesheet" href="/Widget/public/studio-icon-motion.css?v=20261118-navigation1">
-<link rel="stylesheet" href="./studio-unified.css?v=20261119-design1"></head>
+<link rel="stylesheet" href="./studio-unified.css?v=20261119-design1">  <link rel="stylesheet" href="./studio-tiktok.css?v=20261119-sidebar">
+  </head>
   <body class="reward-config-source cloud-auth-required">
     <main class="reward-config-app">
       <aside class="studio-sidebar">
@@ -47,6 +48,18 @@
           <button id="studio-output-tab" class="studio-nav-link" type="button" aria-controls="studio-output-workspace">
             <span class="studio-nav-icon" aria-hidden="true">⌗</span><span>Canvas Designer</span>
           </button>
+          <section id="studio-tiktok" aria-label="TikTok LIVE connection" hidden>
+            <details>
+              <summary>TikTok LIVE</summary>
+              <form id="studio-tiktok-form" class="cloud-config-controls">
+          <label for="studio-tiktok-username">TikTok username</label>
+          <input id="studio-tiktok-username" name="username" placeholder="@yourusername" pattern="@?[a-zA-Z0-9_.]{2,24}" maxlength="25" required autocomplete="off">
+          <button id="studio-tiktok-connect" class="btn-primary" type="submit">Connect</button>
+          <button id="studio-tiktok-disconnect" type="button" disabled>Disconnect</button>
+        </form>
+            </details>
+            <p id="studio-tiktok-status" role="status" aria-live="polite"></p>
+          </section>
         </div>
 
         <div class="studio-account-panel">
@@ -1379,5 +1392,6 @@
     <script src="./account-recovery.js?v=20261117-sidebar2"></script>
     <script src="../../site-chrome.js?v=20261118-unified4"></script>
   <script src="./studio-graphics.js?v=20261118-unified4"></script>
-<script src="./site-admin-link.js?v=20261118-navigation1"></script><script src="./studio-unified-shell.js?v=20261118-unified4"></script></body>
+<script src="./site-admin-link.js?v=20261118-navigation1"></script><script src="./studio-unified-shell.js?v=20261118-unified4"></script>  <script src="./studio-tiktok.js?v=20261119-sidebar"></script>
+  </body>
 </html>

@@ -63,7 +63,6 @@
   }
   global.addEventListener('rewardconfig:tabchanged',()=>{queueSelection();enhanceInspector();});
   global.addEventListener('rewardconfig:changed',queueSelection);enhanceInspector();
-  const title=document.querySelector('[data-current-design]');if(title){const button=document.createElement('button');button.type='button';button.dataset.currentDesign='';button.className='studio-design-title';button.textContent=title.textContent;button.title='Rename or name this design';button.setAttribute('aria-label','Rename or name this design');title.replaceWith(button);button.onclick=()=>{if(studioDesigns.selected())document.querySelector('#cloud-rename-variant').click();else studioDesigns.save();};}
   const canvasPlacement=document.querySelector('.studio-canvas-placement'),placementMessage=document.querySelector('#design-placement-status');if(canvasPlacement&&placementMessage)canvasPlacement.append(placementMessage);
   const status=document.querySelector('#cloud-config-status'),summary=document.querySelector('[data-save-summary]');
   if(status&&summary)new MutationObserver(()=>{if(/^Added .+ to .+; arrange/.test(status.textContent)&&canvasPlacement)canvasPlacement.open=false;if(status.classList.contains('is-error'))summary.textContent=document.querySelector('#cloud-retry-session:not([hidden])')?'Connection interrupted · edits kept':'Needs attention · see message below';else if(/Connecting/.test(status.textContent))summary.textContent='Reconnecting to saved designs…';}).observe(status,{childList:true,attributes:true,attributeFilter:['class']});

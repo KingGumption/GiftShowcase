@@ -3,13 +3,13 @@
   const designs=global.studioDesigns;if(!designs)return;
   const labels={carousel:'Gift Carousel',rows:'Reward Rows','side-gifts':'Side Gifts',goal:'Goal Bar','top-likers':'Top Likers'};
   const toolbar=document.createElement('div');toolbar.className='studio-sticky-toolbar';toolbar.setAttribute('aria-label','Current design actions');
-  toolbar.innerHTML='<div><strong data-current-design>New design</strong><small data-save-summary></small></div><button type="button" id="studio-design-library" data-toolbar-library>Designs</button><button type="button" data-toolbar-save class="btn-primary">Save</button><button type="button" data-toolbar-test>Test</button><button type="button" data-toolbar-link>Direct link</button>';
+  toolbar.innerHTML='<div><small data-save-summary></small></div><button type="button" id="studio-design-library" data-toolbar-library>Designs</button><button type="button" data-toolbar-save class="btn-primary">Save</button><button type="button" data-toolbar-test>Test</button><button type="button" data-toolbar-link>Direct link</button>';
   document.querySelector('.reward-config-header').after(toolbar);
   toolbar.querySelector('[data-toolbar-save]').onclick=()=>designs.save();
   toolbar.querySelector('[data-toolbar-link]').onclick=()=>document.querySelector('#cloud-direct-link').click();
   toolbar.querySelector('[data-toolbar-test]').onclick=()=>{const button=document.querySelector('.rows-inspector [data-test-card]');if(button&&!button.closest('[hidden]'))button.click();else global.studioPreviewSample?.();};
   let paint=0;
-  function update(){if(paint)return;paint=requestAnimationFrame(()=>{paint=0;const state=designs.state(),selected=designs.selected();toolbar.hidden=!overlayCloud.signedIn||document.body.classList.contains('studio-output-active');toolbar.querySelector('[data-current-design]').textContent=selected?.name||'Untitled design';toolbar.querySelector('[data-save-summary]').textContent=(state.dirty?'Unsaved changes':selected?'Saved · revision '+selected.revision:'Not saved')+(state.live?' · Live editing enabled':'');toolbar.title=state.placement;});}
+  function update(){if(paint)return;paint=requestAnimationFrame(()=>{paint=0;const state=designs.state(),selected=designs.selected();toolbar.hidden=!overlayCloud.signedIn||document.body.classList.contains('studio-output-active');toolbar.querySelector('[data-save-summary]').textContent=(state.dirty?'Unsaved changes':selected?'Saved · revision '+selected.revision:'Not saved')+(state.live?' · Live editing enabled':'');toolbar.title=state.placement;});}
   global.addEventListener('rewardconfig:changed',update);global.addEventListener('rewardconfig:tabchanged',update);global.addEventListener('overlaycloud:session',update);
   new MutationObserver(update).observe(document.querySelector('#cloud-variant-select'),{childList:true});new MutationObserver(update).observe(document.body,{attributes:true,attributeFilter:['class']});update();
   const libraryButton=toolbar.querySelector('#studio-design-library');
