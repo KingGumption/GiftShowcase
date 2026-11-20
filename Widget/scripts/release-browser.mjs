@@ -27,6 +27,7 @@ try{
   const page=await context.newPage(),errors=[];page.on('pageerror',error=>errors.push(error.message));page.on('dialog',dialog=>dialog.accept());page.setDefaultTimeout(15000);
   await page.goto(origin+'/studio/');await page.fill('#cloud-auth-email','release-workflows@example.invalid');await page.fill('#cloud-auth-password','local-release-workflows-only');await page.click('#cloud-create-account');await page.click('#cloud-sign-in');await page.waitForSelector('#cloud-account-session');
   await page.waitForFunction(()=>Boolean(window.studioDesigns));
+  assert.equal(await page.locator('nav[aria-label="Overlay types"] [data-graphic-menu]').count(),4);assert.equal(await page.locator('[data-admin-navigation]').count(),0,'Members have no administration navigation in the DOM');
   for(const kind of ['original','rows','side-gifts','goal','top-likers']){
     await page.click('[data-config-tab="'+kind+'"]');
     const previewId=(kind==='original'?'carousel':kind)+'-preview';

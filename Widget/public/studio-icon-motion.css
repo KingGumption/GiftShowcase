@@ -9,3 +9,5 @@
 @media(prefers-reduced-motion:reduce){:is(button,a,summary) :is(svg,.editor-tab-icon,.account-icon){transform:none!important;transition:none!important}}
 
 .studio-live-controls{display:flex;align-items:center;gap:10px;padding:12px;color:var(--kg-text);font-size:12px;text-decoration:none}.studio-live-controls svg{width:18px;height:18px}.studio-recovery-tools button span,.studio-action-direct>span{display:inline-block;transition:transform 160ms ease}.studio-recovery-tools button:is(:hover,:focus-visible) span{transform:rotate(-12deg)}.studio-action-direct:is(:hover,:focus-visible)>span{transform:translate(1px,-2px)}@media(prefers-reduced-motion:reduce){.studio-recovery-tools button span,.studio-action-direct>span{transform:none!important;transition:none!important}}
+
+.studio-overlay-link{text-decoration:none;box-sizing:border-box;white-space:nowrap}.studio-overlay-link svg,[data-live-controls-navigation] svg{width:20px;height:20px;flex:none}.studio-overlay-link:hover{background:var(--kg-soft)!important}.studio-admin-link[hidden]{display:none!important}
