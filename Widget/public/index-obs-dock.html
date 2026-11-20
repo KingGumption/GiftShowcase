@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <script src="/site-theme.js?v=20261118-unified4"></script>
+    <script src="/site-theme.js?v=20261120-polish"></script>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src 'self' data: https:; connect-src 'self' http://127.0.0.1:8787 http://localhost:8787 https: wss: ws://localhost:21213; frame-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
     <link rel="icon" href="../../favicon.svg" type="image/svg+xml">
@@ -12,7 +12,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="./style.css?v=20261118-studio3">
     <link rel="stylesheet" href="../../site-chrome.css?v=20260810-1">
-      <link rel="stylesheet" href="/site-theme.css?v=20261117-character">
+      <link rel="stylesheet" href="/site-theme.css?v=20261120-polish">
   <link rel="stylesheet" href="./studio-polish.css?v=20261117-medium1">
 <link rel="stylesheet" href="./studio-ux.css?v=20261118-studio3">
 <link rel="stylesheet" href="/Widget/public/studio-icon-motion.css?v=20261118-navigation1">
@@ -36,7 +36,7 @@
 
       <details id="dock-manager-setup" class="dock-manager-panel dock-manager-help">
         <summary>
-          <span><strong>How canvases work</strong><small>Arrange your overlays, copy one link, then add it to your stream. Connect your username in Studio’s TikTok LIVE panel. Sample activity previews the design. Switch it off to receive live events.</small></span>
+          <span><strong>How canvases work</strong><small>Combine saved overlays into one Browser Source.</small></span>
           <span class="dock-disclosure-label">View guide</span>
         </summary>
         <div class="dock-help-content">
@@ -45,7 +45,7 @@
             <li><span>2</span><div><strong>Copy the link</strong><p>The same link keeps working when you change the layout.</p></div></li>
             <li><span>3</span><div><strong>Add it to your stream</strong><p>Use a Browser Source or Link source in your streaming software.</p></div></li>
           </ol>
-          <p class="dock-manager-optional"><strong>Setup tip:</strong> Use the canvas width and height shown in Canvas settings.</p>
+          <p class="dock-manager-optional">Use the dimensions shown in Canvas settings. Turn off sample activity before going live.</p>
         </div>
       </details>
 
@@ -56,9 +56,9 @@
 
       <form id="dock-manager-auth" class="dock-manager-panel dock-manager-auth" hidden>
         <div class="dock-auth-intro">
-          <span class="dock-panel-kicker">Your workspace</span>
+
           <h2>Sign in to manage your canvases</h2>
-          <p>Your layouts and permanent canvas links are stored securely in your account.</p>
+
         </div>
         <label class="dock-field"><span>Email address</span><input id="dock-manager-email" type="email" autocomplete="email" placeholder="you@example.com" required></label>
         <label class="dock-field"><span>Password</span><input id="dock-manager-password" type="password" autocomplete="current-password" minlength="10" placeholder="10+ characters" required></label>
@@ -76,7 +76,7 @@
 
         <section class="dock-manager-panel dock-library-panel">
           <div class="dock-list-heading">
-            <div><span class="dock-panel-kicker">Canvases</span><h2>Choose a Canvas</h2><p>Edit its layout, then copy its link into your streaming app.</p></div>
+            <div><h2>Choose a Canvas</h2><p>Edit its layout, then copy its link into your streaming app.</p></div>
             <button id="dock-manager-refresh" type="button" class="btn-secondary">↻ Refresh</button>
           </div>
           <section class="live-connection-check" aria-label="TikTok LIVE connection">

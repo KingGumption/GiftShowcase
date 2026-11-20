@@ -59,7 +59,9 @@
     const compact = matchMedia('(max-width: 820px)');
     const placeControl = () => {
       const brand = document.querySelector('.studio-brand');
-      if (brand && compact.matches) (document.querySelector('.studio-account-panel')||mount).append(control);
+      const footer = document.querySelector('footer');
+      if (compact.matches && mount.closest('.site-header') && footer) footer.append(control);
+      else if (brand && compact.matches) (document.querySelector('.studio-account-panel')||mount).append(control);
       else mount.append(control);
     };
     placeControl();

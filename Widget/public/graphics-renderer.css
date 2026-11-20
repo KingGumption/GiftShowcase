@@ -7,7 +7,7 @@
 .compact-milestone{display:flex;align-items:center;gap:7px;min-height:48px;padding:6px 9px;background:color-mix(in srgb,var(--milestone) 75%,transparent);border-color:var(--milestone);color:var(--milestone-text);font-size:19px}.compact-milestone span{min-width:0}.compact-milestone b,.compact-milestone small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.compact-milestone b{font-size:10px}.compact-milestone small{font-size:8px;margin-top:4px}
 
 /* Colours and surfaces are shared with the saved overlay style. */
-.glass{background:linear-gradient(135deg,#ffffff0d,var(--surface-fill));border-color:var(--edge);box-shadow:0 0 var(--glow-size,0) var(--glow-color)}
+.glass{background:linear-gradient(135deg,color-mix(in srgb,var(--surface-fill) 94%,white),var(--surface-fill));border-color:var(--edge);box-shadow:0 0 var(--glow-size,0) var(--glow-color)}
 .row,.rail,.pins{gap:var(--layout-gap,5px);justify-content:var(--layout-align,center)}.rail{height:138px;display:flex;flex-direction:column;justify-content:var(--layout-align,center)}
 .rail .action{display:flex;flex-direction:column;flex:0 0 40px;height:40px;justify-content:center;align-items:center;gap:2px;padding:0;overflow:hidden;min-width:0}
 .rail .action>.gift{width:24px;height:24px;flex:none}.rail .action>b{display:block;width:100%;max-width:66px;height:11px;line-height:11px;padding:0 2px;font-size:8px;white-space:nowrap;text-overflow:ellipsis;overflow:hidden;flex:none;color:var(--ink);background:var(--surface-fill)}
@@ -18,7 +18,7 @@
 
 .halo>i{background:transparent}.halo>i:before,.no-background .halo>i:before{inset:0;background:conic-gradient(var(--progress-start,var(--accent)) 0,var(--progress-end,var(--accent)) var(--progress),var(--track) 0);mask:radial-gradient(circle,transparent 55%,#000 57%)}
 
-.combo>span,.boss b,.vote>b,.quest b{text-align:var(--text-align,left)}.combo>span{flex:1}.goal b{flex:1;text-align:var(--text-align,left)}.row .action{justify-content:var(--layout-align,center)}.roster .person{width:110px}.roster .person>span:last-child{flex:1;overflow:hidden}
+.combo>span,.boss b,.vote>b,.quest b{text-align:var(--text-align,left)}.combo>span:not(.avatar){flex:1;min-width:0}.combo b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.goal b{flex:1;text-align:var(--text-align,left)}.row .action{justify-content:var(--layout-align,center)}.roster .person{width:110px}.roster .person>span:last-child{flex:1;overflow:hidden}
 
 .hide-avatars .person>.avatar,.hide-names .person b,.hide-hearts .like-heart{display:none}.like-heart{font-style:normal}.person small{color:var(--muted)}#graphic-root{isolation:isolate}.with-shell:before{content:"";position:absolute;inset:0;background:var(--surface-fill);border:1px solid var(--edge);border-radius:5px;z-index:-1;box-sizing:border-box}.podium.glass{background:transparent;border-color:transparent;box-shadow:none}.with-tiles .person{background:var(--surface-fill);border-radius:3px}.no-background:before{display:none}
 

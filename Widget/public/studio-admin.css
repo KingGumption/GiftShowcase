@@ -6,3 +6,17 @@
 .operations-guide {max-width:82ch;overflow-wrap:anywhere}
 .operations-guide pre {overflow-x:auto;padding:1rem;background:var(--kg-raised);border-radius:8px}
 .operations-guide h2 {margin-top:2rem}
+
+.onboarding {max-width:640px;margin:clamp(16px,5vh,56px) auto}
+.onboarding .admin-brand {margin-bottom:20px}
+.onboarding>section {padding:clamp(16px,4vw,32px);border:1px solid var(--kg-line);border-radius:12px;background:var(--kg-panel)}
+.onboarding h1 {margin:0 0 10px;font-size:clamp(26px,4vw,36px);line-height:1.15}
+.onboarding form {margin-top:20px}
+.onboarding input:not([type=checkbox]),.onboarding textarea {width:100%;min-width:0;min-height:44px;font-size:16px}
+.onboarding #invite-message:not(:empty),.onboarding #invite-request-again:not([hidden]) {margin:12px 0;padding-inline:8px}
+.admin-tabs button[aria-selected=true] {font-weight:700}
+.admin-brand>a {display:inline-flex;align-items:center;min-height:40px;gap:4px}
+@media(max-width:450px){.onboarding{margin:0 auto}.admin-brand{row-gap:6px}.admin-brand .kg-appearance-control{flex-basis:100%}}
+.onboarding input:not([type=checkbox]),.onboarding textarea {font-weight:400}
+.onboarding .error {color:var(--kg-danger)}
+.onboarding #invite-message:empty {display:none}

@@ -63,7 +63,7 @@
         let prefs;try{prefs=JSON.parse(localStorage.getItem(key)||'null');}catch{}
         pack={entries:{}};restoring=true;
         try{for(const [k,id]of Object.entries(prefs?.selections||{})){const saved=latest(id);if(['carousel','rows','side-gifts','goal','top-likers'].includes(k)&&typeof id==='string'){selections.set(k,id);if(saved&&saved.overlayKind===k)editor.loadConfigForKind(k,saved.config,'Saved design loaded');}}
-          if(['carousel','rows','side-gifts','goal','top-likers'].includes(prefs?.kind))editor.setActiveKind(prefs.kind);
+          if(new URLSearchParams(location.search).get('workspace')!=='outputs' && ['carousel','rows','side-gifts','goal','top-likers'].includes(prefs?.kind))editor.setActiveKind(prefs.kind);
         }finally{restoring=false;}
         currentKind=editor.getActiveOverlayKind();baseline();
       },

@@ -107,6 +107,12 @@ try{
  await page.screenshot({path:out+'/desktop-layout-style.png'});await page.locator('[data-editor-nav="side-gifts"] [data-editor-section-tab="layout"]').click();await page.locator('[data-editor-panel="side-gifts"] [data-presentation-field="slots"]').fill('2');await page.locator('[data-editor-panel="side-gifts"] [data-presentation-field="slots"]').dispatchEvent('change');await page.waitForFunction(()=>document.querySelector('#side-gifts-preview').contentDocument?.querySelectorAll('.rail .action').length===2);
  await page.evaluate(()=>studioDesigns.discard());await page.reload();await page.waitForFunction(()=>Boolean(window.studioDesigns));assert.equal(await page.evaluate(()=>Boolean(KGGraphics.definition('side-gifts',rewardConfigEditor.getConfigForKind('side-gifts')))),false,'Reload does not recover discarded layout edits');
  await native('rows');
+ await page.click('[data-graphic-menu="quest"]');
+ await page.waitForFunction(()=>window.studioSessionReady);
+ await page.click('#studio-output-tab');
+ await page.frameLocator('#studio-output-frame').getByRole('heading',{name:'Choose a Canvas'}).waitFor();
+ assert(await page.locator('#studio-output-workspace').isVisible());
+ await native('rows');
  const toolbarShape = () => page.locator('.studio-sticky-toolbar:visible').evaluate(el=>[...el.children].map(child=>child.className));
  const originalToolbar = await toolbarShape();
  for(const type of ['combo','boss','vote','quest']){
